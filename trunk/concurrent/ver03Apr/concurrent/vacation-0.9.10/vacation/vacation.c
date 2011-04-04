@@ -410,6 +410,7 @@ freeClients (client_t** clients)
     }
 }
 
+#ifdef MAP_USE_TFAVLTREE
 #ifdef SEPERATE_MAINTENANCE
 
 void run_maintenance(void *data) {
@@ -441,7 +442,7 @@ void run_maintenance(void *data) {
 
 }
 
-
+#endif
 #endif
 
 
@@ -580,7 +581,7 @@ usleep(THROTTLE_TIME);
 
 
 
-
+#ifdef MAP_USE_TFAVLTREE
 #ifdef SEPERATE_MAINTENANCE
 typedef struct thread_data {
   manager_t* managerPtr;
@@ -604,7 +605,7 @@ do_run (void* argPtr)
   }
 }
 #endif
-
+#endif
 
 /* =============================================================================
  * main
@@ -616,8 +617,10 @@ MAIN(argc, argv)
     client_t** clients;
     TIMER_T start;
     TIMER_T stop;
+#ifdef MAP_USE_TFAVLTREE
 #ifdef SEPERATE_MAINTENANCE
     thread_data_t tdata;
+#endif
 #endif
     GOTO_REAL();
 
@@ -634,10 +637,12 @@ MAIN(argc, argv)
     assert(managerPtr != NULL);
     clients = initializeClients(managerPtr);
     assert(clients != NULL);
-#ifdef TINY10B
+#ifdef MAP_USE_TFAVLTREE
+    //#ifdef TINY10B
     managerPtr->nb_clients = numThread;
 #endif
 
+#ifdef MAP_USE_TFAVLTREE
 #ifdef SEPERATE_MAINTENANCE
     TM_STARTUP(numThread + 4);
     P_MEMORY_STARTUP(numThread + 4);
@@ -645,6 +650,11 @@ MAIN(argc, argv)
     tdata.managerPtr = managerPtr;
     tdata.clients = clients;
     tdata.nbClients = numThread;
+#else
+    TM_STARTUP(numThread);
+    P_MEMORY_STARTUP(numThread);
+    thread_startup(numThread);
+#endif
 #else
     TM_STARTUP(numThread);
     P_MEMORY_STARTUP(numThread);
@@ -662,9 +672,13 @@ MAIN(argc, argv)
         client_run(clients);
     }
 #else
+#ifdef MAP_USE_TFAVLTREE
 #ifdef SEPERATE_MAINTENANCE
     //do_run((void*)clients, managerPtr, numThread);
     thread_start(do_run, (void*)&tdata);
+#else
+    thread_start(client_run, (void*)clients);
+#endif
 #else
     thread_start(client_run, (void*)clients);
 #endif
