@@ -1,0 +1,2 @@
+cc -g -DNDEBUG -O0 -DSTM -DTINY10B -m64 -D_REENTRANT -Wall -fno-strict-aliasing -I/home/gramoli/lib/libatomic64/include -I../include -I/home/gramoli/svn/private/dev/tmfriendly/tinySTM-1.0.0/include -c -o avltree.o avltree.c
+cc -g -DNDEBUG -O0 -DSTM -DTINY10B -m64 -D_REENTRANT -Wall -fno-strict-aliasing -I/home/gramoli/lib/libatomic64/include -I../include -I/home/gramoli/svn/private/dev/tmfriendly/tinySTM-1.0.0/include -c -o intset.o intset.c
