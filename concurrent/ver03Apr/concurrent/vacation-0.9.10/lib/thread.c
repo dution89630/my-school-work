@@ -144,7 +144,7 @@ thread_startup (long numThread)
     assert(global_barrierPtr);
     THREAD_BARRIER_INIT(global_barrierPtr, numThread);
 
-
+#ifdef MAP_USE_TFAVLTREE
 #ifdef SEPERATE_MAINTENANCE
     thread_done = (bool_t *)malloc((numThread -4) * sizeof(bool_t));
     for(i = 0; i < numThread -4; i++) {
@@ -160,7 +160,7 @@ thread_startup (long numThread)
     /* assert(global_barrierPtr3); */
     /* THREAD_BARRIER_INIT(global_barrierPtr3, 4); */
 #endif
-
+#endif
     /* Set up ids */
     THREAD_LOCAL_INIT(global_threadId);
     assert(global_threadIds == NULL);

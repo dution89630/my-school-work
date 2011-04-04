@@ -106,7 +106,8 @@ addReservation (TM_ARGDECL  MAP_T* tablePtr, long id, long num, long price);
  * tableAlloc
  * =============================================================================
  */
-#ifdef TINY10B
+//#ifdef TINY10B
+#ifdef MAP_USE_TFAVLTREE
 static MAP_T*
 tableAlloc (long nb_threads)
 {

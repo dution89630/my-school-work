@@ -241,7 +241,8 @@ client_run (void* argPtr)
                                          customerId, maxIds[RESERVATION_ROOM]);
                 }
                 TM_END();
-#ifdef TINY10B
+		//#ifdef TINY10B
+#ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
 #endif
@@ -256,7 +257,7 @@ client_run (void* argPtr)
                     MANAGER_DELETE_CUSTOMER(managerPtr, customerId);
                 }
                 TM_END();
-#ifdef TINY10B
+#ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
 #endif
@@ -311,7 +312,7 @@ client_run (void* argPtr)
                     }
                 }
                 TM_END();
-#ifdef TINY10B
+#ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
 #endif
@@ -337,8 +338,8 @@ client_run (void* argPtr)
  */
 
 
-#ifdef TINY10B
-
+//#ifdef TINY10B
+#ifdef MAP_USE_TFAVLTREE
 void increase_nb_committed(long id, manager_t *managerPtr) {
   avl_intset_t *tmp;
 

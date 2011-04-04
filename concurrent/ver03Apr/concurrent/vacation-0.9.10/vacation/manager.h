@@ -78,7 +78,8 @@
 #include "types.h"
 
 
-#ifndef TINY10B
+//#ifndef TINY10B
+#ifndef MAP_USE_TFAVLTREE
 typedef struct manager {
     MAP_T* carTablePtr;
     MAP_T* roomTablePtr;
@@ -87,7 +88,7 @@ typedef struct manager {
 } manager_t;
 #endif
 
-#ifdef TINY10B
+#ifdef MAP_USE_TFAVLTREE
 void increase_nb_committed(long id, manager_t *managerPtr);
 #endif
 
