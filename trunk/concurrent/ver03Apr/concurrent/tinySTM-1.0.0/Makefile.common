@@ -10,9 +10,9 @@ UNIFDEF ?= unifdef
 # Debug/optimization flags
 # Default config is optimization
 ifeq ($(CFG),debug)
-  CFLAGS += -g
+  CFLAGS += -g -m32
 else
-  CFLAGS += -O3 -DNDEBUG
+  CFLAGS += -O3 -DNDEBUG -m32
 endif
 
 TM = stm
