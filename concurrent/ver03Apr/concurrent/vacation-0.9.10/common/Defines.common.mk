@@ -6,20 +6,22 @@
 
 #computer settings
 #asus laptop
-#COMPUTER := /home/tc
+#COMPUTER := /home/tc/my-school-work
 #hp laptop
-COMPUTER := /home/tcrain
+COMPUTER := /home/tcrain/my-school-work
 CONVER := ver03Apr
 CONDIR := $(COMPUTER)/concurrent/$(CONVER)/concurrent/
 
 CC       := gcc
 CFLAGS   += -Wall -pthread
 #CFLAGS   += -O3
-CFLAGS   += -g
+CFLAGS   += -g -m32
 CFLAGS   += -I$(LIB) -I$(LIBAO_INC)
 CPP      := g++
 CPPFLAGS += $(CFLAGS)
-LD       := g++
+#LD       := g++
+LD	 := gcc
+LDFLAGS  := -m32
 LIBS     += -lpthread
 
 # Remove these files when doing clean
