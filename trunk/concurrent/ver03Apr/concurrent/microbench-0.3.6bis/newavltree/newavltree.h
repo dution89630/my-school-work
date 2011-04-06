@@ -16,7 +16,7 @@
 
 #include "tm.h"
 
-#define SEPERATE_MAINTENANCE
+//#define SEPERATE_MAINTENANCE
 //#define CHANGE_KEY
 //#define SEPERATE_BALANCE
 //#define SEPERATE_BALANCE1

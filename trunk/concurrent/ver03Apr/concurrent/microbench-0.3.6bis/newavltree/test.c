@@ -367,7 +367,7 @@ void *test_maintenance(void *data) {
 #ifdef TINY10B
       //do maintenance, but only when there have been enough modifications
 
-#ifdef SEPERATE_BALANCE2
+#ifdef SEPERATE_MAINTENANCE
 
       do_maintenance_thread(d->set);
 
