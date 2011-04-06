@@ -680,13 +680,7 @@ int avl_search(val_t key, avl_intset_t *set) {
   done = 0;
   
   while(rem) {
-    avl_find(key, &place);
-
-#ifdef CHANGE_KEY
-    k = (val_t)TX_UNIT_LOAD(&place->key);
-#else
-    k = place->key;
-#endif
+    avl_find(key, &place, &k);
 
     if(k != key) {
 
@@ -720,27 +714,27 @@ int avl_search(val_t key, avl_intset_t *set) {
 
 
 
-int avl_find(val_t key, avl_node_t **place) {
+int avl_find(val_t key, avl_node_t **place, val_t *val) {
   avl_node_t *next;
   intptr_t rem;
-  val_t val;
+  //val_t val;
 
   next = *place;
   rem = 1;
-  while(next != NULL && (val != key || rem)) {
+  while(next != NULL && (*val != key || rem)) {
     *place = next;
     rem = (intptr_t)TX_UNIT_LOAD(&(*place)->removed);
 #ifdef CHANGE_KEY
-    val = (val_t)TX_UNIT_LOAD(&(*place)->key);
+    *val = (val_t)TX_UNIT_LOAD(&(*place)->key);
     if(val == key) {
-      val = (val_t)TX_LOAD(&(*place)->key);
+      *val = (val_t)TX_LOAD(&(*place)->key);
     }
 #else
-    val = (*place)->key;
+    *val = (*place)->key;
 #endif
 
-    if(key != val || rem) {
-      if(key > val) {
+    if(key != *val || rem) {
+      if(key > *val) {
 	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->right);
       } else {
 	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->left);
@@ -749,50 +743,61 @@ int avl_find(val_t key, avl_node_t **place) {
       //Do this for nested transactions
       if(next == NULL ) {
 #ifdef CHANGE_KEY
-	val = (val_t)TX_LOAD(&(*place)->key);
+	*val = (val_t)TX_LOAD(&(*place)->key);
 #endif
-	if(key > val) {
+	if(key > *val) {
 	  next = (avl_node_t*)TX_LOAD(&(*place)->right);
 	} else {
 	  next = (avl_node_t*)TX_LOAD(&(*place)->left);
 	}
       }
     }
-
   }
-
   return 0;
 }
 
 
-int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent) {
+int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *val) {
   avl_node_t *next;
   intptr_t rem;
-  val_t val;
+  //val_t val;
 
   next = *place;
   *place = *parent;
   rem = 1;
-  while(next != NULL && (val != key || rem)) {
+  while(next != NULL && (*val != key || rem)) {
     *parent = *place;
     *place = next;
     rem = (intptr_t)TX_UNIT_LOAD(&(*place)->removed);
-    val = (*place)->key;
-    if(key > val) {
-      next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->right);
-    } else {
-      next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->left);
+
+#ifdef CHANGE_KEY
+    *val = (val_t)TX_UNIT_LOAD(&(*place)->key);
+    if(*val == key) {
+      *val = (val_t)TX_LOAD(&(*place)->key);
     }
+#else
+    *val = (*place)->key;
+#endif
+
+    if(key != *val || rem) {
+      if(key > *val) {
+	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->right);
+      } else {
+	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->left);
+      }
 
     //Do this for nested transactions
-    if(next == NULL) {
-      if(key > val) {
-	next = (avl_node_t*)TX_LOAD(&(*place)->right);
-      } else {
-	next = (avl_node_t*)TX_LOAD(&(*place)->left);
+      if(next == NULL) {
+#ifdef CHANGE_KEY
+	*val = (val_t)TX_LOAD(&(*place)->key);
+#endif
+	if(key > *val) {
+	  next = (avl_node_t*)TX_LOAD(&(*place)->right);
+	} else {
+	  next = (avl_node_t*)TX_LOAD(&(*place)->left);
+	}
       }
     }
-
   }
   return 0;
 }
@@ -804,6 +809,7 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
   intptr_t rem, del;
   short done, go_left = 0;
   int ret;
+  val_t k;
 
   //printf("inserting %d %d\n", key, v);  
 
@@ -815,13 +821,13 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
   done = 0;
   
   while(rem || next != NULL) {
-    avl_find(key, &place);
+    avl_find(key, &place, &k);
     rem = (intptr_t)TX_LOAD(&place->removed);
     if(!rem) {
-      if(place->key == key) {
+      if(k == key) {
 	done = 1;
 	break;
-      } else if(key > place->key){
+      } else if(key > k){
 	next = (avl_node_t*)TX_LOAD(&place->right);
 	go_left = 0;
       } else {
@@ -837,21 +843,36 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
       TX_STORE(&place->deleted, 0);
       TX_STORE(&place->val, v);
       ret = 1;
+      //printf("undeleting\n");
     } else {
       ret = 0;
     }
   } else {
-    new_node = avl_new_simple_node(v, key, 1);
-    if(go_left) {
-      TX_STORE(&place->left, new_node);
-      //printf("inserted node %d %d %d at left %d\n", new_node, new_node->key, new_node->val, place->key);
-      //printf("val is %d\n", (val_t)TX_UNIT_LOAD(&place->left));
+
+#ifdef KEY_CHANGE
+    if((del = (intptr_t)TX_LOAD(&place->deleted))) {
+      TX_STORE(&place->deleted, 0);
+      TX_STORE(&place->key, key);
+      TX_STORE(&place->val, v);
+      //printf("adding in key change\n");
+      ret = 1;
     } else {
-      TX_STORE(&place->right, new_node);
-      //printf("inserted node %d %d %d at right %d\n", new_node, new_node->key, new_node->val, place->key);
-      //printf("val is %d\n", (val_t)TX_UNIT_LOAD(&place->right));
+#endif
+    
+      new_node = avl_new_simple_node(v, key, 1);
+      if(go_left) {
+	TX_STORE(&place->left, new_node);
+	//printf("inserted node %d %d %d at left %d\n", new_node, new_node->key, new_node->val, place->key);
+	//printf("val is %d\n", (val_t)TX_UNIT_LOAD(&place->left));
+      } else {
+	TX_STORE(&place->right, new_node);
+	//printf("inserted node %d %d %d at right %d\n", new_node, new_node->key, new_node->val, place->key);
+	//printf("val is %d\n", (val_t)TX_UNIT_LOAD(&place->right));
+      }
+      ret = 2;
+#ifdef KEY_CHANGE
     }
-    ret = 2;
+#endif
   }
 
   TX_END;
@@ -873,6 +894,7 @@ int avl_delete(val_t key, avl_intset_t *set) {
   intptr_t rem, del;
   short done;
   int ret;
+  val_t k;
 #ifndef SEPERATE_BALANCE2
   free_list_item *free_item;
   free_list_item *free_list;
@@ -894,9 +916,9 @@ int avl_delete(val_t key, avl_intset_t *set) {
   rem = 1;
 
   while(rem) {
-    avl_find_parent(key, &place, &parent);
+    avl_find_parent(key, &place, &parent, &k);
     //avl_find(v, &place);
-    if(place->key != key) {
+    if(k != key) {
       done = 1;
       ret = 0;
       break;
@@ -993,8 +1015,12 @@ int remove_node(avl_node_t *parent, avl_node_t *place) {
 #endif
 #endif
 
-  v = place->key;
   TX_START(NL);
+#ifdef CHANGE_KEY
+  v = (val_t)TX_UNIT_LOAD(&place->key);
+#else
+  v = place->key;
+#endif
   ret = 1;
   right_child = NULL;
   left_child = NULL;
@@ -1293,9 +1319,17 @@ int avl_right_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t 
   right_child = (avl_node_t *)TX_LOAD(&node->right);
    
 #ifdef KEYMAP
+#ifdef CHANGE_KEY
+  new_node = avl_new_simple_node((val_t)TX_LOAD(&node->val), (val_t)TX_LOAD(&node->key), 1);
+#else
   new_node = avl_new_simple_node((val_t)TX_LOAD(&node->val), node->key, 1);
+#endif
+#else
+#ifdef CHANGE_KEY
+  new_node = avl_new_simple_node(node->val, (val_t)TX_LOAD(&node->key), 1);
 #else
   new_node = avl_new_simple_node(node->val, node->key, 1);
+#endif
 #endif
 #ifdef SEPERATE_BALANCE2
   bnode = avl_new_balance_node(new_node, 1);
@@ -1418,11 +1452,21 @@ int avl_left_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t l
   right_left_child = (avl_node_t *)TX_LOAD(&right_child->left);
   left_child = (avl_node_t *)TX_LOAD(&node->left);
 
+
 #ifdef KEYMAP
+#ifdef CHANGE_KEY
+  new_node = avl_new_simple_node((val_t)TX_LOAD(&node->val), (val_t)TX_LOAD(&node->key), 1);
+#else
   new_node = avl_new_simple_node((val_t)TX_LOAD(&node->val), node->key, 1);
+#endif
+#else
+#ifdef CHANGE_KEY
+  new_node = avl_new_simple_node(node->val, (val_t)TX_LOAD(&node->key), 1);
 #else
   new_node = avl_new_simple_node(node->val, node->key, 1);
 #endif
+#endif
+
 #ifdef SEPERATE_BALANCE2
   bnode = avl_new_balance_node(new_node, 1);
   if(right_left_child != NULL) {
@@ -2015,6 +2059,7 @@ val_t avl_get(val_t key, avl_intset_t *set) {
   intptr_t rem, del;
   avl_node_t *place;
   val_t val;
+  val_t k;
   
   //printf("getting %d\n", key);  
 
@@ -2024,9 +2069,9 @@ val_t avl_get(val_t key, avl_intset_t *set) {
   done = 0;
   
   while(rem) {
-    avl_find(key, &place);
+    avl_find(key, &place, &k);
     
-    if(place->key != key) {
+    if(k != key) {
       done = 1;
       break;
     }
@@ -2059,6 +2104,7 @@ int avl_update(val_t v, val_t key, avl_intset_t *set) {
   intptr_t rem, del;
   short done, go_left = 0;
   int ret;
+  val_t k;
 
   //printf("updating %d\n", key);  
 
@@ -2070,13 +2116,13 @@ int avl_update(val_t v, val_t key, avl_intset_t *set) {
   done = 0;
   
   while(rem || next != NULL) {
-    avl_find(key, &place);
+    avl_find(key, &place, &k);
     rem = (intptr_t)TX_LOAD(&place->removed);
     if(!rem) {
-      if(place->key == key) {
+      if(k == key) {
 	done = 1;
 	break;
-      } else if(key > place->key){
+      } else if(key > k){
 	next = (avl_node_t*)TX_LOAD(&place->right);
 	go_left = 0;
       } else {

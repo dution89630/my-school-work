@@ -28,7 +28,7 @@
 
 
 #ifdef SEPERATE_MAINTENANCE
-#define THROTTLE_TIME 5000
+#define THROTTLE_TIME 100
 #else
 //#define THROTTLE_NUM  1000
 #define THROTTLE_TIME 10000
@@ -100,7 +100,9 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 #ifdef TINY10B
 int avl_search(val_t key, avl_intset_t *set);
 
-int avl_find(val_t key, avl_node_t **place);
+int avl_find(val_t key, avl_node_t **place, val_t *k);
+
+int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *k);
 
 int avl_insert(val_t val, val_t key, avl_intset_t *set);
 
