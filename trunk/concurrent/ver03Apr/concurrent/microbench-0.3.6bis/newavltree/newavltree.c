@@ -74,10 +74,11 @@ avl_node_t *avl_new_simple_node(val_t val, val_t key, int transactional)
   node->right = NULL;
 #ifdef SEPERATE_BALANCE2
   node->bnode = NULL;
-#elif SEPERATE_BALANCE1
+#elif defined(SEPERATE_BALANCE1)
   bnode->lefth = 0;
   bnode->righth = 0;
   bnode->localh = 1;
+  bnode->removed = 0;
   bnode->parent = NULL;
   bnode->left = NULL;
   bnode->right = NULL;
@@ -106,6 +107,7 @@ balance_node_t *avl_new_balance_node(avl_node_t *node, int transactional) {
     exit(1);
   }
   
+  bnode->removed = 0;
   bnode->lefth = 0;
   bnode->righth = 0;
   bnode->localh = 1;
@@ -190,12 +192,20 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
 
 #endif
 
-#ifdef SEPERATE_BALANCE2
-  set->to_remove = (free_list_item **)malloc(nb_threads * sizeof(free_list_item *));
+#ifdef SEPERATE_BALANCE2DEL
+  set->to_remove = (avl_node_t **)malloc(nb_threads * sizeof(avl_node_t *));
   for(i = 0; i < nb_threads; i++) {
-    /* set->to_remove[i] = (free_list_item *)malloc(sizeof(free_list_item)); */
-    /* set->to_remove[i]->next = NULL; */
     set->to_remove[i] = NULL;
+  }
+
+  set->to_remove_parent = (avl_node_t **)malloc(nb_threads * sizeof(avl_node_t *));
+  for(i = 0; i < nb_threads; i++) {
+    set->to_remove_parent[i] = NULL;
+  }
+
+  set->to_remove_seen = (avl_node_t **)malloc(nb_threads * sizeof(avl_node_t *));
+  for(i = 0; i < nb_threads; i++) {
+    set->to_remove_seen[i] = NULL;
   }
 
 #endif

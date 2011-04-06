@@ -17,9 +17,12 @@
 #include "tm.h"
 
 #define SEPERATE_MAINTENANCE
-#define SEPERATE_BALANCE
-#define SEPERATE_BALANCE2
-
+#define KEY_CHANGE
+//#define SEPERATE_BALANCE
+//#define SEPERATE_BALANCE1
+//#define SEPERATE_BALANCE2
+//#define SEPERATE_BALANCE2DEL
+//#define MICROBENCH
 
 
 #define DEFAULT_DURATION                10000
@@ -78,6 +81,7 @@ typedef struct avl_node {
 #ifdef SEPERATE_BALANCE
 typedef struct balance_node {
   val_t lefth, righth, localh;
+  intptr_t removed;
   struct balance_node *left;
   struct balance_node *right;
   struct balance_node *parent;
@@ -102,8 +106,10 @@ typedef struct avl_intset {
   free_list_item **t_free_list;
   free_list_item *free_list;
 
-#ifdef SEPERATE_BALANCE2
-  free_list_item **to_remove;
+#ifdef SEPERATE_BALANCE2DEL
+  avl_node_t **to_remove;
+  avl_node_t **to_remove_parent;
+  avl_node_t **to_remove_seen;
 #endif
 
   long nb_threads;
