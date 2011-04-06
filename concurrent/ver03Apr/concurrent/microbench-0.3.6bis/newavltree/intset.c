@@ -674,8 +674,9 @@ int avl_search(val_t key, avl_intset_t *set) {
   avl_node_t *place, *next;
   val_t k;
   
-  place = set->root;
+  //place = set->root;
   TX_START(NL);
+  place = set->root;
   rem = 1;
   done = 0;
   
@@ -726,7 +727,7 @@ int avl_find(val_t key, avl_node_t **place, val_t *val) {
     rem = (intptr_t)TX_UNIT_LOAD(&(*place)->removed);
 #ifdef CHANGE_KEY
     *val = (val_t)TX_UNIT_LOAD(&(*place)->key);
-    if(val == key) {
+    if(*val == key) {
       *val = (val_t)TX_LOAD(&(*place)->key);
     }
 #else
@@ -813,9 +814,10 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
 
   //printf("inserting %d %d\n", key, v);  
 
-  place = set->root;
+  //place = set->root;
   next = place;
   TX_START(NL);
+  place = set->root;
   ret = 0;
   rem = 1;
   done = 0;
@@ -849,7 +851,7 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
     }
   } else {
 
-#ifdef KEY_CHANGE
+#ifdef CHANGE_KEY
     if((del = (intptr_t)TX_LOAD(&place->deleted))) {
       TX_STORE(&place->deleted, 0);
       TX_STORE(&place->key, key);
@@ -870,7 +872,7 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
 	//printf("val is %d\n", (val_t)TX_UNIT_LOAD(&place->right));
       }
       ret = 2;
-#ifdef KEY_CHANGE
+#ifdef CHANGE_KEY
     }
 #endif
   }
@@ -908,9 +910,11 @@ int avl_delete(val_t key, avl_intset_t *set) {
 
   //printf("deleting %d\n", key);  
 
+  //place = set->root;
+  //parent = set->root;
+  TX_START(NL);
   place = set->root;
   parent = set->root;
-  TX_START(NL);
   ret  = 0;
   done = 0;
   rem = 1;
@@ -2063,8 +2067,9 @@ val_t avl_get(val_t key, avl_intset_t *set) {
   
   //printf("getting %d\n", key);  
 
-  place = set->root;
+  //place = set->root;
   TX_START(NL);
+  place = set->root;
   rem = 1;
   done = 0;
   
@@ -2108,9 +2113,11 @@ int avl_update(val_t v, val_t key, avl_intset_t *set) {
 
   //printf("updating %d\n", key);  
 
+  //place = set->root;
+  //next = place;
+  TX_START(NL);
   place = set->root;
   next = place;
-  TX_START(NL);
   ret = 0;
   rem = 1;
   done = 0;
@@ -2401,11 +2408,6 @@ void do_maintenance_thread(avl_intset_t *tree) {
   //not doing this here, but maybe should?
   
 
-#ifdef SEPERATE_BALANCE2DEL
-  check_remove_list(tree, &nb_removed, tree->free_list);
-#endif
-  
-
   //check if you can free removed nodes
   done = 0;
   for(i = 0; i < nb_threads; i++) {
@@ -2425,22 +2427,11 @@ void do_maintenance_thread(avl_intset_t *tree) {
     //printf("Starting free\n");
     while(next != NULL) {
 
-#ifdef SEPERATE_BALANCE2DEL
-      check_remove_list(tree, &nb_removed, tree->free_list);
-#endif
-      
-
       //printf("FREEING\n");
       free(next->to_free);
       tmp_item = next;
       next = next->next;
       
-
-#ifdef SEPERATE_BALANCE2DEL
-  check_remove_list(tree, &nb_removed, tree->free_list);
-#endif
-
-
       free(tmp_item);
     }
     tree->free_list->next = NULL;
