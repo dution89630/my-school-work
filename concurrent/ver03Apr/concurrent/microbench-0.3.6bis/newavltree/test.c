@@ -102,6 +102,7 @@ inline long rand_range_re(unsigned int *seed, long r) {
 
 
 typedef struct thread_data {
+        int id;
 	val_t first;
 	long range;
 	int update;
@@ -188,8 +189,12 @@ void *test(void *data) {
 	int unext, last = -1; 
 	val_t val = 0;
 	int result;
-	
+	int id;
+	ulong *tloc;
+
 	thread_data_t *d = (thread_data_t *)data;
+	id = d->id;
+	tloc = d->set->nb_committed;
 	
 	/* Create transaction */
 	TM_THREAD_ENTER();
@@ -218,13 +223,18 @@ void *test(void *data) {
 					last = val;
 				}
 				d->nb_trans++;
+				tloc[id]++;
 				d->nb_add++;
 				
 			} else { // remove
 				
 				if (d->alternate) { // alternate mode (default)
 #ifdef TINY10B
+#ifdef SEPERATE_BALANCE2DEL
+				  if ((result = avl_remove(d->set, last, TRANSACTIONAL, &d->free_list, id)) > 0) {
+#else
 				  if ((result = avl_remove(d->set, last, TRANSACTIONAL, &d->free_list)) > 0) {
+#endif
 #else
 				  if ((result = avl_remove(d->set, last, TRANSACTIONAL)) > 0) {
 #endif
@@ -239,7 +249,11 @@ void *test(void *data) {
 					val = rand_range_re(&d->seed, d->range);
 					/* Remove one random value */
 #ifdef TINY10B
+#ifdef SEPERATE_BALANCE2DEL
+					if ((result = avl_remove(d->set, val, TRANSACTIONAL, &d->free_list, id)) > 0) {
+#else
 					  if ((result = avl_remove(d->set, val, TRANSACTIONAL, &d->free_list)) > 0) {
+#endif
 #else
 					if ((result = avl_remove(d->set, val, TRANSACTIONAL)) > 0) {
 #endif
@@ -252,6 +266,7 @@ void *test(void *data) {
 					} 
 				}
 				d->nb_trans++;
+				tloc[id]++;
 				d->nb_remove++;
 			}
 			
@@ -279,6 +294,7 @@ void *test(void *data) {
 			if (avl_contains(d->set, val, TRANSACTIONAL)) 
 				d->nb_found++;
 			d->nb_trans++;
+			tloc[id]++;
 			d->nb_contains++;
 			
 		}
@@ -633,7 +649,8 @@ int main(int argc, char **argv)
 	
 	//levelmax = floor_log_2((unsigned int) initial);
 
-	set = avl_set_new();
+	//set = avl_set_new();
+	set = avl_set_new_alloc(0, nb_threads);
 	//#endif
 	stop = 0;
 	
@@ -680,6 +697,7 @@ int main(int argc, char **argv)
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	for (i = 0; i < nb_threads; i++) {
 		printf("Creating thread %d\n", i);
+		data[i].id = i;
 		data[i].first = last;
 		data[i].range = range;
 		data[i].update = update;
