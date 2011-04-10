@@ -16,14 +16,15 @@
 
 #include "tm.h"
 
-//#define SEPERATE_MAINTENANCE
-//#define CHANGE_KEY
+#ifdef TINY10B
+#define SEPERATE_MAINTENANCE
+#define CHANGE_KEY
 //#define SEPERATE_BALANCE
 //#define SEPERATE_BALANCE1
 //#define SEPERATE_BALANCE2
 //#define SEPERATE_BALANCE2DEL
-//#define MICROBENCH
-
+#define MICROBENCH
+#endif
 
 #define DEFAULT_DURATION                10000
 #define DEFAULT_INITIAL                 256

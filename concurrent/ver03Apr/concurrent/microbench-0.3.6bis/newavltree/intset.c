@@ -131,12 +131,8 @@ int avl_add(avl_intset_t *set, val_t key, int transactional)
 }
 
 
-#ifdef TINY10B
-#if defined(SEPERATE_BALANCE2DEL) && defined(MICROBENCH)
-int avl_remove(avl_intset_t *set, val_t key, int transactional, free_list_item **free_list, int id)
-#else
-int avl_remove(avl_intset_t *set, val_t key, int transactional, free_list_item **free_list)
-#endif
+#if defined(MICROBENCH)
+int avl_remove(avl_intset_t *set, val_t key, int transactional, int id)
 #else
 int avl_remove(avl_intset_t *set, val_t key, int transactional)
 #endif
@@ -190,7 +186,7 @@ int avl_remove(avl_intset_t *set, val_t key, int transactional)
 
 #elif defined TINY10B
 
-#if defined(SEPERATE_BALANCE2DEL) && defined(MICROBENCH)
+#if defined(MICROBENCH)
   result = avl_delete(key, set, id);
 #else
   result = avl_delete(key, set);
@@ -815,9 +811,9 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
   //printf("inserting %d %d\n", key, v);  
 
   //place = set->root;
-  next = place;
   TX_START(NL);
   place = set->root;
+  next = place;
   ret = 0;
   rem = 1;
   done = 0;
@@ -856,7 +852,18 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
       TX_STORE(&place->deleted, 0);
       TX_STORE(&place->key, key);
       TX_STORE(&place->val, v);
-      //printf("adding in key change\n");
+      if(go_left) {
+	if(key >= k) {
+	  printf("error1\n");
+	}
+      } else {
+	if(key <= k) {
+	  printf("error2\n");
+	}
+      }
+      if(next != NULL) {
+	printf("adding in key change old %d, new %d, %d\n", k, key, next);
+      }
       ret = 1;
     } else {
 #endif
@@ -887,7 +894,7 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
 
 }
 
-#if defined(SEPERATE_BALANCE2DEL) && defined(MICROBENCH)
+#if defined(MICROBENCH)
 int avl_delete(val_t key, avl_intset_t *set, int id) {
 #else
 int avl_delete(val_t key, avl_intset_t *set) {
@@ -965,37 +972,47 @@ int avl_delete(val_t key, avl_intset_t *set) {
   if(ret == 1) {
     ret = remove_node(parent, place);
     if(ret > 1) {
-
+      //printf("removed\n");
       //TODO FIX THIS SHOULD NOT BE 0
-      free_list = set->t_free_list[0];
-      if(free_list != NULL) {
-	//add it to the garbage collection
-	free_item = (free_list_item *)MALLOC(sizeof(free_list_item));
-	free_item->next = NULL;
-	free_item->to_free = place;
 #ifdef SEPERATE_MAINTENANCE
-	free_list->next = free_item;
-	free_list = free_item;
-#else
-	while(free_list->next != NULL) {
-	  free_list = free_list->next;
-	}
-	//printf("adding to free list %d %d\n", place->key, thread_getId());
-	//(*free_list)->next = free_item;
-	//free_list->next = free_item;
-	TX_STORE(&free_list->next, free_item);
-	//do this in a trans (atomic)?
-	//*free_list = free_item;
-	//TX_START(NL);
-	//TX_STORE(&(*free_list), free_item);
-	//TX_END;
-	
+      TX_START(NL);
 #endif
+      //free_list = set->t_free_list[id];
+      free_list = (free_list_item *)TX_UNIT_LOAD(&set->t_free_list[id]);
+      //add it to the garbage collection
+      free_item = (free_list_item *)MALLOC(sizeof(free_list_item));
+      free_item->next = NULL;
+      free_item->to_free = place;
+#ifdef SEPERATE_MAINTENANCE
+      free_list->next = free_item;
+      //free_list = free_item;
+      
+	//set->t_free_list[id] = free_item;
+      TX_STORE(&set->t_free_list[id], free_item);
+      TX_END;
+#else
+      while(free_list->next != NULL) {
+	free_list = free_list->next;
       }
+      //printf("adding to free list %d %d\n", place->key, id);
+      //(*free_list)->next = free_item;
+      //free_list->next = free_item;
+      
+      //SHould only do this if in a transaction
+      TX_STORE(&free_list->next, free_item);
+      
+      //do this in a trans (atomic)?
+      //*free_list = free_item;
+      //TX_START(NL);
+      //TX_STORE(&(*free_list), free_item);
+      //TX_END;
+      
+#endif
+    
     }
   }
 #endif
-
+  
 
   return ret;
 
@@ -1137,13 +1154,13 @@ int remove_node(avl_node_t *parent, avl_node_t *place) {
 	    }
 	  }
 	  //MAYBE THIS ISNT NECESSARY
-	  if(left_child == NULL) {
+	  //if(left_child == NULL) {
 	    TX_STORE(&place->left, parent);
-	  }
-	  if(right_child == NULL) {
+	    //}
+	    //if(right_child == NULL) {
 	    TX_STORE(&place->right, parent);
 	    //righth = 0;
-	  }
+	    //}
 	  
 	  if(left_child == NULL && right_child == NULL) {
 	    if(go_left) {
@@ -2416,23 +2433,25 @@ void do_maintenance_thread(avl_intset_t *tree) {
       done = 1;
       //printf("Done at i:%d, new %d, old %d\n", i, t_nb_trans[i], t_nb_trans_old[i]);
       break;
+    } else {
+      //printf("Not Done at i:%d, new %d, old %d\n", i, t_nb_trans[i], t_nb_trans_old[i]);
     }
   }
   if(!done) {
     //free removed nodes
     tmp = (t_nb_trans_old);
-    (t_nb_trans_old) = (t_nb_trans);
-    (t_nb_trans) = tmp;
+    (tree->t_nbtrans_old) = (t_nb_trans);
+    (tree->t_nbtrans) = tmp;
     next = tree->free_list->next;
     //printf("Starting free\n");
     while(next != NULL) {
 
       //printf("FREEING\n");
-      free(next->to_free);
+      //free(next->to_free);
       tmp_item = next;
       next = next->next;
       
-      free(tmp_item);
+      //free(tmp_item);
     }
     tree->free_list->next = NULL;
     
@@ -2441,7 +2460,7 @@ void do_maintenance_thread(avl_intset_t *tree) {
     for(i = 0; i < tree->nb_threads; i++) {
       while(tree->maint_list_start[i] != tree->maint_list_end[i]) {
 	if(tree->maint_list_start[i]->to_free != NULL) {
-	  //printf("freeing %d\n", d->t_free_list[i]->to_free->key);
+	  //printf("freeing %d\n", tree->maint_list_start[i]->to_free->key);
 	  //free(tree->maint_list_start[i]->to_free);
 	}
 	tmp_item = tree->maint_list_start[i];
@@ -2449,13 +2468,16 @@ void do_maintenance_thread(avl_intset_t *tree) {
 	//free(tmp_item);
       }
       //update the t_list
-      tree->maint_list_end[i] = tree->t_free_list[i];
+      //tree->maint_list_end[i] = tree->t_free_list[i];
+      TX_START(NL);
+      tree->maint_list_end[i] = (free_list_item*)TX_UNIT_LOAD(&tree->t_free_list[i]);
+      TX_END;
     }
 #endif
   }
   
   
-  recursive_tree_propagate(tree, &nb_propagated, &nb_suc_propagated, &nb_rotated, &nb_suc_rotated, &nb_removed, tree->free_list);
+  //recursive_tree_propagate(tree, &nb_propagated, &nb_suc_propagated, &nb_rotated, &nb_suc_rotated, &nb_removed, tree->free_list);
     
   
 }
