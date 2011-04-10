@@ -50,12 +50,8 @@
 //Wrappers?
 int avl_contains(avl_intset_t *set, val_t key, int transactional);
 int avl_add(avl_intset_t *set, val_t key, int transactional);
-#ifdef TINY10B
-#if defined(SEPERATE_BALANCE2DEL) && defined(MICROBENCH)
-int avl_remove(avl_intset_t *set, val_t key, int transactional, free_list_item **free_list, int id);
-#else
-int avl_remove(avl_intset_t *set, val_t key, int transactional, free_list_item **free_list);
-#endif
+#if defined(MICROBENCH)
+int avl_remove(avl_intset_t *set, val_t key, int transactional, int id);
 #else
 int avl_remove(avl_intset_t *set, val_t key, int transactional);
 #endif
@@ -107,7 +103,7 @@ int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *k
 int avl_insert(val_t val, val_t key, avl_intset_t *set);
 
 //int avl_delete(val_t key, avl_intset_t *set, free_list_item **free_list);
-#if defined(SEPERATE_BALANCE2DEL) && defined(MICROBENCH)
+#if defined(MICROBENCH)
 int avl_delete(val_t key, avl_intset_t *set, int id);
 #else
 int avl_delete(val_t key, avl_intset_t *set);

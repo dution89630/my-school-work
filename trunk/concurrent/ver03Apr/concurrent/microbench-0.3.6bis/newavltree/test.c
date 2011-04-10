@@ -130,7 +130,7 @@ typedef struct thread_data {
 	barrier_t *barrier;
 	unsigned long failures_because_contention;
         unsigned long nb_trans;
-        free_list_item *free_list;
+  //free_list_item *free_list;
 } thread_data_t;
 
 typedef struct maintenance_thread_data {
@@ -151,8 +151,8 @@ typedef struct maintenance_thread_data {
   thread_data_t *t_data;
   unsigned long *t_nb_trans;
   unsigned long *t_nb_trans_old;
-  free_list_item *free_list;
-  free_list_item **t_free_list;
+  //free_list_item *free_list;
+  //free_list_item **t_free_list;
   int nb_threads;
   avl_intset_t *set;
   barrier_t *barrier;
@@ -231,11 +231,7 @@ void *test(void *data) {
 				
 				if (d->alternate) { // alternate mode (default)
 #ifdef TINY10B
-#ifdef SEPERATE_BALANCE2DEL
-				  if ((result = avl_remove(d->set, last, TRANSACTIONAL, &d->free_list, id)) > 0) {
-#else
-				  if ((result = avl_remove(d->set, last, TRANSACTIONAL, &d->free_list)) > 0) {
-#endif
+				  if ((result = avl_remove(d->set, last, TRANSACTIONAL, id)) > 0) {
 #else
 				  if ((result = avl_remove(d->set, last, TRANSACTIONAL)) > 0) {
 #endif
@@ -250,11 +246,7 @@ void *test(void *data) {
 					val = rand_range_re(&d->seed, d->range);
 					/* Remove one random value */
 #ifdef TINY10B
-#ifdef SEPERATE_BALANCE2DEL
-					if ((result = avl_remove(d->set, val, TRANSACTIONAL, &d->free_list, id)) > 0) {
-#else
-					  if ((result = avl_remove(d->set, val, TRANSACTIONAL, &d->free_list)) > 0) {
-#endif
+					if ((result = avl_remove(d->set, val, TRANSACTIONAL, id)) > 0) {
 #else
 					if ((result = avl_remove(d->set, val, TRANSACTIONAL)) > 0) {
 #endif
@@ -346,7 +338,7 @@ void *test_maintenance(void *data) {
 #ifdef TINY10B
   t_list_items = (free_list_item **)malloc(d->nb_threads * sizeof(free_list_item *));
   for(i = 0; i < d->nb_threads; i++) {
-    t_list_items[i] = d->t_free_list[i];
+    t_list_items[i] = d->set->t_free_list[i];
   }
 #endif  
 
@@ -367,82 +359,78 @@ void *test_maintenance(void *data) {
 #ifdef TINY10B
       //do maintenance, but only when there have been enough modifications
 
-#ifdef SEPERATE_MAINTENANCE
-
       do_maintenance_thread(d->set);
 
-#else
+/*       //need to do garbage collection here */
+/*       done = 0; */
+/*       for(i = 0; i < d->nb_threads; i++) { */
+/* 	d->t_nb_trans[i] = d->t_data[i].nb_trans; */
+/* 	if(d->t_nb_trans[i] == d->t_nb_trans_old[i]) { */
+/* 	  done = 1; */
+/* 	  //printf("Done at i:%d, %d, %d\n", i, d->t_nb_trans[i], d->t_nb_trans_old[i]); */
+/* 	  break; */
+/* 	} */
+/*       } */
+/*       if(!done) { */
+/* 	tmp = (d->t_nb_trans_old); */
+/* 	(d->t_nb_trans_old) = (d->t_nb_trans); */
+/* 	(d->t_nb_trans) = tmp; */
+/* 	next = d->set->free_list->next; */
+/* 	printf("Starting free\n"); */
+/* 	while(next != NULL) { */
+/* 	  printf("FREEING\n"); */
+/* 	  free(next->to_free); */
+/* 	  tmp_item = next; */
+/* 	  next = next->next; */
+/* 	  free(tmp_item); */
+/* 	} */
+/* 	d->set->free_list->next = NULL; */
 
-      //need to do garbage collection here
-      done = 0;
-      for(i = 0; i < d->nb_threads; i++) {
-	d->t_nb_trans[i] = d->t_data[i].nb_trans;
-	if(d->t_nb_trans[i] == d->t_nb_trans_old[i]) {
-	  done = 1;
-	  //printf("Done at i:%d, %d, %d\n", i, d->t_nb_trans[i], d->t_nb_trans_old[i]);
-	  break;
-	}
-      }
-      if(!done) {
-	tmp = (d->t_nb_trans_old);
-	(d->t_nb_trans_old) = (d->t_nb_trans);
-	(d->t_nb_trans) = tmp;
-	next = d->free_list->next;
-	//printf("Starting free\n");
-	while(next != NULL) {
-	  //printf("FREEING\n");
-	  free(next->to_free);
-	  tmp_item = next;
-	  next = next->next;
-	  free(tmp_item);
-	}
-	d->free_list->next = NULL;
-
-	//now do the frees for the ones removed in the non-maint threads
-	for(i = 0; i < d->nb_threads; i++) {
-	  while(d->t_free_list[i] != t_list_items[i]) {
-	    if(d->t_free_list[i]->to_free != NULL) {
-	      //printf("freeing %d\n", d->t_free_list[i]->to_free->key);
-	      free(d->t_free_list[i]->to_free);
-	    }
-	    tmp_item = d->t_free_list[i];
-	    d->t_free_list[i] = d->t_free_list[i]->next;
-	    free(tmp_item);
-	  }
-	  //update the t_list
-	  t_list_items[i] = d->t_data[i].free_list;
-	  //t_list_items[i] = (free_list_item *)TX_UNIT_LOAD(d->t_data[i].free_list);
-	}
-      }
+/* 	//now do the frees for the ones removed in the non-maint threads */
+/* 	for(i = 0; i < d->nb_threads; i++) { */
+/* 	  while(d->set->t_free_list[i] != t_list_items[i]) { */
+/* 	    if(d->set->t_free_list[i]->to_free != NULL) { */
+/* 	      printf("freeing %d\n", d->set->t_free_list[i]->to_free->key); */
+/* 	      free(d->set->t_free_list[i]->to_free); */
+/* 	    } */
+/* 	    tmp_item = d->set->t_free_list[i]; */
+/* 	    d->set->t_free_list[i] = d->set->t_free_list[i]->next; */
+/* 	    free(tmp_item); */
+/* 	  } */
+/* 	  //update the t_list */
+/* 	  t_list_items[i] = d->set->t_free_list[i]; */
+/* 	  //t_list_items[i] = (free_list_item *)TX_UNIT_LOAD(d->t_data[i].free_list); */
+/* 	} */
+/*       } */
       
 
-      recursive_tree_propagate(d->set, &(d->nb_propagated), &(d->nb_suc_propagated), &(d->nb_rotated), &(d->nb_suc_rotated), &(d->nb_removed), d->free_list);
+/*       //recursive_tree_propagate(d->set, &(d->nb_propagated), &(d->nb_suc_propagated), &(d->nb_rotated), &(d->nb_suc_rotated), &(d->nb_removed), d->set->free_list); */
 
 
 
-#ifdef THROTTLE_MAINTENANCE
-      nb_modified = 0;
-      while(nb_modified < (THROTTLE_NUM + last_modified)) {
-	nb_modified = 0;
-	for(i = 0; i < d->nb_threads; i++) {
-	  nb_modified += d->t_data[i].nb_modifications;
-	}
-	usleep(THROTTLE_TIME);
+/* #ifdef THROTTLE_MAINTENANCE */
+/*       nb_modified = 0; */
+/*       while(nb_modified < (THROTTLE_NUM + last_modified)) { */
+/* 	nb_modified = 0; */
+/* 	for(i = 0; i < d->nb_threads; i++) { */
+/* 	  nb_modified += d->t_data[i].nb_modifications; */
+/* 	} */
+/* 	usleep(THROTTLE_TIME); */
 
-#ifdef ICC
-	if(stop != 0) break;
-#else
-	if(AO_load_full(&stop) != 0) break;
-#endif /* ICC */
+/* #ifdef ICC */
+/* 	if(stop != 0) break; */
+/* #else */
+/* 	if(AO_load_full(&stop) != 0) break; */
+/* #endif /\* ICC *\/ */
 	
-      }
-      last_modified = nb_modified;
+/*       } */
+/*       last_modified = nb_modified; */
 
-#endif
+/* #endif */
 
 
 
-#endif /* SEPERATE_BALANCE2 */
+/* #endif /\* SEPERATE_BALANCE2 *\/ */
 
 
 #endif
@@ -725,11 +713,6 @@ int main(int argc, char **argv)
 		data[i].set = set;
 		data[i].barrier = &barrier;
 		data[i].failures_because_contention = 0;
-		if ((data[i].free_list = (free_list_item *)malloc(sizeof(free_list_item))) == NULL) {
-		  perror("malloc");
-		  exit(1);
-		}
-		data[i].free_list->next = NULL;
 		if (pthread_create(&threads[i], &attr, test, (void *)(&data[i])) != 0) {
 			fprintf(stderr, "Error creating thread\n");
 			exit(1);
@@ -771,20 +754,6 @@ int main(int argc, char **argv)
 		}
 		for(j = 0; j < nb_threads; j++) {
 		  maintenance_data[i].t_nb_trans_old[j] = 0;
-		}
-
-		if ((maintenance_data[i].free_list = (free_list_item *)malloc(nb_threads * sizeof(free_list_item))) == NULL) {
-		  perror("malloc");
-		  exit(1);
-		}
-		maintenance_data[i].free_list->next = NULL;
-
-		if ((maintenance_data[i].t_free_list = (free_list_item **)malloc(nb_threads * sizeof(free_list_item*))) == NULL) {
-		  perror("malloc");
-		  exit(1);
-		}
-		for(j = 0; j < nb_threads; j++) {
-		  maintenance_data[i].t_free_list[j] = data[j].free_list;
 		}
 
 		printf("Creating maintenance thread %d\n", i);
