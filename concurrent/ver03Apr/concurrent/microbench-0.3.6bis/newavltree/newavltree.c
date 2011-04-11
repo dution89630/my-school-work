@@ -211,6 +211,7 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
 #endif
 
   set->nb_threads = nb_threads;
+  set->deleted_count = 0;
 
 
   set->t_nbtrans = (ulong *)malloc(nb_threads * sizeof(ulong));

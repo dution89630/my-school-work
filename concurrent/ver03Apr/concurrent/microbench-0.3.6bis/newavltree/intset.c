@@ -715,6 +715,9 @@ int avl_find(val_t key, avl_node_t **place, val_t *val) {
   avl_node_t *next;
   intptr_t rem;
   //val_t val;
+#ifdef CHANGE_KEY
+  val_t new_val;
+#endif
 
   next = *place;
   rem = 1;
@@ -723,19 +726,40 @@ int avl_find(val_t key, avl_node_t **place, val_t *val) {
     rem = (intptr_t)TX_UNIT_LOAD(&(*place)->removed);
 #ifdef CHANGE_KEY
     *val = (val_t)TX_UNIT_LOAD(&(*place)->key);
-    if(*val == key) {
-      *val = (val_t)TX_LOAD(&(*place)->key);
+    //*val = (*place)->key;
+    while(1) {
+      
+      if(key > *val) {
+	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->right);
+      } else {
+	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->left);
+      }
+      new_val = (val_t)TX_UNIT_LOAD(&(*place)->key);
+      //new_val = (*place)->key;
+
+      if(new_val == key) {
+	if(key == (val_t)TX_LOAD(&(*place)->key)) {
+	  *val = key;
+	  break;
+	}
+      }
+      if(new_val == *val) {
+	break;
+      }
+      *val = new_val;
     }
 #else
     *val = (*place)->key;
 #endif
 
     if(key != *val || rem) {
+#ifndef CHANGE_KEY
       if(key > *val) {
 	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->right);
       } else {
 	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->left);
       }
+#endif
       
       //Do this for nested transactions
       if(next == NULL ) {
@@ -758,6 +782,9 @@ int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *v
   avl_node_t *next;
   intptr_t rem;
   //val_t val;
+#ifdef CHANGE_KEY
+  val_t new_val;
+#endif
 
   next = *place;
   *place = *parent;
@@ -769,19 +796,40 @@ int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *v
 
 #ifdef CHANGE_KEY
     *val = (val_t)TX_UNIT_LOAD(&(*place)->key);
-    if(*val == key) {
-      *val = (val_t)TX_LOAD(&(*place)->key);
+    //*val = (*place)->key;
+    while(1) {
+      
+      if(key > *val) {
+	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->right);
+      } else {
+	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->left);
+      }
+      new_val = (val_t)TX_UNIT_LOAD(&(*place)->key);
+      //new_val = (*place)->key;
+
+      if(new_val == key) {
+	if(key == (val_t)TX_LOAD(&(*place)->key)) {
+	  *val = key;
+	  break;
+	}
+      }
+      if(new_val == *val) {
+	break;
+      }
+      *val = new_val;
     }
 #else
     *val = (*place)->key;
 #endif
 
     if(key != *val || rem) {
+#ifndef CHANGE_KEY
       if(key > *val) {
 	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->right);
       } else {
 	next = (avl_node_t*)TX_UNIT_LOAD(&(*place)->left);
       }
+#endif
 
     //Do this for nested transactions
       if(next == NULL) {
@@ -853,16 +901,16 @@ int avl_insert(val_t v, val_t key, avl_intset_t *set) {
       TX_STORE(&place->key, key);
       TX_STORE(&place->val, v);
       if(go_left) {
-	if(key >= k) {
-	  printf("error1\n");
-	}
+    	if(key >= k) {
+    	  printf("error1\n");
+    	}
       } else {
-	if(key <= k) {
-	  printf("error2\n");
-	}
+    	if(key <= k) {
+    	  printf("error2\n");
+    	}
       }
       if(next != NULL) {
-	printf("adding in key change old %d, new %d, %d\n", k, key, next);
+    	printf("adding in key change old %d, new %d, %d\n", k, key, next);
       }
       ret = 1;
     } else {
@@ -1216,6 +1264,7 @@ int avl_rotate(avl_node_t *parent, short go_left, avl_node_t *node, free_list_it
   int ret;
   avl_node_t *child_addr = NULL;
   
+  //printf("here");
   ret = avl_single_rotate(parent, go_left, node, 0, 0, &child_addr, free_list);
   if(ret == 2) {
     //Do a LRR
@@ -1727,7 +1776,7 @@ int avl_propagate(avl_node_t *node, short left, short *should_rotate) {
 	 rem_succs = remove_node(parent, next);
 	 //rem_succs = 0;
 	 if(rem_succs > 1) {
-	   //printf("Removed, %d\n", next->key);
+	   printf("Removed, %d\n", next->key);
 	   bnode = next->bnode;
 	   if(bnode != NULL) {
 	     bnode->left = NULL;
@@ -1831,9 +1880,11 @@ int avl_propagate(balance_node_t *node, short left, short *should_rotate) {
 
 #endif /* def SEPERATE_BALANCE2 */
 
-int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item* free_list) {
+ int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, free_list_item* free_list) {
   free_list_item *next;
   
+  *deleted_count = 0;
+
   //Get to the end of the free list so you can add new elements
   next = free_list;
   while(next->next != NULL) {
@@ -1841,11 +1892,13 @@ int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong* num_suc, ulon
   }
 
 #ifdef SEPERATE_BALANCE2
-  recursive_node_propagate(set, set->root->bnode, set->root->bnode, NULL, num, num_suc, num_rot, suc_rot, num_rem, next);
+  recursive_node_propagate(set, set->root->bnode, set->root->bnode, NULL, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, set->deleted_count, next);
 #else
-  recursive_node_propagate(set->root, set->root, NULL, num, num_suc, num_rot, suc_rot, num_rem, next);
+  recursive_node_propagate(set->root, set->root, NULL, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, set->deleted_count, next);
 #endif
   //printf("Finished full prop\n");
+  //printf("deleted count: %lu\n", *deleted_count);
+  set->deleted_count = *deleted_count;
   return 1;
 }
 
@@ -1886,7 +1939,7 @@ balance_node_t* check_expand(balance_node_t *node, short go_left) {
 }
 
 
- int recursive_node_propagate(avl_intset_t *set, balance_node_t *root, balance_node_t *node, balance_node_t *parent, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item *free_list) {
+ int recursive_node_propagate(avl_intset_t *set, balance_node_t *root, balance_node_t *node, balance_node_t *parent, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, ulong old_deleted_count, free_list_item *free_list) {
   balance_node_t *left, *right;
   int rem_succs;
   short should_rotatel, should_rotater;
@@ -1896,14 +1949,6 @@ balance_node_t* check_expand(balance_node_t *node, short go_left) {
     return 1;
   }
 
-#ifdef SEPERATE_BALANCE2DEL
-  check_remove_list(set, num_rem, free_list);
-#endif
-
-#ifdef SEPERATE_MAINTENANCE
-  usleep(THROTTLE_TIME);
-  //printf("sleeping\n");
-#endif
 
 #ifdef SEPERATE_BALANCE2DEL
   check_remove_list(set, num_rem, free_list);
@@ -1914,22 +1959,35 @@ balance_node_t* check_expand(balance_node_t *node, short go_left) {
     return 0;
   }
 
+  //should do this in a transaction
+  if(node->anode->deleted) {
+    (*deleted_count)++;
+  }
+
   left = node->left;
   right = node->right;
 
-  if(left != NULL) {
-    recursive_node_propagate(set, root, left, node, num, num_suc, num_rot, suc_rot, num_rem, free_list);
-  } else {
-    if((left = check_expand(node, 1)) != NULL) {
-      recursive_node_propagate(set, root, left, node, num, num_suc, num_rot, suc_rot, num_rem, free_list);
-    }
+  /* if(left != NULL) { */
+  /*   recursive_node_propagate(set, root, left, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list); */
+  /* } else { */
+  /*   if((left = check_expand(node, 1)) != NULL) { */
+  /*     recursive_node_propagate(set, root, left, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list); */
+  /*   } */
+  /* } */
+  /* if(right != NULL) { */
+  /*   recursive_node_propagate(set, root, right, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list); */
+  /* } else { */
+  /*   if((right = check_expand(node, 0)) != NULL) { */
+  /*     recursive_node_propagate(set, root, right, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list); */
+  /*   } */
+  /* } */
+
+  if(left == NULL) {
+    left = check_expand(node, 1);
   }
-  if(right != NULL) {
-    recursive_node_propagate(set, root, right, node, num, num_suc, num_rot, suc_rot, num_rem, free_list);
-  } else {
-    if((right = check_expand(node, 0)) != NULL) {
-      recursive_node_propagate(set, root, right, node, num, num_suc, num_rot, suc_rot, num_rem, free_list);
-    }
+
+  if(right == NULL) {
+    right = check_expand(node, 0);
   }
 
   rem_succs = 0;
@@ -1945,11 +2003,24 @@ balance_node_t* check_expand(balance_node_t *node, short go_left) {
       next_list_item->to_free = node->anode;
       free_list->next = next_list_item;
       free_list = next_list_item;
-      
+
       return 1;
     }
   }
+
+  if(left != NULL) {
+    recursive_node_propagate(set, root, left, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list);
+  }
+  if(right != NULL) {
+    recursive_node_propagate(set, root, right, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list);
+  }
+
   
+#ifdef SEPERATE_MAINTENANCE
+  usleep((THROTTLE_TIME)/(old_deleted_count + (*deleted_count * *deleted_count) + 1));
+  //printf("sleeping %lu, %lu, %lu\n", old_deleted_count, *deleted_count, ((THROTTLE_TIME)/(old_deleted_count + (*deleted_count * *deleted_count) + 1)));
+#endif
+
 
   //printf("prop %d\n", node->anode->key);
   //should do just left or right rotate here?
@@ -1961,7 +2032,7 @@ balance_node_t* check_expand(balance_node_t *node, short go_left) {
     if(should_rotatel || should_rotater) {
       //printf("Calling rotate method\n");
       *suc_rot = *suc_rot + avl_rotate(node->anode, 1, left->anode, free_list);
-	*num_rot = *num_rot + 1;
+  	*num_rot = *num_rot + 1;
     }
     *num = *num + 2;
   }
@@ -1985,7 +2056,7 @@ balance_node_t* check_expand(balance_node_t *node, short go_left) {
 
 #else
 
-int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *parent, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item *free_list) {
+ int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *parent, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, ulong old_deleted_count, free_list_item *free_list) {
   avl_node_t *left, *right;
   intptr_t rem, del;
   int rem_succs;
@@ -1996,10 +2067,6 @@ int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *par
     return 1;
   }
 
-#ifdef SEPERATE_MAINTENANCE
-  usleep(THROTTLE_TIME);
-#endif
-
   TX_START(NL);
   left = (avl_node_t*)TX_UNIT_LOAD(&node->left);
   right = (avl_node_t*)TX_UNIT_LOAD(&node->right);
@@ -2008,11 +2075,9 @@ int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *par
   TX_END;
 
   if(!rem) {
-    if(left != NULL) {
-      recursive_node_propagate(root, left, node, num, num_suc, num_rot, suc_rot, num_rem, free_list);
-    }
-    if(right != NULL) {
-      recursive_node_propagate(root, right, node, num, num_suc, num_rot, suc_rot, num_rem, free_list);
+
+    if(del) {
+      (*deleted_count)++;
     }
 
     rem_succs = 0;
@@ -2033,6 +2098,18 @@ int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *par
       }
     }
     
+#ifdef SEPERATE_MAINTENANCE
+    usleep((THROTTLE_TIME)/(old_deleted_count + 1));
+    //printf("sleeping %lu, %lu, %lu\n", old_deleted_count, *deleted_count, ((THROTTLE_TIME)/(old_deleted_count + (*deleted_count * *deleted_count) + 1)));
+#endif
+
+    
+    if(left != NULL) {
+      recursive_node_propagate(root, left, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list);
+    }
+    if(right != NULL) {
+      recursive_node_propagate(root, right, node, num, num_suc, num_rot, suc_rot, num_rem, deleted_count, old_deleted_count, free_list);
+    }
 
     //should do just left or right rotate here?
     TX_START(NL);
@@ -2412,7 +2489,7 @@ void do_maintenance_thread(avl_intset_t *tree) {
   free_list_item *next, *tmp_item;//, **t_list_items;
   long nb_threads;
   ulong *nb_committed;
-  ulong nb_propagated, nb_suc_propagated, nb_rotated, nb_suc_rotated, nb_removed;
+  ulong nb_propagated, nb_suc_propagated, nb_rotated, nb_suc_rotated, nb_removed, deleted_count;
   ulong *t_nb_trans;
   ulong *t_nb_trans_old;
 
@@ -2477,7 +2554,7 @@ void do_maintenance_thread(avl_intset_t *tree) {
   }
   
   
-  //recursive_tree_propagate(tree, &nb_propagated, &nb_suc_propagated, &nb_rotated, &nb_suc_rotated, &nb_removed, tree->free_list);
+  recursive_tree_propagate(tree, &nb_propagated, &nb_suc_propagated, &nb_rotated, &nb_suc_rotated, &nb_removed, &deleted_count, tree->free_list);
     
   
 }
@@ -2495,7 +2572,7 @@ void do_maintenance(avl_intset_t *tree) {
   //avl_intset_t *tree;
   //manager_t *mgrPtr;
   long id;
-  ulong nb_propagated, nb_suc_propagated, nb_rotated, nb_suc_rotated, nb_removed;
+  ulong nb_propagated, nb_suc_propagated, nb_rotated, nb_suc_rotated, nb_removed, deleted_count;
 #ifdef THROTTLE_MAINTENANCE
   //ulong nb_modified, last_modified = 0;
 #endif
@@ -2557,7 +2634,7 @@ void do_maintenance(avl_intset_t *tree) {
   }
   
   
-  recursive_tree_propagate(tree, &nb_propagated, &nb_suc_propagated, &nb_rotated, &nb_suc_rotated, &nb_removed, tree->free_list);
+  recursive_tree_propagate(tree, &nb_propagated, &nb_suc_propagated, &nb_rotated, &nb_suc_rotated, &nb_removed, &deleted_count, tree->free_list);
   
   
 }
