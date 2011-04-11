@@ -27,14 +27,6 @@
 //#include "thread.h"
 
 
-#ifdef SEPERATE_MAINTENANCE
-#define THROTTLE_TIME 100
-#else
-#define THROTTLE_NUM  1000
-#define THROTTLE_TIME 10000
-#define THROTTLE_UPDATE 1000
-#define THROTTLE_MAINTENANCE
-#endif
 
 //temporary stuff
 /* #define KEYMAP */
@@ -125,7 +117,7 @@ int avl_left_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t l
 //int avl_left_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child);
 
 
-int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item *free_list);
+int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, free_list_item *free_list);
 
 
 #ifdef SEPERATE_BALANCE2
@@ -134,7 +126,7 @@ int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong *num_suc, ulon
 int check_remove_list(avl_intset_t *set, ulong *num_rem, free_list_item *free_list);
 #endif
 
-int recursive_node_propagate(avl_intset_t *set, balance_node_t *root, balance_node_t *node, balance_node_t *parent, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item *free_list);
+int recursive_node_propagate(avl_intset_t *set, balance_node_t *root, balance_node_t *node, balance_node_t *parent, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, ulong old_deleted_count, free_list_item *free_list);
 
 int avl_propagate(balance_node_t *node, short left, short *should_rotate);
 
@@ -142,7 +134,7 @@ balance_node_t* check_expand(balance_node_t *node, short go_left);
 
 #else
 
-int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *parent, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item *free_list);
+int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *parent, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, ulong old_deleted_count, free_list_item *free_list);
 
 int avl_propagate(avl_node_t *node, short left, short *should_rotate);
 

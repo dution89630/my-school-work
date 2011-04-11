@@ -19,12 +19,23 @@
 #ifdef TINY10B
 #define SEPERATE_MAINTENANCE
 #define CHANGE_KEY
-//#define SEPERATE_BALANCE
-//#define SEPERATE_BALANCE1
-//#define SEPERATE_BALANCE2
+#define SEPERATE_BALANCE
+#define SEPERATE_BALANCE1
+#define SEPERATE_BALANCE2
 //#define SEPERATE_BALANCE2DEL
 #define MICROBENCH
 #endif
+
+
+#ifdef SEPERATE_MAINTENANCE
+#define THROTTLE_TIME 10000
+#else
+#define THROTTLE_NUM  1000
+#define THROTTLE_TIME 10000
+#define THROTTLE_UPDATE 1000
+#define THROTTLE_MAINTENANCE
+#endif
+
 
 #define DEFAULT_DURATION                10000
 #define DEFAULT_INITIAL                 256
@@ -118,6 +129,7 @@ typedef struct avl_intset {
   ulong *t_nbtrans_old;
   ulong *nb_committed;
   ulong *nb_committed_old;
+  ulong deleted_count;
   ulong next_maintenance;
 } avl_intset_t;
 
