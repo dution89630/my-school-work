@@ -322,7 +322,7 @@ void *test(void *data) {
 
 void *test_maintenance(void *data) {
 #ifdef TINY10B
-  short done;
+  int done;
   int i;
   ulong *tmp;
   free_list_item *next, *tmp_item, **t_list_items;
@@ -871,11 +871,11 @@ int main(int argc, char **argv)
 
 	for (i = 0; i < nb_maintenance_threads; i++) {
 		printf("Maintenance thread %d\n", i);
-		printf("  #removed %lu\n", maintenance_data[i].nb_removed);
-		printf("  #rotated %lu\n", maintenance_data[i].nb_rotated);
-		printf("  #rotated sucs %lu\n", maintenance_data[i].nb_suc_rotated);
-		printf("  #propogated %lu\n", maintenance_data[i].nb_propagated);
-		printf("  #propogated sucs %lu\n", maintenance_data[i].nb_suc_propagated);
+		printf("  #removed %lu\n", set->nb_removed);
+		printf("  #rotated %lu\n", set->nb_rotated);
+		printf("  #rotated sucs %lu\n", set->nb_suc_rotated);
+		printf("  #propogated %lu\n", set->nb_propogated);
+		printf("  #propogated sucs %lu\n", set->nb_suc_propogated);
 		printf("  #aborts     : %lu\n", maintenance_data[i].nb_aborts);
 		printf("    #lock-r   : %lu\n", maintenance_data[i].nb_aborts_locked_read);
 		printf("    #lock-w   : %lu\n", maintenance_data[i].nb_aborts_locked_write);

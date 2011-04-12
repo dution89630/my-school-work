@@ -86,38 +86,38 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 //Actual STM methods
 
 #ifdef TINY10B
-int avl_search(val_t key, avl_intset_t *set);
+int avl_search(val_t key, const avl_intset_t *set);
 
 int avl_find(val_t key, avl_node_t **place, val_t *k);
 
 int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *k);
 
-int avl_insert(val_t val, val_t key, avl_intset_t *set);
+int avl_insert(val_t val, val_t key, const avl_intset_t *set);
 
 //int avl_delete(val_t key, avl_intset_t *set, free_list_item **free_list);
 #if defined(MICROBENCH)
-int avl_delete(val_t key, avl_intset_t *set, int id);
+int avl_delete(val_t key, const avl_intset_t *set, int id);
 #else
-int avl_delete(val_t key, avl_intset_t *set);
+int avl_delete(val_t key, const avl_intset_t *set);
 #endif
 
 int remove_node(avl_node_t *parent, avl_node_t *place);
 
-int avl_rotate(avl_node_t *parent, short go_left, avl_node_t *node, free_list_item *free_list);
+int avl_rotate(avl_node_t *parent, int go_left, avl_node_t *node, free_list_item *free_list);
 
-int avl_single_rotate(avl_node_t *parent, short go_left, avl_node_t *node, short left_rotate, short right_rotate, avl_node_t **child_addr, free_list_item *free_list);
-
-
-int avl_right_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child, avl_node_t **left_child_addr, short do_rotate, free_list_item *free_list);
-
-int avl_left_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child, avl_node_t **right_child_addr, short do_rotate, free_list_item *free_list);
-
-//int avl_right_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child);
-
-//int avl_left_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child);
+int avl_single_rotate(avl_node_t *parent, int go_left, avl_node_t *node, int left_rotate, int right_rotate, avl_node_t **child_addr, free_list_item *free_list);
 
 
-int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, free_list_item *free_list);
+int avl_right_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child, avl_node_t **left_child_addr, int do_rotate, free_list_item *free_list);
+
+int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child, avl_node_t **right_child_addr, int do_rotate, free_list_item *free_list);
+
+//int avl_right_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child);
+
+//int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child);
+
+
+int recursive_tree_propagate(avl_intset_t *set, free_list_item *free_list);
 
 
 #ifdef SEPERATE_BALANCE2
@@ -126,23 +126,23 @@ int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong *num_suc, ulon
 int check_remove_list(avl_intset_t *set, ulong *num_rem, free_list_item *free_list);
 #endif
 
-int recursive_node_propagate(avl_intset_t *set, balance_node_t *root, balance_node_t *node, balance_node_t *parent, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, ulong old_deleted_count, free_list_item *free_list);
+int recursive_node_propagate(avl_intset_t *set, balance_node_t *node, balance_node_t *parent, free_list_item *free_list);
 
-int avl_propagate(balance_node_t *node, short left, short *should_rotate);
+int avl_propagate(balance_node_t *node, int left, int *should_rotate);
 
-balance_node_t* check_expand(balance_node_t *node, short go_left);
+balance_node_t* check_expand(balance_node_t *node, int go_left);
 
 #else
 
-int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *parent, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, ulong *deleted_count, ulong old_deleted_count, free_list_item *free_list);
+int recursive_node_propagate(avl_intset_t *set, avl_node_t *node, avl_node_t *parent, free_list_item *free_list);
 
-int avl_propagate(avl_node_t *node, short left, short *should_rotate);
+int avl_propagate(avl_node_t *node, int left, int *should_rotate);
 
 #endif
 
 #ifdef KEYMAP
-val_t avl_get(val_t key, avl_intset_t *set);
-int avl_update(val_t v, val_t key, avl_intset_t *set);
+val_t avl_get(val_t key, const avl_intset_t *set);
+int avl_update(val_t v, val_t key, const avl_intset_t *set);
 #endif
 
 #ifdef SEPERATE_MAINTENANCE
