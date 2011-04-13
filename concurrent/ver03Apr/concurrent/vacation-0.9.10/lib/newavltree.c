@@ -74,10 +74,11 @@ avl_node_t *avl_new_simple_node(val_t val, val_t key, int transactional)
   node->right = NULL;
 #ifdef SEPERATE_BALANCE2
   node->bnode = NULL;
-#elif SEPERATE_BALANCE1
+#elif defined(SEPERATE_BALANCE1)
   bnode->lefth = 0;
   bnode->righth = 0;
   bnode->localh = 1;
+  bnode->removed = 0;
   bnode->parent = NULL;
   bnode->left = NULL;
   bnode->right = NULL;
@@ -106,6 +107,7 @@ balance_node_t *avl_new_balance_node(avl_node_t *node, int transactional) {
     exit(1);
   }
   
+  bnode->removed = 0;
   bnode->lefth = 0;
   bnode->righth = 0;
   bnode->localh = 1;
@@ -190,8 +192,41 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
 
 #endif
 
-  set->nb_threads = nb_threads;
+#ifdef SEPERATE_BALANCE2DEL
+  set->to_remove = (avl_node_t **)malloc(nb_threads * sizeof(avl_node_t *));
+  for(i = 0; i < nb_threads; i++) {
+    set->to_remove[i] = NULL;
+  }
 
+  set->to_remove_parent = (avl_node_t **)malloc(nb_threads * sizeof(avl_node_t *));
+  for(i = 0; i < nb_threads; i++) {
+    set->to_remove_parent[i] = NULL;
+  }
+
+  set->to_remove_seen = (avl_node_t **)malloc(nb_threads * sizeof(avl_node_t *));
+  for(i = 0; i < nb_threads; i++) {
+    set->to_remove_seen[i] = NULL;
+  }
+#endif
+
+#ifdef REMOVE_LATER
+  set->to_remove_later = (remove_list_item_t **)malloc(nb_threads * sizeof(remove_list_item_t*));
+  for(i = 0; i < nb_threads; i++) {
+    set->to_remove_later[i] = NULL;
+  }
+#endif
+
+  set->nb_threads = nb_threads;
+  set->deleted_count = 0;
+  set->current_deleted_count = 0;
+  set->tree_size = 0;
+  set->current_tree_size = 0;
+  set->nb_propogated = 0;
+  set->nb_rotated = 0;
+  set->nb_suc_propogated = 0;
+  set->nb_suc_rotated = 0;
+  set->nb_removed = 0;
+  set->active_remove = 0;
 
   set->t_nbtrans = (ulong *)malloc(nb_threads * sizeof(ulong));
   set->t_nbtrans_old = (ulong *)malloc(nb_threads * sizeof(ulong));
@@ -272,7 +307,7 @@ void avl_set_size_node(avl_node_t *node, int* size, int tree) {
 
 }
 
-
+#ifndef MICROBENCH
 #ifdef KEYMAP
 
 /* =============================================================================
@@ -316,4 +351,5 @@ TMrbtree_free (TM_ARGDECL  rbtree_t* r) {
   FREE((avl_intset_t *)r, sizeof(avl_intset_t));
 }
 
+#endif
 #endif

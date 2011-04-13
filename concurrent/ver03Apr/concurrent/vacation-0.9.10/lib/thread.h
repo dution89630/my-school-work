@@ -72,7 +72,6 @@
 #ifndef THREAD_H
 #define THREAD_H 1
 
-
 #include <pthread.h>
 #include <stdlib.h>
 #include "types.h"

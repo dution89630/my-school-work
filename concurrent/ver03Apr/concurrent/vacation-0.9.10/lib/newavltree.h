@@ -15,6 +15,12 @@
 //#define RBTREE_H 1
 
 #include "tm.h"
+
+//#define MICROBENCH
+
+
+#ifndef MICROBENCH
+
 #include "types.h"
 
 typedef struct rbtree rbtree_t;
@@ -41,6 +47,31 @@ typedef struct rbtree rbtree_t;
 #  define TM_ARG_ALONE                   /* nothing */
 #  define TM_THREAD_ENTER()              stm_init_thread()
 
+#endif
+
+#ifdef TINY10B
+//#define SEPERATE_MAINTENANCE
+//#define CHANGE_KEY
+#define SEPERATE_BALANCE
+//#define SEPERATE_BALANCE1
+#define SEPERATE_BALANCE2
+//#define SEPERATE_BALANCE2DEL
+#define SEPERATE_BALANCE2NLDEL
+#define REMOVE_LATER
+#endif
+
+#define ACTIVE_REM_CONSTANT 2
+
+#ifdef SEPERATE_MAINTENANCE
+#define THROTTLE_TIME 100000
+#else
+#define THROTTLE_NUM  1000
+#define THROTTLE_TIME 10000
+#define THROTTLE_UPDATE 1000
+#define THROTTLE_MAINTENANCE
+#endif
+
+
 #define DEFAULT_DURATION                10000
 #define DEFAULT_INITIAL                 256
 #define DEFAULT_NB_THREADS              1
@@ -52,9 +83,10 @@ typedef struct rbtree rbtree_t;
 #define DEFAULT_ALTERNATE               0
 #define DEFAULT_EFFECTIVE               1
 
+#ifndef MICROBENCH
 #define KEYMAP
 #define SEQUENTIAL
-
+#endif
 
 #define XSTR(s)                         STR(s)
 #define STR(s)                          #s
@@ -76,6 +108,8 @@ extern unsigned int levelmax;
 #define VAL_MIN                         INT_MIN
 #define VAL_MAX                         INT_MAX
 
+
+#ifndef MICROBENCH
 #define TMRBTREE_ALLOC()          TMrbtree_alloc(TM_ARG_ALONE)
 #define TMRBTREE_FREE(r)          TMrbtree_free(TM_ARG  r)
 #define TMRBTREE_INSERT(r, k, v)  TMrbtree_insert(TM_ARG  r, (void*)(k), (void*)(v))
@@ -83,6 +117,8 @@ extern unsigned int levelmax;
 #define TMRBTREE_UPDATE(r, k, v)  TMrbtree_update(TM_ARG  r, (void*)(k), (void*)(v))
 #define TMRBTREE_GET(r, k)        TMrbtree_get(TM_ARG  r, (void*)(k))
 #define TMRBTREE_CONTAINS(r, k)   TMrbtree_contains(TM_ARG  r, (void*)(k))
+#endif
+
 
 typedef intptr_t val_t;
 //#define val_t void*
@@ -105,6 +141,7 @@ typedef struct avl_node {
 #ifdef SEPERATE_BALANCE
 typedef struct balance_node {
   val_t lefth, righth, localh;
+  intptr_t removed;
   struct balance_node *left;
   struct balance_node *right;
   struct balance_node *parent;
@@ -117,16 +154,17 @@ typedef struct free_list_item_t {
   avl_node_t *to_free;
 } free_list_item;
 
+#ifdef REMOVE_LATER
+typedef struct remove_list_item {
+  struct remove_list_item *next;
+  avl_node_t *parent, *item;
+} remove_list_item_t;
+#endif
 
+/* typedef struct info_data { */
+/*   ulong nb_propogated, nb_suc_propogated, nb_rotated, nb_suc_rotated, nb_removed; */
+/* } info_data_t; */
 
-typedef struct manager {
-  rbtree_t* carTablePtr;
-  rbtree_t* roomTablePtr;
-  rbtree_t* flightTablePtr;
-  rbtree_t* customerTablePtr;
-  //ulong *nb_committed;
-  long nb_clients;
-} manager_t;
 
 typedef struct avl_intset {
   avl_node_t *root;
@@ -138,14 +176,29 @@ typedef struct avl_intset {
   free_list_item **t_free_list;
   free_list_item *free_list;
 
+#ifdef SEPERATE_BALANCE2DEL
+  avl_node_t **to_remove;
+  avl_node_t **to_remove_parent;
+  avl_node_t **to_remove_seen;
+#endif
+
+#ifdef REMOVE_LATER
+  remove_list_item_t **to_remove_later;
+#endif
+
   long nb_threads;
   ulong *t_nbtrans;
   ulong *t_nbtrans_old;
   ulong *nb_committed;
   ulong *nb_committed_old;
+  uint deleted_count;
+  uint current_deleted_count;
+  uint tree_size;
+  uint current_tree_size;
+  int active_remove;
   ulong next_maintenance;
+  ulong nb_propogated, nb_suc_propogated, nb_rotated, nb_suc_rotated, nb_removed;
 } avl_intset_t;
-
 
 
 int floor_log_2(unsigned int n);
@@ -167,6 +220,12 @@ int avl_set_size(avl_intset_t *set);
 int avl_tree_size(avl_intset_t *set);
 void avl_set_size_node(avl_node_t *node, int* size, int tree);
 
+
+
+
+
+
+#ifndef MICROBENCH
 
 #ifdef KEYMAP
 
@@ -203,13 +262,7 @@ TMrbtree_free (TM_ARGDECL  rbtree_t* r);
 
 #endif
 
-
-
-
-
-
-
-
+#endif
 
 
 
@@ -330,13 +383,13 @@ TMrbtree_free (TM_ARGDECL  rbtree_t* r);
 /*  int avl_insert(val_t val, val_t key, avl_intset_t *set); */
 /*  int avl_delete(val_t key, avl_intset_t *set, free_list_item **free_list); */
 /*  int remove_node(avl_node_t *parent, avl_node_t *place); */
-/*  int avl_rotate(avl_node_t *parent, short go_left, avl_node_t *node, free_list_item *free_list); */
-/*  int avl_single_rotate(avl_node_t *parent, short go_left, avl_node_t *node, short left_rotate, short right_rotate, avl_node_t **child_addr, free_list_item *free_list); */
-/*  int avl_right_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child, avl_node_t **left_child_addr, short do_rotate, free_list_item *free_list); */
-/*  int avl_left_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child, avl_node_t **right_child_addr, short do_rotate, free_list_item *free_list); */
-/*  //int avl_right_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child); */
-/*  //int avl_left_rotate(avl_node_t *parent, short go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child); */
-/*  int avl_propagate(avl_node_t *node, short left, short *should_rotate); */
+/*  int avl_rotate(avl_node_t *parent, int go_left, avl_node_t *node, free_list_item *free_list); */
+/*  int avl_single_rotate(avl_node_t *parent, int go_left, avl_node_t *node, int left_rotate, int right_rotate, avl_node_t **child_addr, free_list_item *free_list); */
+/*  int avl_right_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child, avl_node_t **left_child_addr, int do_rotate, free_list_item *free_list); */
+/*  int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child, avl_node_t **right_child_addr, int do_rotate, free_list_item *free_list); */
+/*  //int avl_right_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *left_child); */
+/*  //int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child); */
+/*  int avl_propagate(avl_node_t *node, int left, int *should_rotate); */
 /*  int recursive_tree_propagate(avl_intset_t *set, ulong *num, ulong *num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item *free_list); */
 /*  int recursive_node_propagate(avl_node_t *root, avl_node_t *node, avl_node_t *parent, ulong *num, ulong* num_suc, ulong *num_rot, ulong *suc_rot, ulong *num_rem, free_list_item *free_list); */
 
