@@ -120,6 +120,14 @@ int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lef
 int recursive_tree_propagate(avl_intset_t *set, free_list_item *free_list);
 
 
+#ifdef REMOVE_LATER
+#ifdef MICROBENCH
+int finish_removal(avl_intset_t *set, int id);
+#else
+int finish_removal(avl_intset_t *set);
+#endif
+#endif
+
 #ifdef SEPERATE_BALANCE2
 
 #ifdef SEPERATE_BALANCE2DEL

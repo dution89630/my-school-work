@@ -957,14 +957,15 @@ int avl_delete(val_t key, const avl_intset_t *set) {
   val_t k;
   //#ifndef SEPERATE_BALANCE2
 #if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL)
+#ifdef REMOVE_LATER
+  remove_list_item_t *next_remove;
+#else
   free_list_item *free_item;
   free_list_item *free_list;
 #endif
-#ifdef SEPERATE_BALANCE2DEL
-  //free_list_item *delete, *old;
+#endif
 #ifndef MICROBENCH
   long id;
-#endif
 #endif
 
   //printf("deleting %d\n", key);  
@@ -1001,11 +1002,22 @@ int avl_delete(val_t key, const avl_intset_t *set) {
       ret = 1;
     }
   }
-#ifdef SEPERATE_BALANCE2DEL
-  if((avl_node_t *)TX_UNIT_LOAD(&place->left) == NULL || (avl_node_t *)TX_UNIT_LOAD(&place->right) == NULL) {
+
+#if defined(SEPERATE_BALANCE2DEL) || defined(REMOVE_LATER)
+  if(ret == 1 && set->active_remove && ((avl_node_t *)TX_UNIT_LOAD(&place->left) == NULL || (avl_node_t *)TX_UNIT_LOAD(&place->right) == NULL)) {
+
 #ifndef MICROBENCH
     id = thred_getId();
 #endif
+
+#ifdef REMOVE_LATER
+    next_remove = (remove_list_item_t*)MALLOC(sizeof(remove_list_item_t));
+    next_remove->item = place;
+    next_remove->parent = parent;
+    next_remove->next = (remove_list_item_t*)TX_UNIT_LOAD(&set->to_remove_later[id]);
+    TX_STORE(&set->to_remove_later[id], next_remove);
+#else
+
     /* delete = (free_list_item *)MALLOC(sizeof(free_list_item)); */
     /* delete->to_free = place; */
     /* if((old = (free_list_item *)TX_UNIT_LOAD(&set->to_remove[id])) != NULL) { */
@@ -1014,6 +1026,9 @@ int avl_delete(val_t key, const avl_intset_t *set) {
     /* TX_STORE(&set->to_remove[id], delete); */
     TX_STORE(&set->to_remove[id], place);
     TX_STORE(&set->to_remove_parent[id], parent);
+
+#endif
+
   }
 
 #endif
@@ -1021,7 +1036,8 @@ int avl_delete(val_t key, const avl_intset_t *set) {
 
   //Do the removal in a new trans(or maybe should do this in maintenance?)
 #if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL)
-  if(ret == 1) {
+#ifndef REMOVE_LATER
+  if(ret == 1 && set->active_remove) {
     ret = remove_node(parent, place);
     if(ret > 1) {
 #ifdef SEPERATE_MAINTENANCE
@@ -1063,16 +1079,83 @@ int avl_delete(val_t key, const avl_intset_t *set) {
     }
   }
 #endif
+#endif
   
 
   return ret;
-
 }
-#if defined(SEPERATE_BALANCE2NLDEL)
-int remove_node(avl_node_t *parent, avl_node_t *place) {
+ 
+
+#ifdef REMOVE_LATER
+#ifdef MICROBENCH
+ int finish_removal(avl_intset_t *set, int id) {
 #else
-int remove_node(avl_node_t *parent, avl_node_t *place) {
+ int finish_removal(avl_intset_t *set) {
 #endif
+   remove_list_item_t *next;
+   avl_node_t *place, *parent;
+   free_list_item *free_item;
+   free_list_item *free_list;
+   int ret;
+#ifndef MICROBENCH
+   long id;
+   id = thred_getId();
+#endif
+
+   next = set->to_remove_later[id];
+   set->to_remove_later[id] = NULL;
+
+   while(next != NULL) {
+     parent = next->parent;
+     place = next->item;
+
+     ret = remove_node(parent, place);
+     if(ret > 1) {
+#ifdef SEPERATE_MAINTENANCE
+       TX_START(NL);
+#endif
+       //free_list = set->t_free_list[id];
+       free_list = (free_list_item *)TX_UNIT_LOAD(&set->t_free_list[id]);
+       //add it to the garbage collection
+       free_item = (free_list_item *)MALLOC(sizeof(free_list_item));
+       free_item->next = NULL;
+       free_item->to_free = place;
+#ifdef SEPERATE_MAINTENANCE
+       free_list->next = free_item;
+       //free_list = free_item;
+       
+       //set->t_free_list[id] = free_item;
+       TX_STORE(&set->t_free_list[id], free_item);
+       TX_END;
+#else
+       while(free_list->next != NULL) {
+	 free_list = free_list->next;
+       }
+       //printf("adding to free list %d %d\n", place->key, id);
+       //(*free_list)->next = free_item;
+       //free_list->next = free_item;
+       
+       //SHould only do this if in a transaction
+      
+       TX_STORE(&free_list->next, free_item);
+       
+       //do this in a trans (atomic)?
+       //*free_list = free_item;
+       //TX_START(NL);
+       //TX_STORE(&(*free_list), free_item);
+       //TX_END;
+       
+#endif
+       
+     }
+     next = next->next;
+     free(next);
+   }
+   return 0;
+ }
+#endif
+
+int remove_node(avl_node_t *parent, avl_node_t *place) {
   avl_node_t *right_child, *left_child, *parent_child;
   int go_left;
   val_t v;
@@ -1930,6 +2013,7 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
   free_list_item *next;
   
   set->current_deleted_count = 0;
+  set->current_tree_size = 0;
 
   //Get to the end of the free list so you can add new elements
   next = free_list;
@@ -1945,6 +2029,20 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
   //printf("Finished full prop\n");
   //printf("deleted count: %lu\n", *deleted_count);
   set->deleted_count = set->current_deleted_count;
+  set->tree_size = set->current_tree_size;
+
+  if(set->deleted_count > set->tree_size * ACTIVE_REM_CONSTANT) {
+    if(!set->active_remove) {
+      set->active_remove = 1;
+      //printf("active remove\n");
+    }
+  } else {
+    if(set->active_remove) {
+      set->active_remove = 0;
+      //printf("non active remove\n");
+    }
+  }
+
   return 1;
 }
 
@@ -2032,10 +2130,22 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
     return 0;
   }
 
-
-  //should do this in a transaction
+  //should do this in a transaction?
   if(anode->deleted) {
     (set->current_deleted_count)++;
+  } else {
+    set->current_tree_size++;
+  }
+  if(set->current_deleted_count > set->current_tree_size * ACTIVE_REM_CONSTANT) {
+    if(!set->active_remove) {
+      set->active_remove = 1;
+      //printf("active remove\n");
+    }
+  } else {
+    if(set->active_remove) {
+      set->active_remove = 0;
+      //printf("non active remove\n");
+    }
   }
 
   left = node->left;

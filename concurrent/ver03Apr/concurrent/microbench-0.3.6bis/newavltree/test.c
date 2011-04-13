@@ -236,6 +236,9 @@ void *test(void *data) {
 				  if ((result = avl_remove(d->set, last, TRANSACTIONAL)) > 0) {
 #endif
 						d->nb_removed++;
+#ifdef REMOVE_LATER
+						finish_removal(d->set, id);
+#endif
 					        if(result > 1) {
 					           d->nb_modifications++;
 					         }
@@ -251,6 +254,9 @@ void *test(void *data) {
 					if ((result = avl_remove(d->set, val, TRANSACTIONAL)) > 0) {
 #endif
 						d->nb_removed++;
+#ifdef REMOVE_LATER
+						finish_removal(d->set, id);
+#endif
 					        if(result > 1) {
 					          d->nb_modifications++;
 					        }
