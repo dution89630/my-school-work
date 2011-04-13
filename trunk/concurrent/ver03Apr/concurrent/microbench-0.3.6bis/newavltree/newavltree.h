@@ -23,10 +23,12 @@
 //#define SEPERATE_BALANCE1
 #define SEPERATE_BALANCE2
 //#define SEPERATE_BALANCE2DEL
-//#define SEPERATE_BALANCE2NLDEL
+#define SEPERATE_BALANCE2NLDEL
 #define MICROBENCH
+#define REMOVE_LATER
 #endif
 
+#define ACTIVE_REM_CONSTANT 2
 
 #ifdef SEPERATE_MAINTENANCE
 #define THROTTLE_TIME 100000
@@ -107,11 +109,16 @@ typedef struct free_list_item_t {
   avl_node_t *to_free;
 } free_list_item;
 
+#ifdef REMOVE_LATER
+typedef struct remove_list_item {
+  struct remove_list_item *next;
+  avl_node_t *parent, *item;
+} remove_list_item_t;
+#endif
 
 /* typedef struct info_data { */
 /*   ulong nb_propogated, nb_suc_propogated, nb_rotated, nb_suc_rotated, nb_removed; */
 /* } info_data_t; */
-
 
 
 typedef struct avl_intset {
@@ -130,13 +137,20 @@ typedef struct avl_intset {
   avl_node_t **to_remove_seen;
 #endif
 
+#ifdef REMOVE_LATER
+  remove_list_item_t **to_remove_later;
+#endif
+
   long nb_threads;
   ulong *t_nbtrans;
   ulong *t_nbtrans_old;
   ulong *nb_committed;
   ulong *nb_committed_old;
-  ulong deleted_count;
-  ulong current_deleted_count;
+  uint deleted_count;
+  uint current_deleted_count;
+  uint tree_size;
+  uint current_tree_size;
+  int active_remove;
   ulong next_maintenance;
   ulong nb_propogated, nb_suc_propogated, nb_rotated, nb_suc_rotated, nb_removed;
 } avl_intset_t;
