@@ -79,7 +79,15 @@
 
 
 //#ifndef TINY10B
-#ifndef MAP_USE_TFAVLTREE
+#ifdef MAP_USE_TFAVLTREE
+typedef struct manager {
+    MAP_T* carTablePtr;
+    MAP_T* roomTablePtr;
+    MAP_T* flightTablePtr;
+    MAP_T* customerTablePtr;
+    long nb_clients;
+} manager_t;
+#else
 typedef struct manager {
     MAP_T* carTablePtr;
     MAP_T* roomTablePtr;

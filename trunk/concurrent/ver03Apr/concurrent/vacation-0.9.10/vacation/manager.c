@@ -149,7 +149,8 @@ manager_t*
     
 #endif
 
-#ifdef TINY10B
+#ifdef SEPERATE_MAINTENANCE
+    managerPtr->nb_clients = nbClients;
     managerPtr->carTablePtr = tableAlloc(nbClients);
     managerPtr->roomTablePtr = tableAlloc(nbClients);
     managerPtr->flightTablePtr = tableAlloc(nbClients);
