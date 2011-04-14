@@ -57,7 +57,7 @@ typedef struct rbtree rbtree_t;
 #define SEPERATE_BALANCE2
 //#define SEPERATE_BALANCE2DEL
 #define SEPERATE_BALANCE2NLDEL
-#define REMOVE_LATER
+//#define REMOVE_LATER
 #endif
 
 #define ACTIVE_REM_CONSTANT 2
