@@ -670,6 +670,8 @@ int avl_search(val_t key, const avl_intset_t *set) {
   intptr_t rem, del;
   avl_node_t *place, *next;
   val_t k;
+
+  //printf("searching\n");
   
   place = set->root;
   TX_START(NL);
@@ -1005,12 +1007,13 @@ int avl_delete(val_t key, const avl_intset_t *set) {
     }
   }
 
-#if defined(SEPERATE_BALANCE2DEL) || defined(REMOVE_LATER)
-  if(ret == 1 && set->active_remove && ((avl_node_t *)TX_UNIT_LOAD(&place->left) == NULL || (avl_node_t *)TX_UNIT_LOAD(&place->right) == NULL)) {
-
 #ifndef MICROBENCH
     id = thread_getId();
 #endif
+
+#if defined(SEPERATE_BALANCE2DEL) || defined(REMOVE_LATER)
+  if(ret == 1 && set->active_remove && ((avl_node_t *)TX_UNIT_LOAD(&place->left) == NULL || (avl_node_t *)TX_UNIT_LOAD(&place->right) == NULL)) {
+
 
 #ifdef REMOVE_LATER
     next_remove = (remove_list_item_t*)MALLOC(sizeof(remove_list_item_t));
