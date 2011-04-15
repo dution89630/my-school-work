@@ -2625,7 +2625,7 @@ rbtree_update (rbtree_t* r, void* key, void* val) {
  */
 void*
 rbtree_get (rbtree_t* r, void* key) {
-  uint ret;
+  val_t ret;
   ret = (void *)avl_seq_get((avl_intset_t *)r, (val_t)key, 0);
   //printf("suc seq get %d %d %d\n", key, ret, r);
   return ret;
@@ -2734,7 +2734,7 @@ TMrbtree_update (TM_ARGDECL  rbtree_t* r, void* key, void* val) {
 TM_CALLABLE
 void*
 TMrbtree_get (TM_ARGDECL  rbtree_t* r, void* key) {
-  uint ret;
+  val_t ret;
   ret =  (void *)avl_get((val_t)key, (avl_intset_t *)r);
   //check_maintenance((avl_intset_t *)r);
   //printf("tm get %d %d %d\n", key, ret, r);
