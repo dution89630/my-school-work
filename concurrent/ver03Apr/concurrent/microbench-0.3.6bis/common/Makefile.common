@@ -11,7 +11,10 @@ CONVER		= ver03Apr
 CONDIR		= $(COMPUTER)/my-school-work/concurrent/$(CONVER)/concurrent
 
 # Paths
-LIBAO 		?= $(CONDIR)/libatomic
+#LIBAO 		?= $(CONDIR)/libatomic
+LIBAO 		?= $(CONDIR)/libatomic64
+
+
 # Debug/optimization flags
 CFLAGS	 	+= -g -DNDEBUG -O0
 #CFLAGS          += -O3 -DNDEBUG
@@ -174,8 +177,8 @@ endif
 #This is temp change so that can compile using 32 bit on 64 bit computer
 ifeq ($(ARCH_NAME), x86_64)
     ARCH = x86_64
-    CFLAGS += -m32
-    LDFLAGS += -m32
+    CFLAGS += -m64
+    LDFLAGS += -m64
 endif
 
 ifeq ($(ARCH_NAME), sun4v)
