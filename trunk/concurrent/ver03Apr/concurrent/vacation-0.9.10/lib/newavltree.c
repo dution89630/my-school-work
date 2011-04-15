@@ -171,6 +171,7 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
   for(i = 0; i < nb_threads; i++) {
     set->t_free_list[i] = (free_list_item *)malloc(sizeof(free_list_item));
     set->t_free_list[i]->next = NULL;
+    set->t_free_list[i]->to_free = NULL;
   }
 
   set->free_list = (free_list_item *)malloc(sizeof(free_list_item));
@@ -180,14 +181,15 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
 
   set->maint_list_start = (free_list_item **)malloc(nb_threads * sizeof(free_list_item *));
   for(i = 0; i < nb_threads; i++) {
-    set->maint_list_start[i] = set->t_free_list[i];
+    //set->maint_list_start[i] = set->t_free_list[i];
+    set->maint_list_start[i] = NULL;
   }
 
 
-  set->maint_list_end = (free_list_item **)malloc(nb_threads * sizeof(free_list_item *));
-  for(i = 0; i < nb_threads; i++) {
-    set->maint_list_end[i] = set->t_free_list[i];
-  }
+  /* set->maint_list_end = (free_list_item **)malloc(nb_threads * sizeof(free_list_item *)); */
+  /* for(i = 0; i < nb_threads; i++) { */
+  /*   set->maint_list_end[i] = set->t_free_list[i]; */
+  /* } */
 
 
 #endif

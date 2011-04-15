@@ -295,6 +295,9 @@ int avl_req_seq_delete(avl_node_t *parent, avl_node_t *node, val_t key, int go_l
 	  ret = avl_seq_req_find_successor(node, node->right, 0, &succs);
 	  succs->right = node->right;
 #ifdef SEPERATE_BALANCE2
+	  if(node->bnode == NULL) {
+	    avl_new_balance_node(node, 0);
+	  }
 	  succs->bnode->right = node->bnode->right;
 	  if(node->bnode->right != NULL) {
 	    succs->bnode->right->parent = succs->bnode;
@@ -303,6 +306,9 @@ int avl_req_seq_delete(avl_node_t *parent, avl_node_t *node, val_t key, int go_l
 	  //succs->righth = node->localh;
 	  succs->left = node->left;
 #ifdef SEPERATE_BALANCE2
+	  if(node->bnode == NULL) {
+	    avl_new_balance_node(node, 0);
+	  }
 	  succs->bnode->left = node->bnode->left;
 	  if(node->bnode->left != NULL) {
 	    succs->bnode->left->parent = succs->bnode;
@@ -497,9 +503,19 @@ int avl_seq_right_rotate(avl_node_t *parent, avl_node_t *place, int go_left) {
 
   v = place;
   u = place->left;
+  if(u == NULL || v == NULL) {
+    return;
+  }
 #ifdef SEPERATE_BALANCE
   ub = u->bnode;
   vb = v->bnode;
+  if(ub == NULL) {
+    ub = avl_new_balance_node(u, 0);
+  }
+  if(vb == NULL) {
+    vb = avl_new_balance_node(v, 0);
+  }
+
 #endif
   if(go_left) {
     parent->left = u;
@@ -548,9 +564,18 @@ int avl_seq_left_rotate(avl_node_t *parent, avl_node_t *place, int go_left) {
 
   v = place;
   u = place->right;
+  if(u == NULL || v == NULL) {
+    return 0;
+  }
 #ifdef SEPERATE_BALANCE
   ub = u->bnode;
   vb = v->bnode;
+  if(ub == NULL) {
+    ub = avl_new_balance_node(u, 0);
+  }
+  if(vb == NULL) {
+    vb = avl_new_balance_node(v, 0);
+  }
 #endif
   if(go_left) {
     parent->left = u;
@@ -870,7 +895,7 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  //printf("inserting %d %d\n", key, v);  
+  //printf("inserting %d %d %d\n", key, v, thread_getId());  
 
   place = set->root;
   next = place;
@@ -902,10 +927,10 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
     //printf("Found the node %d, %d %d\n", key, place->key, place->val);
     if((del = (intptr_t)TX_LOAD(&place->deleted))) {
       TX_STORE(&place->deleted, 0);
-#ifdef MAPKEY
+#ifdef KEYMAP
       TX_STORE(&place->val, v);
+      //printf("updating val\n");
 #endif
-      TX_STORE(&place->val, v);
       ret = 1;
       //printf("undeleting\n");
     } else {
@@ -972,7 +997,7 @@ int avl_delete(val_t key, const avl_intset_t *set) {
   long id;
 #endif
 
-  //printf("deleting %d\n", key);  
+  //printf("deleting %d %d\n", key, thread_getId());  
 
   place = set->root;
   parent = set->root;
@@ -1014,13 +1039,17 @@ int avl_delete(val_t key, const avl_intset_t *set) {
 #if defined(SEPERATE_BALANCE2DEL) || defined(REMOVE_LATER)
   if(ret == 1 && set->active_remove && ((avl_node_t *)TX_UNIT_LOAD(&place->left) == NULL || (avl_node_t *)TX_UNIT_LOAD(&place->right) == NULL)) {
 
+    printf("to removed later\n");
 
 #ifdef REMOVE_LATER
-    next_remove = (remove_list_item_t*)MALLOC(sizeof(remove_list_item_t));
-    next_remove->item = place;
-    next_remove->parent = parent;
-    next_remove->next = (remove_list_item_t*)TX_UNIT_LOAD(&set->to_remove_later[id]);
-    TX_STORE(&set->to_remove_later[id], next_remove);
+    //if(!(intptr_t)TX_LOAD(&place->remove_later)) {
+    //TX_STORE(&place->remove_later, 1);
+      next_remove = (remove_list_item_t*)MALLOC(sizeof(remove_list_item_t));
+      next_remove->item = place;
+      next_remove->parent = parent;
+      next_remove->next = (remove_list_item_t*)TX_UNIT_LOAD(&set->to_remove_later[id]);
+      TX_STORE(&set->to_remove_later[id], next_remove);
+      //}
 #else
 
     /* delete = (free_list_item *)MALLOC(sizeof(free_list_item)); */
@@ -1043,6 +1072,7 @@ int avl_delete(val_t key, const avl_intset_t *set) {
 #if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL)
 #ifndef REMOVE_LATER
   if(ret == 1 && set->active_remove) {
+    printf("removing\n");
     ret = remove_node(parent, place);
     if(ret > 1) {
 #ifdef SEPERATE_MAINTENANCE
@@ -1052,16 +1082,13 @@ int avl_delete(val_t key, const avl_intset_t *set) {
       free_list = (free_list_item *)TX_UNIT_LOAD(&set->t_free_list[id]);
       //add it to the garbage collection
       free_item = (free_list_item *)MALLOC(sizeof(free_list_item));
-      free_item->next = NULL;
       free_item->to_free = place;
 #ifdef SEPERATE_MAINTENANCE
-      free_list->next = free_item;
-      //free_list = free_item;
-      
-	//set->t_free_list[id] = free_item;
+      free_item->next = free_list;
       TX_STORE(&set->t_free_list[id], free_item);
       TX_END;
 #else
+      free_item->next = NULL;
       while(free_list->next != NULL) {
 	free_list = free_list->next;
       }
@@ -1092,20 +1119,12 @@ int avl_delete(val_t key, const avl_intset_t *set) {
  
 
 #ifdef REMOVE_LATER
-#ifdef MICROBENCH
  int finish_removal(avl_intset_t *set, int id) {
-#else
- int finish_removal(avl_intset_t *set) {
-#endif
-   remove_list_item_t *next;
+   remove_list_item_t *next, *tmp;
    avl_node_t *place, *parent;
    free_list_item *free_item;
    free_list_item *free_list;
    int ret;
-#ifndef MICROBENCH
-   long id;
-   id = thread_getId();
-#endif
 
    next = set->to_remove_later[id];
    set->to_remove_later[id] = NULL;
@@ -1123,16 +1142,13 @@ int avl_delete(val_t key, const avl_intset_t *set) {
        free_list = (free_list_item *)TX_UNIT_LOAD(&set->t_free_list[id]);
        //add it to the garbage collection
        free_item = (free_list_item *)MALLOC(sizeof(free_list_item));
-       free_item->next = NULL;
        free_item->to_free = place;
 #ifdef SEPERATE_MAINTENANCE
-       free_list->next = free_item;
-       //free_list = free_item;
-       
-       //set->t_free_list[id] = free_item;
+       free_item->next = free_list;
        TX_STORE(&set->t_free_list[id], free_item);
        TX_END;
 #else
+       free_item->next = NULL;
        while(free_list->next != NULL) {
 	 free_list = free_list->next;
        }
@@ -1153,8 +1169,9 @@ int avl_delete(val_t key, const avl_intset_t *set) {
 #endif
        
      }
+     tmp = next;
      next = next->next;
-     free(next);
+     free(tmp);
    }
    return 0;
  }
@@ -2016,6 +2033,8 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 
  int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list) {
   free_list_item *next;
+
+  //set->active_remove = 1;
   
   set->current_deleted_count = 0;
   set->current_tree_size = 0;
@@ -2039,12 +2058,12 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
   if(set->deleted_count > set->tree_size * ACTIVE_REM_CONSTANT) {
     if(!set->active_remove) {
       set->active_remove = 1;
-      //printf("active remove\n");
+      printf("active remove\n");
     }
   } else {
     if(set->active_remove) {
       set->active_remove = 0;
-      //printf("non active remove\n");
+      printf("non active remove\n");
     }
   }
 
@@ -2151,12 +2170,12 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   if(set->current_deleted_count > set->current_tree_size * ACTIVE_REM_CONSTANT) {
     if(!set->active_remove) {
       set->active_remove = 1;
-      //printf("active remove\n");
+      printf("active remove node\n");
     }
   } else {
     if(set->active_remove) {
       set->active_remove = 0;
-      //printf("non active remove\n");
+      printf("non active remove node\n");
     }
   }
 
@@ -2431,7 +2450,7 @@ val_t avl_get(val_t key, const avl_intset_t *set) {
   val_t val;
   val_t k;
   
-  //printf("getting %d\n", key);  
+  //printf("getting %d %d\n", key, thread_getId());  
 
   place = set->root;
   TX_START(NL);
@@ -2458,12 +2477,12 @@ val_t avl_get(val_t key, const avl_intset_t *set) {
 
   if(done) {
     //printf("got nothing\n");
-    return 0;
+    return NULL;
   } else if(del) {
     //printf("got nothing\n");
-    return 0;
+    return NULL;
   }
-  //printf("got %d\n", val);  
+  //printf("got %d, %d, %d, %d\n", k, key, val, thread_getId());  
 
   return val;
 
@@ -2477,7 +2496,7 @@ int avl_update(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  //printf("updating %d\n", key);  
+  //printf("updating %d, %d\n", key, thread_getId());  
 
   place = set->root;
   next = place;
@@ -2973,7 +2992,7 @@ void do_maintenance_thread(avl_intset_t *tree) {
   int done;
   int i;
   ulong *tmp;
-  free_list_item *next, *tmp_item;//, **t_list_items;
+  free_list_item *next, *tmp_item, *tmp_free;//, **t_list_items;
   long nb_threads;
   ulong *nb_committed;
   //ulong nb_propagated, nb_suc_propagated, nb_rotated, nb_suc_rotated, nb_removed, deleted_count;
@@ -2984,7 +3003,7 @@ void do_maintenance_thread(avl_intset_t *tree) {
   t_nb_trans = tree->t_nbtrans;
   t_nb_trans_old = tree->t_nbtrans_old;
   nb_committed = tree->nb_committed;
-  
+
   //do maintenance, but only when there have been enough modifications
   //not doing this here, but maybe should?
   
@@ -3023,22 +3042,29 @@ void do_maintenance_thread(avl_intset_t *tree) {
     }
     tree->free_list->next = NULL;
     
-#ifndef SEPERATE_BALANCE2
+    //#ifndef SEPERATE_BALANCE2
+#if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL)
     //now do the frees for the ones removed in the non-maint threads
     for(i = 0; i < tree->nb_threads; i++) {
-      while(tree->maint_list_start[i] != tree->maint_list_end[i]) {
+      tmp_free = tree->maint_list_start[i];
+      if(tmp_free != NULL) {
+	tree->maint_list_start[i] = tree->maint_list_start[i]->next;
+	tmp_free->next = NULL;
+      }
+      while(tree->maint_list_start[i] != NULL) {
+	printf("here\n");
 	if(tree->maint_list_start[i]->to_free != NULL) {
-	  //printf("freeing %d\n", tree->maint_list_start[i]->to_free->key);
-	  //free(tree->maint_list_start[i]->to_free);
+	  printf("freeing %d\n", tree->maint_list_start[i]->to_free->key);
+	  free(tree->maint_list_start[i]->to_free);
 	}
 	tmp_item = tree->maint_list_start[i];
 	tree->maint_list_start[i] = tree->maint_list_start[i]->next;
-	//free(tmp_item);
+	free(tmp_item);
       }
       //update the t_list
       //tree->maint_list_end[i] = tree->t_free_list[i];
       TX_START(NL);
-      tree->maint_list_end[i] = (free_list_item*)TX_UNIT_LOAD(&tree->t_free_list[i]);
+      tree->maint_list_start[i] = ((free_list_item*)TX_UNIT_LOAD(&tree->t_free_list[i]));
       TX_END;
     }
 #endif
@@ -3050,7 +3076,7 @@ void do_maintenance_thread(avl_intset_t *tree) {
   
   recursive_tree_propagate(tree, tree->free_list);
 
-  printf("done prop\n");
+  //printf("done prop\n");
 
 #ifndef MICROBENCH
   }

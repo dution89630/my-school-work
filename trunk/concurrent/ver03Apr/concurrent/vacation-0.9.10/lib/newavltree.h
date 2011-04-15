@@ -171,7 +171,7 @@ typedef struct avl_intset {
   //manager_t *managerPtr;
 #ifdef SEPERATE_MAINTENANCE
   free_list_item **maint_list_start;
-  free_list_item **maint_list_end;
+  //free_list_item **maint_list_end;
 #endif
   free_list_item **t_free_list;
   free_list_item *free_list;

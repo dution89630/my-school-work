@@ -149,7 +149,7 @@ manager_t*
     
 #endif
 
-#ifdef SEPERATE_MAINTENANCE
+#if defined(SEPERATE_MAINTENANCE) || defined(SEQAVL)
     managerPtr->nb_clients = nbClients;
     managerPtr->carTablePtr = tableAlloc(nbClients);
     managerPtr->roomTablePtr = tableAlloc(nbClients);
@@ -509,6 +509,9 @@ manager_deleteCustomer (TM_ARGDECL  manager_t* managerPtr, long customerId)
 
     /* Cancel this customer's reservations */
     reservationInfoListPtr = customerPtr->reservationInfoListPtr;
+    if(reservationInfoListPtr < 2000) {
+      printf("cp %d\n", customerPtr);
+    }
     TMLIST_ITER_RESET(&it, reservationInfoListPtr);
     while (TMLIST_ITER_HASNEXT(&it, reservationInfoListPtr)) {
         reservation_info_t* reservationInfoPtr;
