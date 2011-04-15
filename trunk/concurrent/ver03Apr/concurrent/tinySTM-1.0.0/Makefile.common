@@ -1,6 +1,9 @@
 # Path to root directory
 ROOT ?= .
 
+#3264BIT = -m32
+3264BIT = -m64
+
 CC ?= gcc
 AR ?= ar
 DOXYGEN ?= doxygen
@@ -10,9 +13,9 @@ UNIFDEF ?= unifdef
 # Debug/optimization flags
 # Default config is optimization
 ifeq ($(CFG),debug)
-  CFLAGS += -g -m32
+  CFLAGS += -g $(3264BIT)
 else
-  CFLAGS += -O3 -DNDEBUG -m32
+  CFLAGS += -O3 -DNDEBUG $(3264BIT)
 endif
 
 TM = stm

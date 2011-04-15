@@ -28,7 +28,8 @@ LIBS     += -lpthread
 OUTPUT +=
 
 LIB := ../lib
-LIBAO_INC := $(CONDIR)/libatomic/include
+#LIBAO_INC := $(CONDIR)/libatomic/include
+LIBAO_INC := $(CONDIR)/libatomic64/include
 
 #STM := /home/gramoli/svn/private/dev/tmfriendly/tinySTM-1.0.0
 STM := $(CONDIR)/tinySTM-1.0.0
