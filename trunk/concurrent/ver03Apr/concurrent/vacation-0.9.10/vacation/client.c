@@ -195,6 +195,7 @@ client_run (void* argPtr)
                     ids[n] = (random_generate(randomPtr) % queryRange) + 1;
                 }
                 bool_t isFound = FALSE;
+		printf("start tx %d\n", thread_getId());
                 TM_BEGIN();
                 for (n = 0; n < numQuery; n++) {
                     long t = types[n];
@@ -241,6 +242,7 @@ client_run (void* argPtr)
                                          customerId, maxIds[RESERVATION_ROOM]);
                 }
                 TM_END();
+		printf("finish tx %d\n", thread_getId());
 		//#ifdef TINY10B
 #ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;

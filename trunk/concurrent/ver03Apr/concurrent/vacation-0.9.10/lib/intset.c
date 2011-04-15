@@ -504,7 +504,7 @@ int avl_seq_right_rotate(avl_node_t *parent, avl_node_t *place, int go_left) {
   v = place;
   u = place->left;
   if(u == NULL || v == NULL) {
-    return;
+    return 0;
   }
 #ifdef SEPERATE_BALANCE
   ub = u->bnode;
@@ -895,7 +895,7 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  //printf("inserting %d %d %d\n", key, v, thread_getId());  
+  printf("inserting %d %d %d\n", key, v, thread_getId());  
 
   place = set->root;
   next = place;
@@ -997,7 +997,7 @@ int avl_delete(val_t key, const avl_intset_t *set) {
   long id;
 #endif
 
-  //printf("deleting %d %d\n", key, thread_getId());  
+  printf("deleting %d %d\n", key, thread_getId());  
 
   place = set->root;
   parent = set->root;
@@ -2496,7 +2496,7 @@ int avl_update(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  //printf("updating %d, %d\n", key, thread_getId());  
+  printf("updating %d, %d\n", key, thread_getId());  
 
   place = set->root;
   next = place;
