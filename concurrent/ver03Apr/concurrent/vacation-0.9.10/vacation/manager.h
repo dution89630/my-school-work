@@ -97,6 +97,9 @@ typedef struct manager {
 #endif
 
 #ifdef MAP_USE_TFAVLTREE
+#ifdef REMOVE_LATER
+void check_finish_removal(long id, manager_t *managerPtr);
+#endif
 void increase_nb_committed(long id, manager_t *managerPtr);
 #endif
 

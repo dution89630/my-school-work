@@ -123,11 +123,7 @@ int recursive_tree_propagate(avl_intset_t *set, free_list_item *free_list);
 
 
 #ifdef REMOVE_LATER
-#ifdef MICROBENCH
 int finish_removal(avl_intset_t *set, int id);
-#else
-int finish_removal(avl_intset_t *set);
-#endif
 #endif
 
 #ifdef SEPERATE_BALANCE2

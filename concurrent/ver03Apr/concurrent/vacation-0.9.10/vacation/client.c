@@ -245,6 +245,9 @@ client_run (void* argPtr)
 #ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
+#ifdef REMOVE_LATER
+		check_finish_removal(myId, managerPtr);
+#endif
 #endif
                 break;
             }
@@ -260,6 +263,9 @@ client_run (void* argPtr)
 #ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
+#ifdef REMOVE_LATER
+		check_finish_removal(myId, managerPtr);
+#endif
 #endif
                 break;
             }
@@ -315,6 +321,9 @@ client_run (void* argPtr)
 #ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
+#ifdef REMOVE_LATER
+		check_finish_removal(myId, managerPtr);
+#endif
 #endif
                 break;
             }
@@ -340,6 +349,25 @@ client_run (void* argPtr)
 
 //#ifdef TINY10B
 #ifdef MAP_USE_TFAVLTREE
+
+#ifdef REMOVE_LATER
+void check_finish_removal(long id, manager_t *managerPtr) {
+  avl_intset_t *tmp;
+
+  tmp = (avl_intset_t *)managerPtr->carTablePtr;
+  finish_removal(tmp, id);
+  
+  tmp = (avl_intset_t *)managerPtr->roomTablePtr;
+  finish_removal(tmp, id);
+
+  tmp = (avl_intset_t *)managerPtr->flightTablePtr;
+  finish_removal(tmp, id);
+
+  tmp = (avl_intset_t *)managerPtr->customerTablePtr;
+  finish_removal(tmp, id);
+}
+#endif
+
 void increase_nb_committed(long id, manager_t *managerPtr) {
   avl_intset_t *tmp;
 
