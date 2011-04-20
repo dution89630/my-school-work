@@ -255,6 +255,16 @@ It might not be necessary to perform all rotations every time the structure of t
 
 \subsection{Not being too lazy}
 Being lazy can be good, but being too lazy can be very bad.
+As described in the previous section being lazy can be benificial for concurrent data structures, but being too lazy can have negitive consequences.
+If nodes are just marked as deleted and not removed from the tree often enough, the number of marked deleted nodes can grow to be much larger then the
+number of non-deleted nodes resulting in poor performance of the search operation.
+The same is true with rotations, if rotations are perofrmed too lazily, the tree can become unbalanced, again resulting in poor performance of the search operation.
+
+This creates a difficult questions, how can one be lazy, without being too lazy?
+The answer is not obvious, but a possible solution is presented here.
+
+There are two extreemes, on one end is the normal AVL and red-black trees which ensure the structure is always perfectly balanced and contains no unnecessary nodes, on the other end is a completely
+lazy implementation which never performs rotations and only marks nodes as deleted.
 
 \subsection{Node Structure}
 
