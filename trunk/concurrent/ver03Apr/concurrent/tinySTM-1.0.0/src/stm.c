@@ -2712,10 +2712,10 @@ sigjmp_buf *stm_get_env(TXPARAM)
   TX_GET;
 
   /* Only return environment for top-level transaction */
-  //return tx->nesting == 0 ? &tx->env : NULL;
+  return tx->nesting == 0 ? &tx->env : NULL;
   
   //see how this effects performance
-  return &tx->env;
+  //return &tx->env;
 }
 
 /*
