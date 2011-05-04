@@ -183,20 +183,26 @@ The other modification they make is that instead of keeping a list at each node 
 
 \subsection{Concepts for efficient TM Algorithm design}
 \subsubsection{Minimal read/write set size}
-Concurrency in a TM is limited by conflicts, conflicts are created when different transactions read and write to the same value.
+Concurrency in a TM is limited by conflicts, conflicts are created when concurrent transactions read and write to the same value.
 In order to reduce conflicts the read and write sets of a transaction should be as small as possible.
 The longer a transaction keeps an item in its read/write set the more likely it is to conflict with another transaction, so transactions should be kept as short as possible.
 Since the intention of the data structure is to be used as a library, a programmer will be able to nest the operations within his own tree, and it is likely he will even preform multiple operations on the same data structure from within the same transaction.
+For example he may perform a search, an insert, and a delete all from within the same transaction.
 In this case it is even more important to keep the read and write sets as small as possible.
-For example if a programmer was to use a traditional red-black tree in his transaction, after each operation on the tree the combined size of the read/write set will on average increase by $O(\log{n})$, while an efficient TM algorithm might only increase the combined size by a small constant factor.
+Consider if a programmer was to use a traditional red-black tree in his transaction.
+After each operation on the tree the combined size of the read/write set will increase by as much as $O(\log{n})$ (where $n$ is the number of nodes in the tree),
+while an efficient TM algorithm might only increase the size by a small constant value.
 
 \subsection{Avoiding expensive transactional reads}
 Conflicts are not the only reason to keep the reads set small.
 Transactional reads are expensive to perform.
-Not only does the STM have to keep track of the reads, in a STM with visible reads write to shared memory are performed, and in a STM with invisible reads validations are preformed at the worst case of cost $O(n^2)$ where $n$ is the size of the read set.
+In addition to keeping track of the reads, during each read, an STM with visible reads will write to shared memory
+ and in an STM with invisible reads validations will normally be preformed at the worst case of cost $O(n^2)$ 
+(here $n$ is the size of the read set).
 
-The basis for this algorithm comes from the two papers described in the previous section.
-It uses the same concept of the local operations and propagation.
+This tree algorithm tries to avoid as many transactional reads as possible by using certain concepts
+that come from the two papers described in the previous section.
+For example it uses the same concept of the local rotaion operations and propagation.
 It also uses the same concept as \ref{Stan} of leaving a node marked for removal in the tree until it has one or no children.
 However these algorithms rely on mechanisms that cannot be directly implemented.
 For example partial-rollback cannot when a node is rotated down, or hand-over-hand locking to traverse the tree cannot be used without modifying the TM itself.
@@ -245,6 +251,21 @@ or not the node has been marked as deleted.
 More then this, rotations will not be required as that the structure of the tree has not changed, and a later insert operation of the same 'key'
 value only need to unmark the node as deleted, again allowing for more concurrency.
 
+Being lazy and just marking nodes as deleted will leave extra, unnecessary nodes in the tree.
+At first thought one might consider these extra nodes to be harmful as that they will require the search operations to travers more nodes then in the optimal case.
+This is true, but is not necessarily always a bad thing.
+Consider a specific workload that has high contention on a tree, performing a large ammounts of inserts and deletes.
+The inserts and deletes are performed at an equal frequency.
+Now consider a non-lazy algorithm, throughout the workload the tree will be kept at around the same size (say $n$ nodes) with no marked deleted nodes, and high contention throughout.
+Next consider an algorithm that is a bit lazier that allows the tree to grow larger then $n$ but only by a constant factor, say for example $2n$.
+This means that each searh operation might have to travel through a few extra nodes to reach its destination (at most $\log(2n) - \log(n)$ extra nodes if the tree is balanced,
+which for example is about $1$ if $n = 1000$).
+Operations are slightly more expensive, but the tree has twice as many nodes, so depending on the workload and how many concurrent operations take place at a time
+contention could be greatly reduced, or even pratcially eliminated.
+Contention leads to aborts, and aborts are expensive especially if the transactions are large or contain multiple nested operations on the tree, in comparison to this, traversing
+thorough a small amount of extra nodes just require a few extra unit loads which has very little cost.
+Of course this all depends on the workload, but even if contention is not lowered from increasing the size of the tree, the extra cost is small.
+
 Deletions are not the only place it can be beinificial to be lazy.
 Rotations can be preformed lazily.
 Inserting or acutally removing nodes from the tree will require rotations to keep the tree balanced.
@@ -263,8 +284,23 @@ The same is true with rotations, if rotations are perofrmed too lazily, the tree
 This creates a difficult questions, how can one be lazy, without being too lazy?
 The answer is not obvious, but a possible solution is presented here.
 
-There are two extreemes, on one end is the normal AVL and red-black trees which ensure the structure is always perfectly balanced and contains no unnecessary nodes, on the other end is a completely
+There are two extreemes, on one end is the normal AVL and red-black trees which ensures the structure is always perfectly balanced and contains no unnecessary nodes, on the other end is a completely
 lazy implementation which never performs rotations and only marks nodes as deleted.
+Depending on the workload the most efficient solution can be closer to one extreem then the other.
+When operations are performed asynchronously by concurrent processors the most efficient solution may change throughout the workload,
+but because the processes are asynchronous and the future is not known it is impossible to predict the optimal solution.
+For example at one point during the execution there might be several processors performing operations often on the tree creating a lot of contention
+while later during the execution there might just be a single process executing operations on the tree.
+As discussed in the previous section being lazy can be benificial when there is high contention so a good solution would be to be lazy with the
+deletions in the first part of the execution, and less lazy when there is only the single processor execution.
+
+\subsubsection{Determining the right ammout of laziness}
+Deciding when to perform operations lazily and when not to is not obvious.
+A single process does not know what operations on the tree it will execute in the future, let alone the current or future actions of other processors,
+so there has to be some prediction or estimation as to when to perform operations on the tree.
+
+
+
 
 \subsection{Node Structure}
 
