@@ -895,7 +895,7 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  printf("inserting %d %d %d\n", key, v, thread_getId());  
+  //printf("inserting %d %d %d\n", key, v, thread_getId());  
 
   place = set->root;
   next = place;
@@ -1072,7 +1072,7 @@ int avl_delete(val_t key, const avl_intset_t *set) {
 #if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL)
 #ifndef REMOVE_LATER
   if(ret == 1 && set->active_remove) {
-    printf("removing\n");
+    //printf("removing\n");
     ret = remove_node(parent, place);
     if(ret > 1) {
 #ifdef SEPERATE_MAINTENANCE
@@ -2058,12 +2058,12 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
   if(set->deleted_count > set->tree_size * ACTIVE_REM_CONSTANT) {
     if(!set->active_remove) {
       set->active_remove = 1;
-      printf("active remove\n");
+      //printf("active remove\n");
     }
   } else {
     if(set->active_remove) {
       set->active_remove = 0;
-      printf("non active remove\n");
+      //printf("non active remove\n");
     }
   }
 
@@ -2170,12 +2170,12 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   if(set->current_deleted_count > set->current_tree_size * ACTIVE_REM_CONSTANT) {
     if(!set->active_remove) {
       set->active_remove = 1;
-      printf("active remove node\n");
+      //printf("active remove node\n");
     }
   } else {
     if(set->active_remove) {
       set->active_remove = 0;
-      printf("non active remove node\n");
+      //printf("non active remove node\n");
     }
   }
 
@@ -2496,7 +2496,7 @@ int avl_update(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  printf("updating %d, %d\n", key, thread_getId());  
+  //printf("updating %d, %d\n", key, thread_getId());  
 
   place = set->root;
   next = place;

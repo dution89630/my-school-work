@@ -1,0 +1,63 @@
+#!/bin/sh
+
+lognumber=`cat ./bmnumber`
+
+lognumber=`expr $lognumber + 1`
+
+`echo "$lognumber" > ./bmnumber`
+
+logvat="./logs/log_vac_at${lognumber}.txt"
+logvrb="./logs/log_vac_rb${lognumber}.txt"
+logmat="./logs/log_micro_at${lognumber}.txt"
+logmat="./logs/log_micro_rt${lognumber}.txt"
+
+for threads in \
+    "1" \
+    "2" \
+    "4" \
+    "8" \
+    "12" \
+    "16" \
+    "24" \
+    "32" \
+    "48"
+do
+
+for vacconfig in \
+    "-n30 -r1000 -t20000000 -u20 -q20" \
+    "-n30 -r1000 -t20000000 -q60" \
+    "-n30 -r1000 -t20000000" \
+    "-n10 -r1000 -t20000000 -u20 -q20" \
+    "-n10 -r1000 -t20000000 -q60" \
+    "-n10 -r1000 -t20000000" \
+    "-n1 -r1000 -t20000000 -u20 -q20" \
+    "-n1 -r1000 -t20000000 -q60" \
+    "-n1 -r1000 -t20000000"
+do
+
+exec ./vacation-0.9.10/vacation_at -c${threads} ${vacconfig} | tee -a ${logvat}
+exec ./vacation-0.9.10/vacation_rb -c${threads} ${vacconfig} | tee -a ${logvrb}
+
+done
+
+for microconfig in \
+    "-i10 -r20 -u5" \
+    "-i10 -r20 -u20" \
+    "-i10 -r20 -u40" \
+    "-i10 -r2000 -u20" \
+    "-i1000 -r2000 -u5" \
+    "-i1000 -r2000 -u20" \
+    "-i1000 -r2000 -u40" \
+    "-i100 -r20000 -u20" \
+    "-i18 -r20 -u5" \
+    "-i18 -r20 -u20" \
+    "-i18 -r20 -u40"
+do
+
+exec ./microbench-0.3.6bis/bin/newat-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmat}
+exec ./microbench-0.3.6bis/bin/rt-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmat}
+
+done
+
+
+done
