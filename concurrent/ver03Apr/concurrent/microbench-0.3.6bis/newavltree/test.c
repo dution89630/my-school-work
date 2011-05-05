@@ -927,7 +927,7 @@ int main(int argc, char **argv)
 	printf("Max retries   : %lu\n", max_retries);
 	
 
-	print_avltree(set);
+	//print_avltree(set);
 	// Delete set 
         avl_set_delete(set);
 	
