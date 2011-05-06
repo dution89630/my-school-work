@@ -997,7 +997,7 @@ int avl_delete(val_t key, const avl_intset_t *set) {
   long id;
 #endif
 
-  printf("deleting %d %d\n", key, thread_getId());  
+  //printf("deleting %d %d\n", key, thread_getId());  
 
   place = set->root;
   parent = set->root;
@@ -1039,7 +1039,7 @@ int avl_delete(val_t key, const avl_intset_t *set) {
 #if defined(SEPERATE_BALANCE2DEL) || defined(REMOVE_LATER)
   if(ret == 1 && set->active_remove && ((avl_node_t *)TX_UNIT_LOAD(&place->left) == NULL || (avl_node_t *)TX_UNIT_LOAD(&place->right) == NULL)) {
 
-    printf("to removed later\n");
+    //printf("to removed later\n");
 
 #ifdef REMOVE_LATER
     //if(!(intptr_t)TX_LOAD(&place->remove_later)) {
@@ -3052,9 +3052,9 @@ void do_maintenance_thread(avl_intset_t *tree) {
 	tmp_free->next = NULL;
       }
       while(tree->maint_list_start[i] != NULL) {
-	printf("here\n");
+	//printf("here\n");
 	if(tree->maint_list_start[i]->to_free != NULL) {
-	  printf("freeing %d\n", tree->maint_list_start[i]->to_free->key);
+	  //printf("freeing %d\n", tree->maint_list_start[i]->to_free->key);
 	  free(tree->maint_list_start[i]->to_free);
 	}
 	tmp_item = tree->maint_list_start[i];
