@@ -9,13 +9,9 @@ lognumber=`expr $lognumber + 1`
 fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
 
 logvat="${fullpath}/logs/log_vac_at${lognumber}.txt"
-touch $logvat
 logvrb="${fullpath}/logs/log_vac_rb${lognumber}.txt"
-touch $logvrb
 logmat="${fullpath}/logs/log_micro_at${lognumber}.txt"
-touch $logmat
-logmrt="${fullpath}/logs/log_micro_rt${lognumber}.txt"
-touch $logmrt
+logmrb="${fullpath}/logs/log_micro_rb${lognumber}.txt"
 
 for threads in \
     "1" \
@@ -30,18 +26,21 @@ for threads in \
 do
 
 for vacconfig in \
-    "-n30 -r1000 -t20000000 -u20 -q20" \
-    "-n30 -r1000 -t20000000 -q60" \
-    "-n30 -r1000 -t20000000" \
-    "-n10 -r1000 -t20000000 -u20 -q20" \
-    "-n10 -r1000 -t20000000 -q60" \
-    "-n10 -r1000 -t20000000" \
-    "-n1 -r1000 -t20000000 -u20 -q20" \
-    "-n1 -r1000 -t20000000 -q60" \
-    "-n1 -r1000 -t20000000"
+    "-n30 -r1000 -t2000000 -u20 -q20" \
+    "-n30 -r1000 -t2000000 -q60" \
+    "-n30 -r1000 -t2000000" \
+    "-n10 -r1000 -t2000000 -u20 -q20" \
+    "-n10 -r1000 -t2000000 -q60" \
+    "-n10 -r1000 -t2000000" \
+    "-n1 -r1000 -t2000000 -u20 -q20" \
+    "-n1 -r1000 -t2000000 -q60" \
+    "-n1 -r1000 -t2000000"
 do
 
+echo "vacation_at -c${threads} ${vacconfig}" > ${logvat}
 exec ${fullpath}/vacation-0.9.10/vacation/vacation_at -c${threads} ${vacconfig} | tee -a ${logvat}
+
+echo "vacation_rb -c${threads} ${vacconfig}" > ${logvrb}
 exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb -c${threads} ${vacconfig} | tee -a ${logvrb}
 
 done
@@ -60,8 +59,13 @@ for microconfig in \
     "-i18 -r20 -u40"
 do
 
+echo "micro_at -n${threads} ${microconfig}" > ${logmat}
 exec ${fullpath}/microbench-0.3.6bis/bin/newat-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmat}
-exec ${fullpath}/microbench-0.3.6bis/bin/rt-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmrt}
+
+echo "micro_rb -n${threads} ${microconfig}" > ${logmrb}
+exec ${fullpath}/microbench-0.3.6bis/bin/rt-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmrb}
 
 done
 
+
+done
