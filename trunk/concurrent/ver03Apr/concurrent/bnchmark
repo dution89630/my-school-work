@@ -6,10 +6,16 @@ lognumber=`expr $lognumber + 1`
 
 `echo "$lognumber" > ./bmnumber`
 
-logvat="./logs/log_vac_at${lognumber}.txt"
-logvrb="./logs/log_vac_rb${lognumber}.txt"
-logmat="./logs/log_micro_at${lognumber}.txt"
-logmat="./logs/log_micro_rt${lognumber}.txt"
+fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
+
+logvat="${fullpath}/logs/log_vac_at${lognumber}.txt"
+touch $logvat
+logvrb="${fullpath}/logs/log_vac_rb${lognumber}.txt"
+touch $logvrb
+logmat="${fullpath}/logs/log_micro_at${lognumber}.txt"
+touch $logmat
+logmrt="${fullpath}/logs/log_micro_rt${lognumber}.txt"
+touch $logmrt
 
 for threads in \
     "1" \
@@ -35,8 +41,8 @@ for vacconfig in \
     "-n1 -r1000 -t20000000"
 do
 
-exec ./vacation-0.9.10/vacation_at -c${threads} ${vacconfig} | tee -a ${logvat}
-exec ./vacation-0.9.10/vacation_rb -c${threads} ${vacconfig} | tee -a ${logvrb}
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_at -c${threads} ${vacconfig} | tee -a ${logvat}
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb -c${threads} ${vacconfig} | tee -a ${logvrb}
 
 done
 
@@ -54,10 +60,8 @@ for microconfig in \
     "-i18 -r20 -u40"
 do
 
-exec ./microbench-0.3.6bis/bin/newat-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmat}
-exec ./microbench-0.3.6bis/bin/rt-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmat}
+exec ${fullpath}/microbench-0.3.6bis/bin/newat-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmat}
+exec ${fullpath}/microbench-0.3.6bis/bin/rt-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmrt}
 
 done
 
-
-done
