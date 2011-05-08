@@ -696,7 +696,9 @@ int avl_search(val_t key, const avl_intset_t *set) {
   avl_node_t *place, *next;
   val_t k;
 
-  //printf("searching\n");
+#ifdef PRINT_INFO
+  printf("searching %d thread: %d\n", key, thread_getId());
+#endif
   
   place = set->root;
   TX_START(NL);
@@ -895,7 +897,9 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  //printf("inserting %d %d %d\n", key, v, thread_getId());  
+#ifdef PRINT_INFO
+  printf("inserting %d thread: %d\n", key, thread_getId());  
+#endif
 
   place = set->root;
   next = place;
@@ -997,7 +1001,9 @@ int avl_delete(val_t key, const avl_intset_t *set) {
   long id;
 #endif
 
-  //printf("deleting %d %d\n", key, thread_getId());  
+#ifdef PRINT_INFO
+  printf("deleting %d thread: %d\n", key, thread_getId());  
+#endif
 
   place = set->root;
   parent = set->root;
@@ -2496,7 +2502,9 @@ int avl_update(val_t v, val_t key, const avl_intset_t *set) {
   int ret;
   val_t k;
 
-  //printf("updating %d, %d\n", key, thread_getId());  
+#ifdef PRINT_INFO
+  printf("updating %d, thread: %d\n", key, thread_getId());  
+#endif
 
   place = set->root;
   next = place;
