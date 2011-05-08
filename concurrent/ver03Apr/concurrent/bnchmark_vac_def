@@ -1,0 +1,42 @@
+#!/bin/sh
+
+lognumber=`cat ./bmnumber`
+
+lognumber=`expr $lognumber + 1`
+
+`echo "$lognumber" > ./bmnumber`
+
+fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
+
+logvat="${fullpath}/logs/log_vac_def_at${lognumber}.txt"
+logvrb="${fullpath}/logs/log_vac_def_rb${lognumber}.txt"
+
+for threads in \
+    "1" \
+    "2" \
+    "4" \
+    "8" \
+    "12" \
+    "16" \
+    "24" \
+    "32" \
+    "48"
+do
+
+for vacconfig in \
+    "-n2 -q90 -u98 -r1048576 -t4194304" \
+    "-n4 -q60 -u90 -r1048576 -t4194304"
+do
+
+echo "vacation_at -c${threads} ${vacconfig}" >> ${logvat}
+echo "vacation_at -c${threads} ${vacconfig}"
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_at -c${threads} ${vacconfig} | tee -a ${logvat}
+
+echo "vacation_rb -c${threads} ${vacconfig}" >> ${logvrb}
+echo "vacation_rb -c${threads} ${vacconfig}"
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb -c${threads} ${vacconfig} | tee -a ${logvrb}
+
+done
+
+
+done
