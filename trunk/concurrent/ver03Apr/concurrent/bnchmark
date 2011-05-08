@@ -37,10 +37,12 @@ for vacconfig in \
     "-n1 -r1000 -t2000000"
 do
 
-echo "vacation_at -c${threads} ${vacconfig}" > ${logvat}
+echo "vacation_at -c${threads} ${vacconfig}" >> ${logvat}
+echo "vacation_at -c${threads} ${vacconfig}"
 exec ${fullpath}/vacation-0.9.10/vacation/vacation_at -c${threads} ${vacconfig} | tee -a ${logvat}
 
-echo "vacation_rb -c${threads} ${vacconfig}" > ${logvrb}
+echo "vacation_rb -c${threads} ${vacconfig}" >> ${logvrb}
+echo "vacation_rb -c${threads} ${vacconfig}"
 exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb -c${threads} ${vacconfig} | tee -a ${logvrb}
 
 done
@@ -59,10 +61,12 @@ for microconfig in \
     "-i18 -r20 -u40"
 do
 
-echo "micro_at -n${threads} ${microconfig}" > ${logmat}
+echo "micro_at -n${threads} ${microconfig}" >> ${logmat}
+echo "micro_at -n${threads} ${microconfig}"
 exec ${fullpath}/microbench-0.3.6bis/bin/newat-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmat}
 
-echo "micro_rb -n${threads} ${microconfig}" > ${logmrb}
+echo "micro_rb -n${threads} ${microconfig}" >> ${logmrb}
+echo "micro_rb -n${threads} ${microconfig}"
 exec ${fullpath}/microbench-0.3.6bis/bin/rt-0.3.6-tiny10B -n${threads} ${microconfig} | tee -a ${logmrb}
 
 done
