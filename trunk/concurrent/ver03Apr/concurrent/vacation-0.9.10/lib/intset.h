@@ -88,13 +88,22 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 //Actual STM methods
 
 #ifdef TINY10B
+
+#ifdef MICROBENCH
+int avl_search(val_t key, const avl_intset_t *set, int id);
+#else
 int avl_search(val_t key, const avl_intset_t *set);
+#endif
 
 int avl_find(val_t key, avl_node_t **place, val_t *k);
 
 int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *k);
 
+#ifdef MICROBENCH
+int avl_insert(val_t val, val_t key, const avl_intset_t *set, int id);
+#else
 int avl_insert(val_t val, val_t key, const avl_intset_t *set);
+#endif
 
 //int avl_delete(val_t key, avl_intset_t *set, free_list_item **free_list);
 #if defined(MICROBENCH)

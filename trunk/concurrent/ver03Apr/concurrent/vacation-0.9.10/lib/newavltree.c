@@ -218,6 +218,13 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
   }
 #endif
 
+#ifdef DEL_COUNT
+  set->active_del = (int *)malloc(nb_threads * sizeof(int));
+  for(i = 0; i < nb_threads; i++) {
+    set->active_del[i] = 0;
+  }
+#endif
+
   set->nb_threads = nb_threads;
   set->deleted_count = 0;
   set->current_deleted_count = 0;
