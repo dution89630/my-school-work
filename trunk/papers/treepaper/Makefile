@@ -1,4 +1,4 @@
-filename = transact
+filename = treepaper
 
 pdf:
 	pdflatex ${filename}

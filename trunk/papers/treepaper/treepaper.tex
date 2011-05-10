@@ -8,15 +8,20 @@
 \usepackage{color}
 \usepackage{flushend}
 \usepackage{multicol}
+\usepackage{cite}
 
 \usepackage{macros}
 \usepackage[ruled]{algorithm}
 \usepackage{algpseudocode}
 \usepackage{ioa_code}
 
+\newcommand{\vincent}[1]{{\bf [V: #1]}}
+\newcommand{\michel}[1]{{\bf [M: #1]}}
+\newcommand{\tyler}[1]{{\bf [T: #1]}}
+
 \begin{document}
 
-\title{TM-Friendly Data Structures}
+\title{Transaction-Friendly Binary Search Tree}
 
 \authorinfo{\mbox{Tyler Crain}}
            {INRIA Rennes Bretagne Atlantique}
@@ -40,17 +45,43 @@
 
 \begin{abstract}
 Transactions are fundamentally different from locks and present high overhead in usual concurrent data structures. 
-We propose a programming technique to derive TM-friendly data structures and demonstrate the performance benefit of a TM-friendly binary tree.
+We propose a programming technique to derive \emph{transaction-friendly data structures} and demonstrate the performance benefit of a 
+transaction-friendly binary search tree.
 \end{abstract}
 
 \section{Introduction}
 
-Red-black trees have been extensively studied to evaluate the performance of TMs~\cite{ST95,HLMS03,HK08,FFR08,DFGG11}.
-Red-black trees are, however, not TM-friendly as they usually rely on sentinel node whose update produce false-conflicts~\cite{Fra03}.
+Transactions simplify concurrent programming by guaranteeing the programmer 
+that all statements delimited within a transaction execute atomically.
+Hence, a programmer who builds upon an existing transactional library 
+is guaranteed to obtain new operations that execute atomically.
+As far as we know, all existing transactional library used in the 
+literature are naively derived from sequential code, thus hampering their 
+efficiency.
+In this paper, we present \emph{transaction-friendly data structures} as 
+data structures with the aim of being accessed through speculative executions.
+
+A transaction-friendly data structure is a crucial building block of 
+concurrent transactional libraries. They provide a minimal toolbox a 
+programmer can rely on to write a concurrent application easily.
+Although implementing transaction-friendly data structures requires some skills 
+in concurrent programming, using them to write a concurrent applications 
+does not requires such skills. The benefit of using a 
+transaction-friendly data structure instead of a transactionalized sequential 
+data structure is to convey high performance to overlying applications.
+
+Popular binary search trees, like red-black trees, have been extensively 
+studied to evaluate the performance of TMs~\cite{ST95,HLMS03,HK08,FFR08,DFGG11}.
+Binary search trees are, however, not TM-friendly for at least three reasons. 
+First, they rely on rebalancing, a global operation that should not be 
+executed speculatively. Second, their implementation often rely on sentinel 
+nodes that produce false-conflicts between concurrent transactions. Three, 
+a rotation may abort an inverted rotation even though they could compensate 
+each other.
 
 Our methodology to implement a TM-friendly data structure relies on the following rules:
 \begin{itemize}
-	\item Use non-transactional accesses when possible. Although compilers with TM support~\cite{dtmc,gcc,icc} can get rid of 
+	\item Use non-transactional accesses when possible. Although compilers with TM support\footnote{Intel C++ STM Compiler.\\http://software.intel.com/en-us/articles/intel-c-stm-compiler-prototype-edition/} can get rid of 
 	unnecessary metadata overhead for accesses to thread-private variables, they cannot identify memory accesses that do not need to 
 	be transactionalized from the point-of-view of the application programmer.
 	\item Shorten the transactions as much as possible. This is often the case that a single operation, which should appear as executing 
@@ -59,102 +90,61 @@ Our methodology to implement a TM-friendly data structure relies on the followin
 	for efficiency reasons or should we consider that they are part of the outermost transaction (in a flat-nested manner) to ensure 
 	extensibility?
 	\item Re-thing the data structure to be able to shorten the transactions further.
-	\item Logical deletion techniques~\cite{Har01,Mic02}?
+	%\item Logical deletion techniques~\cite{Har01,Mic02}?
 \end{itemize}
+We illustrate these choices by describing a new binary search tree algorithm
+that is transaction-friendly. We evaluate it experimentally inside the 
+STAMP benchmark suite~\cite{CCKO08}.  
+
+%\section{Problem}
+%
+%To motivate the implementation of TM-friendly data structures, take a skip list implementation of an integer set.
+%The skip list stores integers in a sorted order and supports $\lit{insert}$, $\lit{delete}$ and $\lit{contains}$ operations.
+%Such data structure is appealing as it guarantees logarithmic time complexity and it is generally simpler than alternative binary trees.
+%
+%
+%\section{Binary Trees}
+%
+%\section{Hash Tables}
+%
+%The bucket hash table from Michael~\ref{Mic02} provides lock-free constant time operations to insert, 
+%delete and search for a specified element. When a common key maps to several value, these values are stored
+%in the same bucket implemented as a bucket hash table. 
+%
+%Transactional oeprations acting on linked lists are unfortunately known to suffer from false conflicts, 
+%as one update on the head of the list can invalidate
+%a concurrent search that is paring the tail of this list and that is about to commit~\cite{FGG09}.
 
 
-\section{Problem}
 
-To motivate the implementation of TM-friendly data structures, take a skip list implementation of an integer set.
-The skip list stores integers in a sorted order and supports $\lit{insert}$, $\lit{delete}$ and $\lit{contains}$ operations.
-Such data structure is appealing as it guarantees logarithmic time complexity and it is generally simpler than alternative binary trees.
-
-
-
-\section{Binary Trees}
-
-\section{Hash Tables}
-
-The bucket hash table from Michael~\ref{Mic02} provides lock-free constant time operations to insert, 
-delete and search for a specified element. When a common key maps to several value, these values are stored
-in the same bucket implemented as a bucket hash table. 
-
-Transactional oeprations acting on linked lists are unfortunately known to suffer from false conflicts, 
-as one update on the head of the list can invalidate
-a concurrent search that is paring the tail of this list and that is about to commit~\cite{FGG09}.
-
-
-\begin{algorithm}[!ht]%\label{alg:tm}
-  \caption{Naive TM for transaction $t$.}
-  \begin{algorithmic}[1]
-  	%\begin{multicols}{2}
-   {\size 
-   		\Part{$\act{begin}()_t$}{
-   			\State $\ms{r-set} \gets \emptyset$
-   			\State $\ms{w-set} \gets \emptyset$
-   			\State $\ms{w-log} \gets \emptyset$
-   		}\EndPart
-   	
-		\Statex   	
-   	
-		\Part{$\act{write}(x,v)_t$}{
-			\If{$\tup{x,v'}\notin \ms{w-set}$}
-				\While{$!\lit{cas}(\act{lock}(x), \lit{unlocked}, \lit{locked})$}
-					\State $\lit{abort-and-restart}$() \label{line:abort1} \Comment{contention mgmt} 
-				\EndWhile
-				\State $\ms{w-log} = \ms{w-log} \cup \{\tup{x, \lit{store}(x,v)}\}$
-				\State $\ms{w-set} = \ms{w-set} \cup \{\tup{x, v}\}$
-			\EndIf
-			\State $\act{return}(\lit{ok})$
-		}\EndPart
-		
-		\Statex
-		
-		\Part{$\act{read}(x)_t$}{
-			\If{$\tup{x,*}\notin \ms{w-set}$}
-				\While{$!\lit{cas}(\act{lock}(x), \lit{unlocked}, \lit{locked})$}
-					\State $\lit{abort-and-restart}$()	\label{line:abort2} \Comment{contention mgmt} 
-				\EndWhile
-				\State $v = \act{load}(x)$
-				\State $\ms{r-set} = \ms{r-set} \cup \{\tup{x, v}\}$
-			\Else{} let $v$ be such that $\tup{x,v}\in \ms{w-set}$
-			\EndIf
-			\State $\act{return}(v)$
-		}\EndPart
-		
-		\Statex		
-		
-   		\Part{$\act{commit}()_t$}{
-   			\For{$\tup{x,*} \in \ms{w-set}$} $\act{unlock}(x)$ \EndFor
-   		}\EndPart
-	}
-	%\end{multicols}
-  \end{algorithmic}
-\end{algorithm}
-
-
-\section{Motivation}
-\subsection{Balanced Binary Trees}
+%\section{Motivation}
+\subsection*{Balanced Binary Trees}
 Balanced binary trees such as red-black trees \ref{} and AVL \ref{} trees are a classical data structures that provide good performance.
 In order to ensure this performance they must keep the tree balanced, and because of this an insert or delete operation is not as simple as adding or removing a node from the bottom of the tree.
 A node with two children that is to be deleted must find a successor node from the bottom of the tree to take its place.
 Both inserts and deletes often require rotations that could perform modifications to a large part of the tree.
 In order to ensure linearisability with these operations when put in a parallel context this means locking possibility large section of the trees or having a large read/write set in the case of transactions.
-\subsection{Where conflicts occur}
+\subsection*{Where conflicts occur}
+\vincent{Here, I replaced 'does not compose' by 'cannot run concurrently' that sounds more accurate to me.}
 First note that in order to perform an insert/delete operations first a search must be done to find the appropriate location in the tree to perform the operation
 When an node is inserted or deleted, in order to keep the tree balanced rotations might be necessary, starting from the position of insertion/deletion all the way up to the root.
-Rotations and searches do not compose because if a search is pre-empted on a node that is rotated downwards the search might miss the location it is looking for.
-A group of rotations done by an insert/delete does not compose with another group of rotations done by a different insert/delete because one set might unbalance the other.
-A search does not compose with a delete because the search might be pre-empted on a node that becomes removed from the tree, leaving the search with undefined results.
+Rotations and searches cannot run concurrently because if a search is pre-empted on a node that is rotated downwards the search might miss the location it is looking for.
+A group of rotations done by an insert/delete cannot run concurrently with another group of rotations done by a different insert/delete because one set might unbalance the other.
+A search cannot run concurrently with a delete because the search might be pre-empted on a node that becomes removed from the tree, leaving the search with undefined results.
 Due to these reasons and in order to insure linearisability these operations require locking large sections of the tree or having transaction with large read/write sets limiting concurrency.
-This leads to the design of modified binar tree algorithms specialized for concurrency.
-\subsection{Previous Work}
+This leads to the design of modified binary tree algorithms specialized for concurrency.
+
+\subsection*{Transactional AVL-Tree}
+
 The benefit of STM is that an unmodified sequential algorithm can be placed directly in transactions and work concurrently.
 The problem with this though is, as discussed above, these algorithms were not designed for concurrency and provide possibly unnecessary conflicts.
 There have been mechanisms introduced for STM to provide ways of creating more efficient implementations.
-For example ESTM \ref{} provides a more efficient way of implementing search structures, and release operations \ref{} provide the programmer with the possibility to remove items from his read set for efficiency reasons.
+For example ${\mathcal E}$-STM~\cite{FGG09} provides a more efficient 
+way of implementing search structures, and release operations~\cite{HLMS03} 
+provide the programmer with the possibility to remove items from his read set 
+for efficiency reasons.
 Those works provide the programmer mechanisms to develop more efficient transactional code, which differs from this work because the goal here is to provide a correct and efficient concurrent data structure that can be used directly by programmers as a library in their transactions.
-This paper will show that creating such a libary is not an obvious task.
+This paper will show that creating such a library is not an obvious task.
 Any programmer may be able to create an implementation of a classic AVL or red-black tree in transactional code, but as this paper will show
 that there are much more efficient ways to implement a tree search structure in that is compatible with transactions, but these structures become much more complicated.
 
@@ -162,7 +152,12 @@ Designing parallel data structures is not a new field and there are many differe
 Even so, many of the concepts from this previous work can be applied in transactions.
 The following paragraphs describe two fairly recent implementations of \emph{AVL-trees} that strongly influence the design of the algorithm presented in this paper.
 
-The first algorithm was proposed by Bouge et al in \ref{IRISAppr}.
+\section{Related Work}
+
+
+
+\subsection{Locally-rotating AVL-Tree}
+The first algorithm was proposed by Boug\'e et al. in \ref{IRISAppr}.
 It is a modified version of a relaxed AVL tree.
 This algorithm introduces local rotation and delete operations that different from the standard AVL operations.
 In order to increase concurrency these local operations lock a minimal amount of nodes.
@@ -171,44 +166,58 @@ Nodes marked for removal are then moved down by the rotations the tree and remov
 Rotations are done one at a time, only locking the nodes that are being rotated.
 The important result that is shown here is that performing these local operations on an unbalanced tree with nodes marked for removal will eventually result in a balanced tree with all marked nodes removed.
 In order to do this each node keeps local information about the heights of its sub-trees and a new local operation \emph{propagate} is provided which propagates information about the balance of the tree from the leaves to the root.
-As the information is propagated appropriate rotations and removals are preformed.
+As the information is propagated appropriate rotations and removals are performed.
 In order to solve the problem of a search operation that is pre-empted on a node that is concurrently rotated down the algorithm does the following.
 As a search operation travels down the tree at each node it adds a marker to the node saying not to do a rotation which is then removed after it travels to the next node.
 
-A more recent paper \ref{Stan} creates a practical implementation of the algorithm proposed by Bouge \ref{IRISAppr}.
+\subsection{Optimistic AVL-Tree}
+A more recent paper~\cite{BCCO10} creates a practical implementation of the algorithm proposed by Boug\'e~\cite{IRISAppr}.
 It makes the following modifications to the original algorithm.
 Nodes marked for removal are not rotated down the tree, they are left alone until (if) they have one or no children at which point they are removed.
 Of course this means at the worst case all but the leaves of the tree could be marked for removal and not actually removed, but they find that in practice the tree does not grow too large with these nodes.
 The other modification they make is that instead of keeping a list at each node of the search operations travelling through it, a search keeps track of the nodes it has visited, and once it sees that it is on a node that has been rotated downwards the search rolls back to a valid location.
+\vincent{The big difference from the PPoP paper is that the tree in that paper does not work with transactions.
+The main changes lie in the way our algorithm minimizes aborts by doing rotations and deletions differently.
+Also the important thing is in our tree multiple operations can be nested within a single transaction and all committed or aborted, while the other cannot.}
+\vincent{Basically the advantage of what we do now avoids using the recursion and keeping track of version numbers. The main trade-off is that what we do now requires a memory allocation during rotation.  Also the way reads/writes are done is a bit different in each solution, but it is not obvious that one is better then the other.
+Also the way they do maintenance is slightly different then the ways I have tried so far.  It would be more difficult for nested transactions, because they do the maintenance directly after an operation, while if a transaction is nested the maintenance would have to wait until the outer transaction is completed, but it should be doable.
+}
 
-\subsection{Concepts for efficient TM Algorithm design}
-\subsubsection{Minimal read/write set size}
+%\subsection{Concepts for efficient TM Algorithm design}
+\section{Methodology for TM-Friendly Data Structures}
+
+\vincent{I found these three subsection titles too general, we should find more specific (to binary tree perhaps?) targets.}
+
+\subsection{Minimal read/write set size}
 Concurrency in a TM is limited by conflicts, conflicts are created when concurrent transactions read and write to the same value.
 In order to reduce conflicts the read and write sets of a transaction should be as small as possible.
 The longer a transaction keeps an item in its read/write set the more likely it is to conflict with another transaction, so transactions should be kept as short as possible.
-Since the intention of the data structure is to be used as a library, a programmer will be able to nest the operations within his own tree, and it is likely he will even preform multiple operations on the same data structure from within the same transaction.
+Since the intention of the data structure is to be used as a library, a programmer will be able to nest the operations within his own tree, and it is likely he will even perform multiple operations on the same data structure from within the same transaction.
 For example he may perform a search, an insert, and a delete all from within the same transaction.
 In this case it is even more important to keep the read and write sets as small as possible.
 Consider if a programmer was to use a traditional red-black tree in his transaction.
 After each operation on the tree the combined size of the read/write set will increase by as much as $O(\log{n})$ (where $n$ is the number of nodes in the tree),
 while an efficient TM algorithm might only increase the size by a small constant value.
+\vincent{Why is it so? Could you explain what an efficient TM algorithm should do according to you, and how?}
 
 \subsection{Avoiding expensive transactional reads}
 Conflicts are not the only reason to keep the reads set small.
 Transactional reads are expensive to perform.
 In addition to keeping track of the reads, during each read, an STM with visible reads will write to shared memory
- and in an STM with invisible reads validations will normally be preformed at the worst case of cost $O(n^2)$ 
+ and in an STM with invisible reads validations will normally be performed at the worst case of cost $O(n^2)$ 
 (here $n$ is the size of the read set).
 
 This tree algorithm tries to avoid as many transactional reads as possible by using certain concepts
 that come from the two papers described in the previous section.
-For example it uses the same concept of the local rotaion operations and propagation.
-It also uses the same concept as \ref{Stan} of leaving a node marked for removal in the tree until it has one or no children.
+For example it uses the same concept of the local rotation operations and propagation.
+It also uses the same concept as~\cite{BCCO10} of leaving a node marked for removal in the tree until it has one or no children.
 However these algorithms rely on mechanisms that cannot be directly implemented.
 For example partial-rollback cannot when a node is rotated down, or hand-over-hand locking to traverse the tree cannot be used without modifying the TM itself.
 
-Still, in order to implement such an efficient algorithm it is necessary to have more then just the traditional $read$ and $write$ operations provided by TM, some additional mechanisms are needed.
-A famous example of such a mechanism is the early $release$ proposed with $DSTM$ \ref{}.
+\vincent{Early-release does not avoid expensive transactional reads but simply diminishes the period where it potentially conflicts. In contrast, unit-loads are non expensive reads.}
+Still, in order to implement such an efficient algorithm it is necessary to have more than just the traditional $read$ and $write$ operations provided by TM, some additional mechanisms are needed.
+A famous example of such a mechanism is the early $release$ proposed with 
+DSTM~\cite{HLMS03}.
 This algorithm uses a somewhat similar mechanism called a $unit$ read.
 A unit read can be simply thought of as a read that does not get added to the transaction's $read$ set.
 All that happens is the most recent value written to memory by a  committed transaction is returned.
@@ -217,90 +226,79 @@ The unit reads are useful when traversing the tree trying to find the node, beca
 It is only necessary that the correct location is reached.
 The following section will describe how these operations are implemented.
 
-\subsubsection{Minimal operation size}
-Using mechanisms to avoid performing expensive reads where possible is important, but pointless if a single transaction does a large ammount of modification to the data structure.
-For example even if unit reads are used to find the location of where to insert a node, if the insert then performs a large ammount of rotations
+\subsection{Minimal operation size}
+Using mechanisms to avoid performing expensive reads where possible is important, but pointless if a single transaction does a large amount of modification to the data structure.
+For example even if unit reads are used to find the location of where to insert a node, if the insert then performs a large amount of rotations
 the read/write set will become large none the less.
 Notice that the operations such as rotations are not required to ensure the linerisability of the insert/delete/search operations.
 Because of this it is not necessary to perform rotations in the same transaction as the insert or delete.
-Rotations can be performed seperately in their own transactions.
+Rotations can be performed separately in their own transactions.
 This becomes even more important when multiple operations to the tree are nested within the same transaction.
-For example consider two insert operations that are nested within a single transaction, at the worst case one might be inserted in one coner of the tree
+For example consider two insert operations that are nested within a single transaction, at the worst case one might be inserted in one corner of the tree
 and the second is inserted at the other corner of the tree, and both perform rotations from their location all the way up to the root.
 Even if unit reads are used to find their location, the transaction will still be performing reads and writes on a large portion of the tree creating many unnecessary conflicts.
 
-In a normal red-black or AVL tree a single insert/delete might warrant a large ammount of rotations going up the tree from the location of the insert/delete,
-kepping the tree balanced and efficient.
+In a normal red-black or AVL tree a single insert/delete might warrant a large amount of rotations going up the tree from the location of the insert/delete,
+keeping the tree balanced and efficient.
 In a concurrent implementation these rotation might not be necessary.
 By keeping the size of operations minimal there can be many concurrent inserts and deletes all taking place at the same time in different locations of the tree.
 Each of these might require a certain set of rotations to balance the tree, but because of concurrent operations these rotations are constantly changing.
 Due to this it is not necessary to perform all the rotations at once, given that we have concurrent operations, the tree is not always going to be perfectly balanced.
-Instead of performing large ammounts of rotations in a single transaction, a single rotation can be done as a single transaction, reducing conflicts.
-Interestingly, performing these The danger with this is the tree might grow too large with nodes that are marked as deleted, slowing down search time, solutions to this will be
-described later.local operations will still eventually result in a balanced tree \cite{}.
-
-\subsubsection{Being Lazy}
-Sometimes it is good to be lazy.
-Consider deletion, in an AVL or red-black tree, deleting a node might require removing the node, moving the successor to its place and performing
-some ammount of rotations.
-Performing this in a concurrent context while ensuring linearisability of all operations requires creating possibly a large ammount of conflicts.
-In a concurrent context it might make more sense to just mark the node as deleted.
-This creates a single point of conflict.
-A concurrent search operation will not even confict with this, as that unless it is searching for the 'key' value of the node, it does not care wether
-or not the node has been marked as deleted.
-More then this, rotations will not be required as that the structure of the tree has not changed, and a later insert operation of the same 'key'
-value only need to unmark the node as deleted, again allowing for more concurrency.
-
-Being lazy and just marking nodes as deleted will leave extra, unnecessary nodes in the tree.
-At first thought one might consider these extra nodes to be harmful as that they will require the search operations to travers more nodes then in the optimal case.
-This is true, but is not necessarily always a bad thing.
-Consider a specific workload that has high contention on a tree, performing a large ammounts of inserts and deletes.
-The inserts and deletes are performed at an equal frequency.
-Now consider a non-lazy algorithm, throughout the workload the tree will be kept at around the same size (say $n$ nodes) with no marked deleted nodes, and high contention throughout.
-Next consider an algorithm that is a bit lazier that allows the tree to grow larger then $n$ but only by a constant factor, say for example $2n$.
-This means that each searh operation might have to travel through a few extra nodes to reach its destination (at most $\log(2n) - \log(n)$ extra nodes if the tree is balanced,
-which for example is about $1$ if $n = 1000$).
-Operations are slightly more expensive, but the tree has twice as many nodes, so depending on the workload and how many concurrent operations take place at a time
-contention could be greatly reduced, or even pratcially eliminated.
-Contention leads to aborts, and aborts are expensive especially if the transactions are large or contain multiple nested operations on the tree, in comparison to this, traversing
-thorough a small amount of extra nodes just require a few extra unit loads which has very little cost.
-Of course this all depends on the workload, but even if contention is not lowered from increasing the size of the tree, the extra cost is small.
-
-Deletions are not the only place it can be beinificial to be lazy.
-Rotations can be preformed lazily.
-Inserting or acutally removing nodes from the tree will require rotations to keep the tree balanced.
-But due to concurrent operations that balance is always changing.
-A insert might require a node to be rotated to the right while a concurrent insert on another part of the tree might then be required to rotate the same node to the left.
-Often concurrent operations will create conflicting rotations, or even balance each other out.
-It might not be necessary to perform all rotations every time the structure of the tree is changed, sometimes it is good to be lazy about them.
-
-\subsection{Not being too lazy}
-Being lazy can be good, but being too lazy can be very bad.
-As described in the previous section being lazy can be benificial for concurrent data structures, but being too lazy can have negitive consequences.
-If nodes are just marked as deleted and not removed from the tree often enough, the number of marked deleted nodes can grow to be much larger then the
-number of non-deleted nodes resulting in poor performance of the search operation.
-The same is true with rotations, if rotations are perofrmed too lazily, the tree can become unbalanced, again resulting in poor performance of the search operation.
-
-This creates a difficult questions, how can one be lazy, without being too lazy?
-The answer is not obvious, but a possible solution is presented here.
-
-There are two extreemes, on one end is the normal AVL and red-black trees which ensures the structure is always perfectly balanced and contains no unnecessary nodes, on the other end is a completely
-lazy implementation which never performs rotations and only marks nodes as deleted.
-Depending on the workload the most efficient solution can be closer to one extreem then the other.
-When operations are performed asynchronously by concurrent processors the most efficient solution may change throughout the workload,
-but because the processes are asynchronous and the future is not known it is impossible to predict the optimal solution.
-For example at one point during the execution there might be several processors performing operations often on the tree creating a lot of contention
-while later during the execution there might just be a single process executing operations on the tree.
-As discussed in the previous section being lazy can be benificial when there is high contention so a good solution would be to be lazy with the
-deletions in the first part of the execution, and less lazy when there is only the single processor execution.
-
-\subsubsection{Determining the right ammout of laziness}
-Deciding when to perform operations lazily and when not to is not obvious.
-A single process does not know what operations on the tree it will execute in the future, let alone the current or future actions of other processors,
-so there has to be some prediction or estimation as to when to perform operations on the tree.
+Instead of performing large amounts of rotations in a single transaction, a single rotation can be done as a single transaction, reducing conflicts.
+%Interestingly, performing these local operations will still eventually result in a balanced tree \cite{}. 
+The danger with this is the tree might grow too large with nodes that are marked as deleted, slowing down search time, solutions to this will be
+described later.
 
 
-
+\section{TM-Friendly Tree Algorithm}
+%
+%\begin{algorithm}[!ht]%\label{alg:tm}
+%  \caption{Naive TM for transaction $t$.}
+%  \begin{algorithmic}[1]
+%  	%\begin{multicols}{2}
+%   {\size 
+%   		\Part{$\act{begin}()_t$}{
+%   			\State $\ms{r-set} \gets \emptyset$
+%   			\State $\ms{w-set} \gets \emptyset$
+%   			\State $\ms{w-log} \gets \emptyset$
+%   		}\EndPart
+%   	
+%		\Statex   	
+%   	
+%		\Part{$\act{write}(x,v)_t$}{
+%			\If{$\tup{x,v'}\notin \ms{w-set}$}
+%				\While{$!\lit{cas}(\act{lock}(x), \lit{unlocked}, \lit{locked})$}
+%					\State $\lit{abort-and-restart}$() \label{line:abort1} \Comment{contention mgmt} 
+%				\EndWhile
+%				\State $\ms{w-log} = \ms{w-log} \cup \{\tup{x, \lit{store}(x,v)}\}$
+%				\State $\ms{w-set} = \ms{w-set} \cup \{\tup{x, v}\}$
+%			\EndIf
+%			\State $\act{return}(\lit{ok})$
+%		}\EndPart
+%		
+%		\Statex
+%		
+%		\Part{$\act{read}(x)_t$}{
+%			\If{$\tup{x,*}\notin \ms{w-set}$}
+%				\While{$!\lit{cas}(\act{lock}(x), \lit{unlocked}, \lit{locked})$}
+%					\State $\lit{abort-and-restart}$()	\label{line:abort2} \Comment{contention mgmt} 
+%				\EndWhile
+%				\State $v = \act{load}(x)$
+%				\State $\ms{r-set} = \ms{r-set} \cup \{\tup{x, v}\}$
+%			\Else{} let $v$ be such that $\tup{x,v}\in \ms{w-set}$
+%			\EndIf
+%			\State $\act{return}(v)$
+%		}\EndPart
+%		
+%		\Statex		
+%		
+%   		\Part{$\act{commit}()_t$}{
+%   			\For{$\tup{x,*} \in \ms{w-set}$} $\act{unlock}(x)$ \EndFor
+%   		}\EndPart
+%	}
+%	%\end{multicols}
+%  \end{algorithmic}
+%\end{algorithm}
 
 \subsection{Node Structure}
 
@@ -335,12 +333,15 @@ Otherwise a new node is allocated and added to the tree using transactional writ
 {\bf Delete} The delete operation does not remove a node from the tree, instead it just marks the node to be deleted later by setting the $deleted$ flag to $true$.
 Similar to the other operations, the $find$ procedure is used in order to locate the node to be deleted.
 Once the node is found a transactional read is done on $removed$ and $deleted$.
-If $removed$ is $true$ the $find$ procedure is preformed again.
+If $removed$ is $true$ the $find$ procedure is performed again.
 Otherwise if $deleted$ is $true$ then the operation returns $false$, if $deleted$ is $false$ it is set to $true$ and the operation returns $true$.
 If the $find$ procedure does not return a node with the same $key$ as the one being searched for a transactional read is performed on the pointer to where the node with the same key would be.
 If the value is $\bot$ then $false$ is returned, otherwise the $find$ operation is executed again starting from this node.
 
-\subsubsection{Linearisability}
+
+\section{Correctness Proof}
+
+%\subsubsection{Linearisability}
 Here we will give a sketch of the proof of the linearisability of these operations.
 Without rotations and removals and with the help of transactional reads writes it is easy to show the linearisability of these operations.
 First note that the linearisability of the transactional reads and writes is ensured by the TM system.
@@ -353,30 +354,33 @@ The result of the $search$, $insert$, and $delete$ operations depend on if the n
 If they find the node with the correct $key$ in the tree then they transactionally read (and possibly write) $deleted$ field of this before returning, and the linearisability of this is guaranteed by the TM.
 Otherwise if the node is not found then the pointer that would point to this node is read (and possibly written to) transactionally which is again guaranteed to be linearisable by the TM.
 
-\subsection{Maintenance Procedures}
+
+\section{Complexity Analysis}
+%\subsection{Maintenance Procedures}
+
 In order to keep the tree balanced and remove nodes marked for removal maintenance must be performed on the tree.
 We call this maintenance because it is something happening invisibly to the user or programmer.
 The following operations are used for maintenance, $remove_node$, $check_rotation$, $left\_rotate$, $right\_rotate$, $left\_right\_rotate$, $right\_left\_rotate$, $left_propogate$, $right_rotate$.
-The rotation and propogate operations are similar to the ones used in \ref{} and \ref{}.
-Rotrations in the normal AVL and red-black tree algorithms are performed along with insert and delete operations.
+The rotation and propagate operations are similar to the ones used in \ref{} and \ref{}.
+Rotations in the normal AVL and red-black tree algorithms are performed along with insert and delete operations.
 A single delete or insert operations could entitle rotations going from the point of insertion/deletion all the way up to the root node.
 The tree algorithms do this in order to ensure the tree is strictly balanced.
-Unfortunately doing this creates a large ammount of contention in parallel executions.
-The rotations and propogations here are all executed seperately each as their own operations, reducing the contention, but allowing the tree to become unbalanced.
-Fortunately, performing these operations repeapibly will eventually result in a balanced tree \ref{}.
+Unfortunately doing this creates a large amount of contention in parallel executions.
+The rotations and propagations here are all executed separately each as their own operations, reducing the contention, but allowing the tree to become unbalanced.
+Fortunately, performing these operations repeatedly will eventually result in a balanced tree \ref{}.
 
 {\bf remove\_node} Nodes can be removed from the tree when they have at most $1$ child and their deleted flag is marked to $true$.
 A node cannot just be directly removed because there could be a concurrent $search$, $insert$, or $delete$ operations that is preempted on the node.
 From the description of these operations they run by performing $unit$ loads going down the tree 
 
 
-If the node was simply removed one of thse preemted operations might not reach the correct location in the tree. 
+If the node was simply removed one of these preempted operations might not reach the correct location in the tree. 
 
-{\bf left\_propogation} The propogation is used to propgate changes of the height of the tree from leaf nodes up to the root.
+{\bf left\_propagation} The propagation is used to propagate changes of the height of the tree from leaf nodes up to the root.
 When a node is inserted or removed from the tree it could effect the height of the left and right subtrees from the point of the insertion all the way up to the root.
 This height information is necessary in order to perform the appropriate rotations.
-Since the goal is to reduce conflicts the propogation operation is as small as possible with each operation executing at a single node and its left or right child.
-The basis of this operation is that when a node has no left/right child it knows that the hieght of its left/right subtree is $0$, and this information is propgated up the tree with the height of the parent being $1$ greater then its child.
+Since the goal is to reduce conflicts the propagation operation is as small as possible with each operation executing at a single node and its left or right child.
+The basis of this operation is that when a node has no left/right child it knows that the height of its left/right subtree is $0$, and this information is propagated up the tree with the height of the parent being $1$ greater then its child.
 The $left\_propogation$ takes as input a single node $nodoe$ and starts by performing a transactional read on $removed$ to ensure that $n$ is still in the tree.
 Next the $lefth$ field of node is read transactionally into the local variable $lefth$, if the value is $0$ then the node has no left child and the operation is complete.
 If the value is greater than $0$ then $n$'s $left\_child$ pointer is read transactionally into the local variable $child$ (note that it is not necessary to read the value of $removed$ for $child$ because if $n$ is not removed then its child is necessarily still in the tree).
@@ -390,6 +394,72 @@ The $right\_rotation$ procedure is omitted here as that it is the mirror of the 
 First the $removed$ flag is read for both the $p$ and $n$, if the $removed$ flag is set to $true$ for either node then $false$ is returned and no rotations are performed on these nodes.
 If the $removed$ flag is $false$ for both nodes then the procedure continues.
 
+
+\section{Discussion}
+
+\subsection{Being Lazy}
+Sometimes it is good to be lazy.
+Consider deletion, in an AVL or red-black tree, deleting a node might require removing the node, moving the successor to its place and performing
+some amount of rotations.
+Performing this in a concurrent context while ensuring linearisability of all operations requires creating possibly a large amount of conflicts.
+In a concurrent context it might make more sense to just mark the node as deleted.
+This creates a single point of conflict.
+A concurrent search operation will not even conflict with this, as that unless it is searching for the `key' value of the node, it does not care whether
+the node has been marked as deleted.
+Moreover, rotations will not be required as that the structure of the tree has not changed, and a later insert operation of the same `key'
+value only need to unmark the node as deleted, again allowing for more concurrency.
+
+Being lazy and just marking nodes as deleted will leave extra, unnecessary nodes in the tree.
+At first thought one might consider these extra nodes to be harmful as that they will require the search operations to traverse more nodes then in the optimal case.
+This is true, but is not necessarily always bad.
+Consider a specific workload that has high contention on a tree, performing a large amount of inserts and deletes.
+The inserts and deletes are performed at an equal frequency.
+Now consider a non-lazy algorithm, throughout the workload the tree will be kept at around the same size (say $n$ nodes) with no marked deleted nodes, and high contention throughout.
+Next consider an algorithm that is a bit lazier that allows the tree to grow larger than $n$ but only by a constant factor, say for example $2n$.
+This means that each search operation might have to travel through a few extra nodes to reach its destination (at most $\log(2n) - \log(n)$ extra nodes if the tree is balanced,
+which for example is about $1$ if $n = 1000$).
+Operations are slightly more expensive, but the tree has twice as many nodes, so depending on the workload and how many concurrent operations take place at a time
+contention could be greatly reduced, or even practically eliminated.
+Contention leads to aborts, and aborts are expensive especially if the transactions are large or contain multiple nested operations on the tree, in comparison to this, traversing
+thorough a small amount of extra nodes just requires a few extra unit loads which has very little cost.
+Of course this all depends on the workload, but even if contention is not lowered from increasing the size of the tree, the extra cost is small.
+
+Deletions are not the only place it can be beneficial to be lazy.
+Rotations can be performed lazily.
+Inserting or actually removing nodes from the tree will require rotations to keep the tree balanced.
+But due to concurrent operations that balance is always changing.
+An insert might require a node to be rotated to the right while a concurrent insert on another part of the tree might then be required to rotate the same node to the left.
+Often concurrent operations will create conflicting rotations, or even balance each other out.
+It might not be necessary to perform all rotations every time the structure of the tree is changed, sometimes it is good to be lazy about them.
+
+\subsection{Not being too lazy}
+Being lazy can be good, but being too lazy can be very bad.
+As described in the previous section being lazy can be beneficial for concurrent data structures, but being too lazy can have negative consequences.
+If nodes are just marked as deleted and not removed from the tree often enough, the number of marked deleted nodes can grow to be much larger than the
+number of non-deleted nodes resulting in poor performance of the search operation.
+The same is true with rotations, if rotations are performed too lazily, the tree can become unbalanced, again resulting in poor performance of the search operation.
+
+This highlight a crucial tradeoff between eagerness and laziness.
+We present a possible solution below.
+
+There are two extremes, on one end is the normal AVL and red-black trees which ensures the structure is always perfectly balanced and contains no unnecessary nodes, on the other end is a completely
+lazy implementation which never performs rotations and only marks nodes as deleted.
+Depending on the workload the most efficient solution can be closer to one extreme then the other.
+When operations are performed asynchronously by concurrent processors the most efficient solution may change throughout the workload,
+but because the processes are asynchronous and the future is not known it is impossible to predict the optimal solution.
+For example at one point during the execution there might be several processors performing operations often on the tree creating a lot of contention
+while later during the execution there might just be a single process executing operations on the tree.
+As discussed in the previous section being lazy can be beneficial when there is high contention so a good solution would be to be lazy with the
+deletions in the first part of the execution, and less lazy when there is only the single processor execution.
+
+\subsection{Determining the right amount of laziness}
+Deciding when to perform operations lazily and when not to is not obvious.
+A single process does not know what operations on the tree it will execute in the future, let alone the current or future actions of other processors,
+so there has to be some prediction or estimation as to when to perform operations on the tree.
+
+\section{Experimental Evaluation}
+
+\section{Conclusion}
 
 \subsection*{Acknowledgements}
 This work is supported in part by the European Commission FP7 under grant numbers 216852 and 248465.
