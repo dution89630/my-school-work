@@ -15,7 +15,7 @@ CFLAGS += -DTINY10B -DTLS -DMAP_USE_TFAVLTREE -DSEPERATE_MAINTENANCE
 
 PROG := vacation
 
-#SRCS += \
+# SRCS += \
 # 	client.c \
 # 	customer.c \
 # 	manager.c \

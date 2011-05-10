@@ -847,7 +847,7 @@ int avl_find(val_t key, avl_node_t **place, val_t *val) {
   *val = valt;
   *place = placet;
 #ifdef DEL_COUNT
-  printf("vals %d, %d, %d\n", nd_count, del_count, nd_count / del_count);
+  //printf("vals %d, %d, %d\n", nd_count, del_count, nd_count / del_count);
   return nd_count / del_count;
 #else
   return 0;
@@ -2167,12 +2167,17 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 	break;
       }
     }
+#ifndef MICROBENCH
+    if(thread_getDone()) {
+      return 0;
+    }
+#endif
     if(!stop)  {
-      printf("sleeping in del_count\n");
+      //printf("sleeping in del_count\n");
       usleep(DEL_COUNT_SLEEP);
     }
   }
-  printf("exit del_count sleep loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  //printf("exit del_count sleep loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 #endif
 
 #ifdef SEPERATE_BALANCE2
