@@ -58,10 +58,16 @@ typedef struct rbtree rbtree_t;
 //#define SEPERATE_BALANCE2DEL
 #define SEPERATE_BALANCE2NLDEL
 //#define REMOVE_LATER
-#define PRINT_INFO
+//#define PRINT_INFO
+#define DEL_COUNT
 #endif
 
 #define ACTIVE_REM_CONSTANT 2
+
+#ifdef DEL_COUNT
+#define DEL_THRESHOLD 1
+#define DEL_COUNT_SLEEP 500
+#endif
 
 #ifdef SEPERATE_MAINTENANCE
 #define THROTTLE_TIME 100000
@@ -181,6 +187,10 @@ typedef struct avl_intset {
   avl_node_t **to_remove;
   avl_node_t **to_remove_parent;
   avl_node_t **to_remove_seen;
+#endif
+
+#ifdef DEL_COUNT
+  int *active_del;
 #endif
 
 #ifdef REMOVE_LATER

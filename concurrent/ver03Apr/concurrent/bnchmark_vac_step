@@ -1,5 +1,12 @@
 #!/bin/sh
 
+if [ $# -gt 0 ]; then
+    threads=$1
+else
+    echo "bnchmark_vac_def nb-threads"
+    exit
+fi
+
 lognumber=`cat ./bmnumber`
 
 lognumber=`expr $lognumber + 1`
@@ -8,20 +15,31 @@ lognumber=`expr $lognumber + 1`
 
 fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
 
-logvat="${fullpath}/logs/log_vac_def_at${lognumber}.txt"
-logvrb="${fullpath}/logs/log_vac_def_rb${lognumber}.txt"
+logvat="${fullpath}/logs/log_vac_step_at${lognumber}.txt"
+logvrb="${fullpath}/logs/log_vac_step_rb${lognumber}.txt"
 
-for threads in \
+for j in \
+    "1" \
+    "2"
+do
+
+if [ "${j}" = "2" ]; then
+
+threads=`expr $threads + 4`
+
+fi
+
+for i in \
     "1" \
     "2" \
+    "3" \
     "4" \
+    "6" \
     "8" \
+    "10" \
     "12" \
     "16" \
-    "20" \
-    "24" \
-    "32" \
-    "48"
+    "20"
 do
 
 for vacconfig in \
@@ -30,7 +48,7 @@ for vacconfig in \
 do
 
 trans="4194304"
-trans=`expr $trans \* $threads`
+trans=`expr $trans \* $i`
 
 echo "vacation_at -c${threads} ${vacconfig} -t${trans}" >> ${logvat}
 echo "vacation_at -c${threads} ${vacconfig} -t${trans}"
@@ -42,5 +60,8 @@ exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb -c${threads} ${vacconfig} 
 
 done
 
+done
 
 done
+
+exit
