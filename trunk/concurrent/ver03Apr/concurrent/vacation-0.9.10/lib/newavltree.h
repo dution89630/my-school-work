@@ -59,7 +59,7 @@ typedef struct rbtree rbtree_t;
 #define SEPERATE_BALANCE2NLDEL
 //#define REMOVE_LATER
 //#define PRINT_INFO
-#define DEL_COUNT
+//#define DEL_COUNT
 #endif
 
 #define ACTIVE_REM_CONSTANT 2
