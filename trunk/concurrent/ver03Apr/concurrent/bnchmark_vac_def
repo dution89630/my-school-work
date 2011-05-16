@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if [ $# -gt 0 ]; then
+    compid=$1
+else
+    compid=""
+fi
+
 lognumber=`cat ./bmnumber`
 
 lognumber=`expr $lognumber + 1`
@@ -8,8 +14,10 @@ lognumber=`expr $lognumber + 1`
 
 fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
 
-logvat="${fullpath}/logs/log_vac_def_at${lognumber}.txt"
-logvrb="${fullpath}/logs/log_vac_def_rb${lognumber}.txt"
+logvlowat="${fullpath}/logs/${compid}vac_def_low_at${lognumber}.txt"
+logvhighat="${fullpath}/logs/${compid}vac_def_high_at${lognumber}.txt"
+logvlowrb="${fullpath}/logs/${compid}vac_def_low_rb${lognumber}.txt"
+logvhighrb="${fullpath}/logs/${compid}vac_def_high_rb${lognumber}.txt"
 
 for threads in \
     "1" \
@@ -24,9 +32,24 @@ for threads in \
     "48"
 do
 
-for vacconfig in \
-    "-n2 -q90 -u98 -r1048576" \
-    "-n4 -q60 -u90 -r1048576"
+for k in \
+    "1" \
+    "2"
+do
+
+if ["${k}" = "1"]
+vacconfig="-n2 -q90 -u98 -r1048576"
+logvat="${logvlowat}"
+logvrb="${logvlowrb}"
+else
+vacconfig="-n4 -q60 -u90 -r1048576"
+logvat="${logvhighat}"
+logvrb="${logvhighrb}"
+fi
+
+for l in \
+    "1" \
+    "2"
 do
 
 trans="4194304"
@@ -42,5 +65,6 @@ exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb -c${threads} ${vacconfig} 
 
 done
 
+done
 
 done

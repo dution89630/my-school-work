@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if [ $# -gt 0 ]; then
+    compid=$1
+else
+    compid=""
+fi
+
 lognumber=`cat ./bmnumber`
 
 lognumber=`expr $lognumber + 1`
@@ -8,10 +14,10 @@ lognumber=`expr $lognumber + 1`
 
 fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
 
-logvat="${fullpath}/logs/log_vac_at${lognumber}.txt"
-logvrb="${fullpath}/logs/log_vac_rb${lognumber}.txt"
-logmat="${fullpath}/logs/log_micro_at${lognumber}.txt"
-logmrb="${fullpath}/logs/log_micro_rb${lognumber}.txt"
+logvat="${fullpath}/logs/${compid}log_vac_at${lognumber}.txt"
+logvrb="${fullpath}/logs/${compid}log_vac_rb${lognumber}.txt"
+logmat="${fullpath}/logs/${compid}log_micro_at${lognumber}.txt"
+logmrb="${fullpath}/logs/${compid}log_micro_rb${lognumber}.txt"
 
 for threads in \
     "1" \
