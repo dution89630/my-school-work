@@ -2,8 +2,14 @@
 
 if [ $# -gt 0 ]; then
     threads=$1
+    shift;
+if [ $# -gt 0 ]; then
+    compid=$1
 else
-    echo "bnchmark_vac_def nb-threads"
+    compid=""
+fi
+else
+    echo "bnchmark_vac_def nb-threads (computer_id)"
     exit
 fi
 
@@ -15,8 +21,11 @@ lognumber=`expr $lognumber + 1`
 
 fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
 
-logvat="${fullpath}/logs/log_vac_step_at${lognumber}.txt"
-logvrb="${fullpath}/logs/log_vac_step_rb${lognumber}.txt"
+logvlowat="${fullpath}/logs/${compid}vac_step_low_at${lognumber}.txt"
+logvhighat="${fullpath}/logs/${compid}vac_step_high_at${lognumber}.txt"
+logvlowrb="${fullpath}/logs/${compid}vac_step_low_atdel${lognumber}.txt"
+logvhighrb="${fullpath}/logs/${compid}vac_step_high_atdel${lognumber}.txt"
+
 
 for j in \
     "1" \
@@ -40,21 +49,31 @@ for i in \
     "12"
 do
 
-for vacconfig in \
-    "-n2 -q90 -u98 -r1048576" \
-    "-n4 -q60 -u90 -r1048576"
+for k in \
+    "1" \
+    "2"
 do
+
+if ["${k}" = "1"]
+vacconfig="-n2 -q90 -u98 -r1048576"
+logvat="${logvlowat}"
+logvrb="${logvlowrb}"
+else
+vacconfig="-n4 -q60 -u90 -r1048576"
+logvat="${logvhighat}"
+logvrb="${logvhighrb}"
+fi
 
 trans="4194304"
 trans=`expr $trans \* $i`
 
 echo "vacation_at_del -c${threads} ${vacconfig} -t${trans}" >> ${logvat}
 echo "vacation_at_del -c${threads} ${vacconfig} -t${trans}"
-exec ${fullpath}/vacation-0.9.10/vacation/vacation_at_del -c${threads} ${vacconfig} -t${trans} | tee -a ${logvat}
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_at -c${threads} ${vacconfig} -t${trans} | tee -a ${logvat}
 
 echo "vacation_at -c${threads} ${vacconfig} -t${trans}" >> ${logvrb}
 echo "vacation_at -c${threads} ${vacconfig} -t${trans}"
-exec ${fullpath}/vacation-0.9.10/vacation/vacation_at -c${threads} ${vacconfig} -t${trans} | tee -a ${logvrb}
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_at_del -c${threads} ${vacconfig} -t${trans} | tee -a ${logvrb}
 
 done
 
