@@ -244,11 +244,13 @@ client_run (void* argPtr)
                 TM_END();
 		//printf("finish tx %d\n", thread_getId());
 		//#ifdef TINY10B
+#ifndef SEQAVL
 #ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
 #ifdef REMOVE_LATER
 		check_finish_removal(myId, managerPtr);
+#endif
 #endif
 #endif
                 break;
@@ -262,11 +264,13 @@ client_run (void* argPtr)
                     MANAGER_DELETE_CUSTOMER(managerPtr, customerId);
                 }
                 TM_END();
+#ifndef SEQAVL
 #ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
 #ifdef REMOVE_LATER
 		check_finish_removal(myId, managerPtr);
+#endif
 #endif
 #endif
                 break;
@@ -320,11 +324,13 @@ client_run (void* argPtr)
                     }
                 }
                 TM_END();
+#ifndef SEQAVL
 #ifdef MAP_USE_TFAVLTREE
 		//managerPtr->nb_committed[myId]++;
 		increase_nb_committed(myId, managerPtr);
 #ifdef REMOVE_LATER
 		check_finish_removal(myId, managerPtr);
+#endif
 #endif
 #endif
                 break;

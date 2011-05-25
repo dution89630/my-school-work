@@ -164,8 +164,9 @@
     ({ \
         void* dataPtr = NULL; \
         pair_t searchPair; \
+	pair_t* pairPtr; \
         searchPair.firstPtr = (void*)(key); \
-        pair_t* pairPtr = (pair_t*)jsw_avlfind(map, (void*)&searchPair); \
+        pairPtr = (pair_t*)jsw_avlfind(map, (void*)&searchPair); \
         if (pairPtr != NULL) { \
             dataPtr = pairPtr->secondPtr; \
         } \
@@ -220,6 +221,74 @@
         } \
         success; \
      })
+
+
+#  define TMMAP_CONTAINS(map, key)    MAP_CONTAINS(map, key)
+#  define TMMAP_FIND(map, key)        MAP_FIND(map, key)
+#  define TMMAP_INSERT(map, key, data)  MAP_INSERT(map, key, data)
+#  define TMMAP_REMOVE(map, key)      MAP_REMOVE(map, key)
+
+
+
+
+#elif defined(MAP_USE_JSWRBTREE)
+
+#  include "jsw_rbtree.h"
+
+#  define MAP_T                       jsw_rbtree_t
+#  define MAP_ALLOC(hash, cmp)        jsw_rbnew((cmp_f)cmp, NULL, NULL)
+#  define MAP_FREE(map)               jsw_rbdelete(map)
+#  define MAP_CONTAINS(map, key) \
+    ({ \
+        bool_t success = FALSE; \
+        pair_t searchPair; \
+        searchPair.firstPtr = (void*)key; \
+        if (jsw_rbfind(map, (void*)&searchPair) != NULL) { \
+            success = TRUE; \
+        } \
+        success; \
+     })
+#  define MAP_FIND(map, key) \
+    ({ \
+        void* dataPtr = NULL; \
+        pair_t searchPair; \
+	pair_t* pairPtr; \
+        searchPair.firstPtr = (void*)(key); \
+        pairPtr = (pair_t*)jsw_rbfind(map, (void*)&searchPair); \
+        if (pairPtr != NULL) { \
+            dataPtr = pairPtr->secondPtr; \
+        } \
+        dataPtr; \
+     })
+#  define MAP_INSERT(map, key, data) \
+    ({ \
+        bool_t success = FALSE; \
+        pair_t* insertPtr = pair_alloc((void*)(key), (void*)data); \
+        if (insertPtr != NULL) { \
+            if (jsw_rbinsert(map, (void*)insertPtr)) { \
+                success = TRUE; \
+            } \
+        } \
+        success; \
+     })
+#  define MAP_REMOVE(map, key) \
+    ({ \
+        bool_t success = FALSE; \
+        pair_t searchPair; \
+        searchPair.firstPtr = (void*)(key); \
+        pair_t* pairPtr = (pair_t*)jsw_rbfind(map, (void*)&searchPair); \
+        if (jsw_rberase(map, (void*)&searchPair)) { \
+            pair_free(pairPtr); \
+            success = TRUE; \
+        } \
+        success; \
+     })
+
+#  define TMMAP_CONTAINS(map, key)    MAP_CONTAINS(map, key)
+#  define TMMAP_FIND(map, key)        MAP_FIND(map, key)
+#  define TMMAP_INSERT(map, key, data)  MAP_INSERT(map, key, data)
+#  define TMMAP_REMOVE(map, key)      MAP_REMOVE(map, key)
+
 
 
 #elif defined(MAP_USE_RBTREE)

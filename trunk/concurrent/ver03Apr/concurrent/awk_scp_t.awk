@@ -1,9 +1,9 @@
 #!/bin/gawk -f
 BEGIN {}
-/Clients/ {core=$3}
-/Time/ {times[core]+=$3; counts[core]+=1}
+/Transactions / {trans=$3}
+/Time/ {times[trans]+=$3; counts[trans]+=1}
 END {
-    print "# threadnum duration"
+    print "# transnum duration"
 
     for(i in times) sorted[j++]=i+0
     n = asort(sorted);
