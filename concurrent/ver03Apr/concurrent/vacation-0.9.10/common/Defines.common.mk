@@ -14,16 +14,16 @@ CONDIR := $(COMPUTER)/concurrent/$(CONVER)/concurrent/
 
 CC       := gcc
 CFLAGS   += -Wall -pthread
-#CFLAGS   += -O3
-#CFLAGS   += -g -m32
-CFLAGS   += -g -m64
+CFLAGS   += -O3
+CFLAGS   += -g -m32
+#CFLAGS   += -g -m64
 CFLAGS   += -I$(LIB) -I$(LIBAO_INC)
 CPP      := g++
 CPPFLAGS += $(CFLAGS)
 #LD       := g++
 LD	 := gcc
-#LDFLAGS  := -m32
-LDFLAGS := -m64
+LDFLAGS  := -m32
+#LDFLAGS := -m64
 LIBS     += -lpthread
 
 # Remove these files when doing clean

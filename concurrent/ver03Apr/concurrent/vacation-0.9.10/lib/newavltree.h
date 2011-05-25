@@ -25,6 +25,48 @@
 
 typedef struct rbtree rbtree_t;
 
+
+#ifdef SEQAVL
+
+#  include "stm.h"
+#  include "mod_mem.h"
+#  include "mod_stats.h"
+
+#  define TM_ARG                        /* nothing */
+#  define TM_ARG_ALONE                  /* nothing */
+#  define TM_ARGDECL                    /* nothing */
+#  define TM_ARGDECL_ALONE              /* nothing */
+#  define TM_CALLABLE                   /* nothing */
+
+//#  define TM_STARTUP(numThread)         /* nothing */
+//#  define TM_SHUTDOWN()                 /* nothing */
+
+//#  define TM_THREAD_ENTER()             /* nothing */
+//#  define TM_THREAD_EXIT()              /* nothing */
+
+#  define NL                             
+#  define EL                            
+#  define TX_START(type)                
+#  define TX_END
+
+
+#  define TX_LOAD(addr)                  printf("should not be here\n")
+#  define TX_UNIT_LOAD(addr)            printf("should not be here\n")
+#  define TX_UNIT_LOAD_TS(addr, timestamp) printf("should not be here\n")
+#  define TX_STORE(addr, val)            printf("should not be here\n")
+
+#  define FREE(addr, size)               printf("should not be here\n")
+#  define MALLOC(size)                   printf("should not be here\n")
+#  define TM_SHARED_READ(addr)           (addr)
+#  define TM_SHARED_WRITE(addr, val)     ((addr) = (val))
+
+//#  define TM_BEGIN()
+//#  define TM_END()
+
+
+#else
+
+
 #  include "stm.h"
 #  include "mod_mem.h"
 #  include "mod_stats.h"
@@ -49,17 +91,19 @@ typedef struct rbtree rbtree_t;
 
 #endif
 
+#endif
+
 #ifdef TINY10B
 //#define SEPERATE_MAINTENANCE
 //#define CHANGE_KEY
-#define SEPERATE_BALANCE
+//#define SEPERATE_BALANCE
 //#define SEPERATE_BALANCE1
-#define SEPERATE_BALANCE2
+//#define SEPERATE_BALANCE2
 //#define SEPERATE_BALANCE2DEL
-#define SEPERATE_BALANCE2NLDEL
-//#define REMOVE_LATER
+//#define SEPERATE_BALANCE2NLDEL
+#define REMOVE_LATER
 //#define PRINT_INFO
-//#define DEL_COUNT
+#define DEL_COUNT
 #endif
 
 #define ACTIVE_REM_CONSTANT 2

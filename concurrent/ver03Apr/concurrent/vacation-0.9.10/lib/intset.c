@@ -1127,7 +1127,9 @@ int avl_delete(val_t key, const avl_intset_t *set) {
   }
 
 #ifndef MICROBENCH
+#ifndef SEQAVL
     id = thread_getId();
+#endif
 #endif
 
 #if defined(SEPERATE_BALANCE2DEL) || defined(REMOVE_LATER)
@@ -1504,7 +1506,6 @@ int avl_rotate(avl_node_t *parent, int go_left, avl_node_t *node, free_list_item
   int ret;
   avl_node_t *child_addr = NULL;
   
-  //printf("here");
   ret = avl_single_rotate(parent, go_left, node, 0, 0, &child_addr, free_list);
   if(ret == 2) {
     //Do a LRR
@@ -2263,9 +2264,11 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 
 
 #ifndef MICROBENCH
+#ifndef SEQAVL
   if(thread_getDone()) {
     return 0;
   }
+#endif
 #endif
 
 
@@ -2377,9 +2380,11 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 
 
 #ifndef MICROBENCH
+#ifndef SEQAVL
   if(thread_getDone()) {
     return 0;
   }
+#endif
 #endif
 
   
@@ -2391,9 +2396,11 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 
 
 #ifndef MICROBENCH
+#ifndef SEQAVL
   if(thread_getDone()) {
     return 0;
   }
+#endif
 #endif
 
   root = set->root->bnode;
@@ -2487,6 +2494,14 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   int should_rotatel, should_rotater;
   free_list_item *next_list_item;
 
+#ifndef MICROBENCH
+#ifndef SEQAVL
+  if(thread_getDone()) {
+    return 0;
+  }
+#endif
+#endif
+
   if(node == NULL) {
     return 1;
   }
@@ -2521,10 +2536,27 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 	return 1;
       }
     }
+
+
+#ifndef MICROBENCH
+#ifndef SEQAVL
+  if(thread_getDone()) {
+    return 0;
+  }
+#endif
+#endif
     
 #ifdef SEPERATE_MAINTENANCE
     usleep((THROTTLE_TIME)/(set->deleted_count + 1));
     //printf("sleeping %lu, %lu, %lu\n", old_deleted_count, *deleted_count, ((THROTTLE_TIME)/(old_deleted_count + (*deleted_count * *deleted_count) + 1)));
+#endif
+
+#ifndef MICROBENCH
+#ifndef SEQAVL
+  if(thread_getDone()) {
+    return 0;
+  }
+#endif
 #endif
 
     
@@ -2872,6 +2904,7 @@ TM_CALLABLE
 void*
 TMrbtree_get (TM_ARGDECL  rbtree_t* r, void* key) {
   val_t ret;
+
   ret =  (void *)avl_get((val_t)key, (avl_intset_t *)r);
   //check_maintenance((avl_intset_t *)r);
   //printf("tm get %d %d %d\n", key, ret, r);
@@ -3189,7 +3222,6 @@ void do_maintenance_thread(avl_intset_t *tree) {
 	tmp_free->next = NULL;
       }
       while(tree->maint_list_start[i] != NULL) {
-	//printf("here\n");
 	if(tree->maint_list_start[i]->to_free != NULL) {
 	  //printf("freeing %d\n", tree->maint_list_start[i]->to_free->key);
 	  free(tree->maint_list_start[i]->to_free);

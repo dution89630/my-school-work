@@ -1,0 +1,69 @@
+#!/bin/bash
+
+if [ $# -gt 6 ]; then
+    remove="1"
+else
+    remove="0"
+fi
+
+if [ $# -gt 5 ]; then
+   firstpart1=$1
+   shift;
+   firstpart2=$1
+   shift;
+   secondpart1=$1
+   shift;
+   secondpart2=$1
+   shift;
+   firstnum=$1
+   shift;
+   secondnum=$1
+   shift;
+else
+    echo "suscript firstpart1 firstpart2 secondpart1 secondpart2 firstnum secondnum (removeline)"
+exit
+fi
+
+d="\$d"
+
+gawk -f awk_scp_t.awk ${firstpart1}_low_${secondpart1}${firstnum}.txt > low${secondpart1}
+if [ "${remove}" = "1" ]; then
+sed -e $d low${secondpart1} > low${secondpart1}2
+cat low${secondpart1}2 > low${secondpart1}
+rm low${secondpart1}2
+fi
+gawk -f awk_scp_t.awk ${firstpart1}_low_${secondpart1}${secondnum}.txt >> low${secondpart1}
+
+gawk -f awk_scp_t.awk ${firstpart1}_high_${secondpart1}${firstnum}.txt > high${secondpart1}
+if [ "${remove}" = "1" ]; then
+sed -e $d high${secondpart1} > high${secondpart1}2
+cat high${secondpart1}2 > high${secondpart1}
+rm high${secondpart1}2
+fi
+gawk -f awk_scp_t.awk ${firstpart1}_high_${secondpart1}${secondnum}.txt >> high${secondpart1}
+
+gawk -f awk_scp_t.awk ${firstpart2}_low_${secondpart2}${firstnum}.txt > low${secondpart2}b
+if [ "${remove}" = "1" ]; then
+sed -e $d low${secondpart2}b > low${secondpart2}b2
+cat low${secondpart2}b2 > low${secondpart2}b
+rm low${secondpart2}b2
+fi
+gawk -f awk_scp_t.awk ${firstpart2}_low_${secondpart2}${secondnum}.txt >> low${secondpart2}b
+
+gawk -f awk_scp_t.awk ${firstpart2}_high_${secondpart2}${firstnum}.txt > high${secondpart2}b
+if [ "${remove}" = "1" ]; then
+sed -e $d high${secondpart2}b > high${secondpart2}b2
+cat high${secondpart2}b2 > high${secondpart2}b
+rm high${secondpart2}b2
+fi
+gawk -f awk_scp_t.awk ${firstpart2}_high_${secondpart2}${secondnum}.txt >> high${secondpart2}b
+
+cat low${secondpart1} > low
+cat low${secondpart2}b >> low
+
+cat high${secondpart1} > high
+cat high${secondpart2}b >> high
+
+gawk -f awk_scp_t_su.awk low > lowsu
+
+gawk -f awk_scp_t_su.awk high > highsu

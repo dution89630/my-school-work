@@ -37,7 +37,7 @@ for k in \
     "2"
 do
 
-if ["${k}" = "1"]
+if [ "${k}" = "1" ]; then
 vacconfig="-n2 -q90 -u98 -r1048576"
 logvat="${logvlowat}"
 logvrb="${logvlowrb}"
@@ -53,6 +53,13 @@ for l in \
 do
 
 trans="4194304"
+
+#if [ ${threads} -gt 24 ]; then
+#trans=`expr $trans \* 24`
+#else
+#trans=`expr $trans \* $threads`
+#fi
+
 trans=`expr $trans \* $threads`
 
 echo "vacation_at -c${threads} ${vacconfig} -t${trans}" >> ${logvat}
@@ -68,3 +75,5 @@ done
 done
 
 done
+
+exit

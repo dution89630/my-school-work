@@ -5,10 +5,12 @@
 # ==============================================================================
 
 
-CFLAGS   += -DSTM -I$(STM)/include
-CPPFLAGS := $(CFLAGS)
-LDFLAGS  += -L$(STM)/lib
-LIBS     += -lstm -lpthread
+
+#need to uncomment this for using AVL tree seq
+#CFLAGS   += -DSTM -I$(STM)/include
+#CPPFLAGS := $(CFLAGS)
+#LDFLAGS  += -L$(STM)/lib
+#LIBS     += -lstm -lpthread
 
 
 # ==============================================================================
@@ -17,7 +19,7 @@ LIBS     += -lstm -lpthread
 
 .PHONY: default
 default: $(PROG)
-LDFLAGS += -static -m32
+#LDFLAGS += -static -m32
 
 .PHONY: clean
 clean:

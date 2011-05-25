@@ -120,6 +120,23 @@ struct jsw_avltrav {
   size_t         top;                /* Top of stack */
 };
 
+
+
+
+/* =============================================================================
+ * compareKeysDefault
+ * =============================================================================
+ */
+static long
+compareKeysDefault (const void* a, const void* b)
+{
+    return ((long)a - (long)b);
+}
+
+
+
+
+
 /* Two way single rotation */
 #define jsw_single(root,dir) do {         \
   jsw_avlnode_t *save = root->link[!dir]; \
@@ -240,7 +257,7 @@ jsw_avltree_t *jsw_avlnew ( cmp_f cmp )
     return NULL;
 
   rt->root = NULL;
-  rt->cmp = cmp;
+  rt->cmp = &compareKeysDefault;//cmp;
 #if USE_DUP_AND_REL
   rt->dup = dup;
   rt->rel = rel;
