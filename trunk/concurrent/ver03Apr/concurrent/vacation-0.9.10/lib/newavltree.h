@@ -94,7 +94,11 @@ typedef struct rbtree rbtree_t;
 #endif
 
 #ifdef TINY10B
-//#define SEPERATE_MAINTENANCE
+
+#ifdef MICROBENCH
+#define SEPERATE_MAINTENANCE
+#endif
+
 //#define CHANGE_KEY
 //#define SEPERATE_BALANCE
 //#define SEPERATE_BALANCE1
@@ -133,6 +137,9 @@ typedef struct rbtree rbtree_t;
 #define DEFAULT_ELASTICITY              4
 #define DEFAULT_ALTERNATE               0
 #define DEFAULT_EFFECTIVE               1
+#define DEFAULT_MOVE                    0
+#define DEFAULT_SNAPSHOT                0
+#define DEFAULT_LOAD                    1
 
 #ifndef MICROBENCH
 #define KEYMAP

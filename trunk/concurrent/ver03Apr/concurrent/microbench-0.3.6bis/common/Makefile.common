@@ -11,12 +11,12 @@ CONVER		= ver03Apr
 CONDIR		= $(COMPUTER)/my-school-work/concurrent/$(CONVER)/concurrent
 
 # Paths
-#LIBAO 		?= $(CONDIR)/libatomic
-LIBAO 		?= $(CONDIR)/libatomic64
+LIBAO 		?= $(CONDIR)/libatomic
+#LIBAO 		?= $(CONDIR)/libatomic64
 
 
 # Debug/optimization flags
-CFLAGS	 	+= -g -DNDEBUG -O0
+CFLAGS	 	+= -g -DNDEBUG -O0 -DMICROBENCH
 #CFLAGS          += -O3 -DNDEBUG
 SOLARIS_CC 	?= /home/vincent/gcc/bin/gcc
 ROOT 		?= ..
@@ -42,7 +42,7 @@ ifeq ($(STM),ESTM)
   TM		= stm
 endif
 ifeq ($(STM),TINY10B)
-  CFLAGS	+= -DSTM -DTINY10B
+  CFLAGS	+= -DSTM -DTINY10B -DMICROBENCH
   STMDIR	= $(TINY10BDIR)
   LIBDIR	= $(STMDIR)/lib
   SRCDIR 	= $(STMDIR)/src

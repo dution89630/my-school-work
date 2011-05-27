@@ -24,8 +24,9 @@
 #include <unistd.h>
 //#include "fraser.h"
 #include "newavltree.h"
-//#include "thread.h"
-
+#ifndef MICROBENCH
+#include "thread.h"
+#endif
 
 
 //temporary stuff
@@ -40,14 +41,22 @@
 
 
 //Wrappers?
-int avl_contains(avl_intset_t *set, val_t key, int transactional);
-int avl_add(avl_intset_t *set, val_t key, int transactional);
+int avl_contains(avl_intset_t *set, val_t key, int transactional, int id);
+int avl_add(avl_intset_t *set, val_t key, int transactional, int id);
 #if defined(MICROBENCH)
 int avl_remove(avl_intset_t *set, val_t key, int transactional, int id);
 #else
 int avl_remove(avl_intset_t *set, val_t key, int transactional);
 #endif
 
+int avl_move(avl_intset_t *set, int val1, int val2, int transactional, int id);
+int avl_snapshot(avl_intset_t *set, int transactional, int id);
+
+
+
+#if defined(SEQUENTIAL) || defined(MICROBENCH)
+
+void rec_seq_ss(avl_node_t *node, int *size);
 
 //seqential calls
 int avl_req_seq_delete(avl_node_t *parent, avl_node_t *node, val_t key, int go_left, int *success);
@@ -69,7 +78,6 @@ int avl_seq_right_left_rotate(avl_node_t *parent, avl_node_t *place, int go_left
 int avl_seq_req_find_successor(avl_node_t *parent, avl_node_t *node, int go_left, avl_node_t** succs);
 
 
-#ifdef SEQUENTIAL
 
 #ifdef KEYMAP
 
@@ -86,13 +94,37 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 //Actual STM methods
 
 #ifdef TINY10B
+
+#ifdef MICROBENCH
+int avl_search(val_t key, const avl_intset_t *set, int id);
+#else
 int avl_search(val_t key, const avl_intset_t *set);
+#endif
 
 int avl_find(val_t key, avl_node_t **place, val_t *k);
 
 int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *k);
 
+#ifdef MICROBENCH
+int avl_insert(val_t val, val_t key, const avl_intset_t *set, int id);
+#else
 int avl_insert(val_t val, val_t key, const avl_intset_t *set);
+#endif
+
+
+#ifdef MICROBENCH
+int avl_ss(avl_intset_t *set, int id);
+#else
+int avl_ss(avl_intset_t *set);
+#endif
+
+void rec_ss(avl_node_t *node, int *size);
+
+#ifdef MICROBENCH
+int avl_mv(val_t key, val_t new_key, const avl_intset_t *set, int id);
+#else
+int avl_mv(val_t key, val_t new_key, const avl_intset_t *set);
+#endif
 
 //int avl_delete(val_t key, avl_intset_t *set, free_list_item **free_list);
 #if defined(MICROBENCH)
@@ -116,16 +148,14 @@ int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lef
 
 //int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child);
 
-
-int recursive_tree_propagate(avl_intset_t *set, free_list_item *free_list);
-
+#ifdef MICROBENCH
+int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list, volatile AO_t *stopm);
+#else
+int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list);
+#endif
 
 #ifdef REMOVE_LATER
-#ifdef MICROBENCH
 int finish_removal(avl_intset_t *set, int id);
-#else
-int finish_removal(avl_intset_t *set);
-#endif
 #endif
 
 #ifdef SEPERATE_BALANCE2
@@ -153,15 +183,128 @@ val_t avl_get(val_t key, const avl_intset_t *set);
 int avl_update(val_t v, val_t key, const avl_intset_t *set);
 #endif
 
+#ifndef MICROBENCH
+#ifdef SEQUENTIAL
+/* =============================================================================
+ * rbtree_insert
+ * -- Returns TRUE on success
+ * =============================================================================
+ */
+bool_t
+rbtree_insert (rbtree_t* r, void* key, void* val);
+
+/* =============================================================================
+ * rbtree_delete
+ * =============================================================================
+ */
+bool_t
+rbtree_delete (rbtree_t* r, void* key);
+
+#ifdef KEYMAP
+
+/* =============================================================================
+ * rbtree_update
+ * -- Return FALSE if had to insert node first
+ * =============================================================================
+ */
+bool_t
+rbtree_update (rbtree_t* r, void* key, void* val);
+
+
+/* =============================================================================
+ * rbtree_get
+ * =============================================================================
+ */
+void*
+rbtree_get (rbtree_t* r, void* key);
+
+#endif
+
+
+/* =============================================================================
+ * rbtree_contains
+ * =============================================================================
+ */
+bool_t
+rbtree_contains (rbtree_t* r, void* key);
+
+#endif
+#endif
+
+
 #ifdef SEPERATE_MAINTENANCE
+
+#ifdef MICROBENCH
+void do_maintenance_thread(avl_intset_t *tree, volatile AO_t *stop);
+#else
 void do_maintenance_thread(avl_intset_t *tree);
+#endif
 #else
 void check_maintenance(avl_intset_t *tree);
 void do_maintenance(avl_intset_t *tree);
 #endif
 
 
+#ifndef MICROBENCH
+/*
+=============================================================================
+  * TMrbtree_insert
+  * -- Returns TRUE on success
+  *
+=============================================================================
+  */
+TM_CALLABLE
+bool_t
+TMrbtree_insert (TM_ARGDECL  rbtree_t* r, void* key, void* val);
+
+/*
+=============================================================================
+  * TMrbtree_delete
+  *
+=============================================================================
+  */
+TM_CALLABLE
+bool_t
+TMrbtree_delete (TM_ARGDECL  rbtree_t* r, void* key);
+
+#ifdef KEYMAP
+/*
+=============================================================================
+  * TMrbtree_update
+  * -- Return FALSE if had to insert node first
+  *
+=============================================================================
+  */
+TM_CALLABLE
+bool_t
+TMrbtree_update (TM_ARGDECL  rbtree_t* r, void* key, void* val);
+
+/*
+=============================================================================
+  * TMrbtree_get
+  *
+=============================================================================
+  */
+TM_CALLABLE
+void*
+TMrbtree_get (TM_ARGDECL  rbtree_t* r, void* key);
+
 #endif
+
+/*
+=============================================================================
+  * TMrbtree_contains
+  *
+=============================================================================
+  */
+TM_CALLABLE
+bool_t
+TMrbtree_contains (TM_ARGDECL  rbtree_t* r, void* key);
+
+#endif
+
+
+#endif /* TINY10B */
 
 //This is ok here?
 #ifndef max

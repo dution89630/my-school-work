@@ -32,6 +32,7 @@ do
        mv skiplist/lf-sl ${EXPERIMENT_BIN_DIR}/sl-${MBENCH_VERSION}-${TARGET}
        mv avltree/lf-at ${EXPERIMENT_BIN_DIR}/at-${MBENCH_VERSION}-${TARGET}
        mv newavltree/newlf-at ${EXPERIMENT_BIN_DIR}/newat-${MBENCH_VERSION}-${TARGET}
+       mv newavltree/newlf-atmove ${EXPERIMENT_BIN_DIR}/newatmove-${MBENCH_VERSION}-${TARGET}
        mv hashtable/lf-ht ${EXPERIMENT_BIN_DIR}/ht-${MBENCH_VERSION}-${TARGET}
        mv rbtree/lf-rt ${EXPERIMENT_BIN_DIR}/rt-${MBENCH_VERSION}-${TARGET}
        mv deque/lf-dq ${EXPERIMENT_BIN_DIR}/dq-${MBENCH_VERSION}-${TARGET}

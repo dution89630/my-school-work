@@ -26,10 +26,10 @@
 
 #define CHECK_FIRST
 
-int avl_contains(avl_intset_t *set, val_t key, int transactional)
+int avl_contains(avl_intset_t *set, val_t key, int transactional, int id)
 {
   int result = 0;
-	
+
 #ifdef SEQUENTIAL /* Unprotected */	
   val_t val;
   avl_node_t *next;
@@ -59,7 +59,7 @@ int avl_contains(avl_intset_t *set, val_t key, int transactional)
   
 #elif defined TINY10B
 
-  result = avl_search(key, set);
+  result = avl_search(key, set, id);
 #endif
 	
   
@@ -103,7 +103,7 @@ inline int avl_seq_add(avl_intset_t *set, val_t key) {
   
 }
 
-int avl_add(avl_intset_t *set, val_t key, int transactional)
+int avl_add(avl_intset_t *set, val_t key, int transactional, int id)
 {
   int result = 0;
 
@@ -111,7 +111,6 @@ int avl_add(avl_intset_t *set, val_t key, int transactional)
 		
     //result = avl_seq_add(set, key);
     avl_req_seq_add(NULL, set->root, key, key, 0, &result);
-
 	
   } else {
 
@@ -120,15 +119,57 @@ int avl_add(avl_intset_t *set, val_t key, int transactional)
     //result = avl_seq_add(set, v);
     avl_req_seq_add(NULL, set->root, key, key, 0, &result);
 		
-#elif defined TINY10B
+#elif defined(MICROBENCH) && defined(TINY10B)
 
-    result = avl_insert(key, key, set);
+    result = avl_insert(key, key, set, id);
 
 #endif
 		
   }
 	
   return result;
+}
+
+int avl_move(avl_intset_t *set, int val1, int val2, int transactional, int id) {
+  int result;
+
+  if(!transactional) {
+    if(avl_contains(set, val1, 0, id) && !avl_contains(set, val2, 0, id)) {
+      avl_req_seq_delete(NULL, set->root, val1, 0, &result);
+      avl_req_seq_add(NULL, set->root, val2, val2, 0, &result);
+    }
+  } else {
+#if defined(MICROBENCH) && defined(TINY10B)
+    result = avl_mv(val1, val2, set, id);
+#endif
+  }
+  return result;
+}
+
+int avl_snapshot(avl_intset_t *set, int transactional, int id) {
+  int result = 0;
+
+  if(!transactional) {
+    rec_seq_ss(set->root->left, &result);
+  } else {
+#if defined(MICROBENCH) && defined(TINY10B)
+    result = avl_ss(set, id);
+#endif
+  }
+  return result;
+}
+
+void rec_seq_ss(avl_node_t *node, int *size) {
+  if(node == NULL) {
+    return;
+  }
+  if(!node->deleted) {
+    *size += node->key;
+  }
+  rec_seq_ss(node->left, size);
+  rec_seq_ss(node->right, size);
+
+  return;
 }
 
 
@@ -144,47 +185,6 @@ int avl_remove(avl_intset_t *set, val_t key, int transactional)
 	
   avl_req_seq_delete(NULL, set->root, key, 0, &result);
 
-  /* avl_node_t *new_node, *next, *prev, *parent, *child; */
-  /* int parent_left_child, left_child; */
-  /* val_t val; */
-  
-  /* next = set->root; */
-  
-  /* while(next != NULL) { */
-  /*   parent = prev; */
-  /*   prev = next; */
-  /*   val = prev->key; */
-    
-  /*   if(v == val) { */
-  /*     if(!prev->deleted) { */
-  /* 	prev->deleted = 1; */
-  /* 	prev->removed = 1; */
-  /* 	if(parent != NULL) { */
-  /* 	  if(prev->right == NULL || prev->left == NULL) { */
-  /* 	    if((child = prev->right) == NULL) { */
-  /* 	      child = prev->left; */
-  /* 	    } */
-  /* 	    //remove the node if it has at least one null child */
-  /* 	    if(parent->right == prev) { */
-  /* 	      parent->right = child; */
-  /* 	    } else { */
-  /* 	      parent->left = child; */
-  /* 	    } */
-  /* 	  } */
-  /* 	} */
-  /* 	return 1; */
-  /*     } */
-      
-  /*   } else if(v > val) { */
-  /*     next = prev->right; */
-  /*   } else { */
-  /*     next = prev->left; */
-  /*   } */
-    
-  /* } */
-
-  /* return 0; */
-
 #elif defined TINY10B
 
 #if defined(MICROBENCH)
@@ -194,7 +194,6 @@ int avl_remove(avl_intset_t *set, val_t key, int transactional)
 #endif
 
 #endif
-
 	
   return result;
 }
@@ -1054,6 +1053,181 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
   //printf("ret = %d\n", ret);
   //printf("should be new node %d %d %d\n", place, place->key, place->right);
   //printf("should be new node %d %d %d\n", place, place->key, place->left);
+  return ret;
+
+}
+
+#ifdef MICROBENCH
+ int avl_ss(avl_intset_t *set, int id){
+#else
+   int avl_ss(avl_intset_t *set) {
+#endif
+     int size = 0;
+
+     TX_START(NL);
+     rec_ss((avl_node_t *)TX_LOAD(&set->root->left), &size);
+     TX_END;
+
+     return size;
+   }
+
+   void rec_ss(avl_node_t *node, int *size) {
+     if(node == NULL) {
+       return;
+     }
+     if(!TX_LOAD(&node->deleted)) {
+       *size += node->key;
+     }
+     rec_ss((avl_node_t *)TX_LOAD(&node->left), size);
+     rec_ss((avl_node_t *)TX_LOAD(&node->right), size);
+
+     return;
+   }
+
+
+#ifdef MICROBENCH
+ int avl_mv(val_t key, val_t new_key, const avl_intset_t *set, int id) {
+#else
+   int avl_mv(val_t key, val_t new_key, const avl_intset_t *set) {
+#endif
+  avl_node_t *place, *new_place, *next, *new_node;
+  intptr_t rem, del;
+  int done, go_left = 0;
+  int ret;
+  val_t k;
+#ifndef MICROBENCH
+  long id;
+#endif
+#ifdef DEL_COUNT
+  int del_val;
+#endif
+
+#ifdef PRINT_INFO
+  printf("moving %d thread: %d\n", key, thread_getId());  
+#endif
+
+  place = set->root;
+  next = place;
+
+  new_place = set->root;
+
+  TX_START(NL);
+
+  ret = 0;
+  rem = 1;
+  done = 0;
+
+  while(rem || next != NULL) {
+#ifdef DEL_COUNT
+    del_val = avl_find(key, &place, &k);
+#else
+    avl_find(key, &place, &k);
+#endif
+    rem = (intptr_t)TX_LOAD(&place->removed);
+    if(!rem) {
+      if(k == key) {
+	done = 1;
+	break;
+      } else if(key > k){
+	next = (avl_node_t*)TX_LOAD(&place->right);
+	go_left = 0;
+      } else {
+	next = (avl_node_t*)TX_LOAD(&place->left);
+	go_left = 1;
+      }
+    }
+  }
+
+  if(done) {
+    if((del = (intptr_t)TX_LOAD(&place->deleted))) {
+      //found the node deleted, cannot do the move
+      ret = 0;
+    } else {
+      //node is not deleted, can move
+      ret = 1;
+    }
+  } else {
+    //did not find the node, cannot do move
+    ret = 0;
+  }
+
+  if(ret > 0) {
+    rem = 1;
+    done = 0;
+    next = new_place;
+    while(rem || next != NULL) {
+#ifdef DEL_COUNT
+      del_val = avl_find(new_key, &new_place, &k);
+#else
+      avl_find(new_key, &new_place, &k);
+#endif
+      rem = (intptr_t)TX_LOAD(&new_place->removed);
+      if(!rem) {
+	if(k == new_key) {
+	  done = 1;
+	  break;
+	} else if(new_key > k){
+	  next = (avl_node_t*)TX_LOAD(&new_place->right);
+	  go_left = 0;
+	} else {
+	  next = (avl_node_t*)TX_LOAD(&new_place->left);
+	  go_left = 1;
+	}
+      }
+    }
+    
+    if(done) {
+      if((del = (intptr_t)TX_LOAD(&new_place->deleted))) {
+	//found the node deleted, can move here
+	ret = 1;
+      } else {
+	//node is not deleted, canont move here
+	ret = 0;
+      }
+    } else {
+      //did not find the node, can move here
+      ret = 2;
+    }
+    
+    if(ret > 0) {
+      //delete the node, just do a lazy delete for now
+      TX_STORE(&place->deleted, 1);
+
+      //insert the new node
+      if(ret == 1) {
+	TX_STORE(&new_place->deleted, 0);
+#ifdef KEYMAP
+	TX_STORE(&new_place->val, TX_LOAD(&place->val));
+#endif
+      } else if(ret == 2) {
+	new_node = avl_new_simple_node(TX_LOAD(&place->val), new_key, 1);
+	if(go_left) {
+	  TX_STORE(&new_place->left, new_node);
+	} else {
+	  TX_STORE(&new_place->right, new_node);
+	}
+	ret = 2;
+      }
+    }
+  }
+
+  TX_END;
+
+#ifdef DEL_COUNT
+#ifndef MICROBENCH
+  id = thread_getId();
+#endif
+  if(del_val > DEL_THRESHOLD) {
+    if(set->active_del[id]) {
+      set->active_del[id] = 0;
+    }
+  } else {
+    if(!set->active_del[id]) {
+      set->active_del[id] = 1;
+    }
+  }
+#endif
+
   return ret;
 
 }
@@ -2141,7 +2315,11 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 
 #endif /* def SEPERATE_BALANCE2 */
 
+#ifdef MICROBENCH
+ int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list, volatile AO_t *stopm) {
+#else
  int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list) {
+#endif
   free_list_item *next;
 #ifdef DEL_COUNT
   int stop, i;
@@ -2172,6 +2350,15 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
     if(thread_getDone()) {
       return 0;
     }
+#else
+
+#ifdef ICC
+  if(*stopm != 0) {
+#else
+    if(AO_load_full(stopm) != 0) {
+#endif /* ICC */
+      return 0;
+    } 
 #endif
     if(!stop)  {
       //printf("sleeping in del_count\n");
@@ -3157,7 +3344,12 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 
 #ifdef SEPERATE_MAINTENANCE
 
-void do_maintenance_thread(avl_intset_t *tree) {
+#ifdef MICROBENCH
+ void do_maintenance_thread(avl_intset_t *tree, volatile AO_t *stop)
+#else
+ void do_maintenance_thread(avl_intset_t *tree)
+#endif
+ {
 
   int done;
   int i;
@@ -3180,6 +3372,14 @@ void do_maintenance_thread(avl_intset_t *tree) {
 #ifndef MICROBENCH
   TM_THREAD_ENTER(); 
   while(!thread_getDone()) {
+#else
+
+#ifdef ICC
+  while (*stop == 0) {
+#else
+    while (AO_load_full(stop) == 0) {
+#endif /* ICC */
+
 #endif
 
   //check if you can free removed nodes
@@ -3242,9 +3442,12 @@ void do_maintenance_thread(avl_intset_t *tree) {
 #ifndef MICROBENCH
   if(!thread_getDone()) {
 #endif
-  
-  recursive_tree_propagate(tree, tree->free_list);
 
+#ifdef MICROBENCH
+    recursive_tree_propagate(tree, tree->free_list, stop);
+#else  
+    recursive_tree_propagate(tree, tree->free_list);
+#endif
   //printf("done prop\n");
 
 #ifndef MICROBENCH
@@ -3254,6 +3457,8 @@ void do_maintenance_thread(avl_intset_t *tree) {
 #ifndef MICROBENCH
   }
   TM_THREAD_EXIT();
+#else
+  }
 #endif
   
 }
