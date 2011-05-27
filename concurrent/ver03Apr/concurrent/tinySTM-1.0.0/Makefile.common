@@ -1,8 +1,8 @@
 # Path to root directory
 ROOT ?= .
 
-#3264BIT = -m32
-3264BIT = -m64
+3264BIT = -m32
+#3264BIT = -m64
 
 CC ?= gcc
 AR ?= ar

@@ -41,16 +41,22 @@
 
 
 //Wrappers?
-int avl_contains(avl_intset_t *set, val_t key, int transactional);
-int avl_add(avl_intset_t *set, val_t key, int transactional);
+int avl_contains(avl_intset_t *set, val_t key, int transactional, int id);
+int avl_add(avl_intset_t *set, val_t key, int transactional, int id);
 #if defined(MICROBENCH)
 int avl_remove(avl_intset_t *set, val_t key, int transactional, int id);
 #else
 int avl_remove(avl_intset_t *set, val_t key, int transactional);
 #endif
 
+int avl_move(avl_intset_t *set, int val1, int val2, int transactional, int id);
+int avl_snapshot(avl_intset_t *set, int transactional, int id);
 
-#ifdef SEQUENTIAL
+
+
+#if defined(SEQUENTIAL) || defined(MICROBENCH)
+
+void rec_seq_ss(avl_node_t *node, int *size);
 
 //seqential calls
 int avl_req_seq_delete(avl_node_t *parent, avl_node_t *node, val_t key, int go_left, int *success);
@@ -105,6 +111,21 @@ int avl_insert(val_t val, val_t key, const avl_intset_t *set, int id);
 int avl_insert(val_t val, val_t key, const avl_intset_t *set);
 #endif
 
+
+#ifdef MICROBENCH
+int avl_ss(avl_intset_t *set, int id);
+#else
+int avl_ss(avl_intset_t *set);
+#endif
+
+void rec_ss(avl_node_t *node, int *size);
+
+#ifdef MICROBENCH
+int avl_mv(val_t key, val_t new_key, const avl_intset_t *set, int id);
+#else
+int avl_mv(val_t key, val_t new_key, const avl_intset_t *set);
+#endif
+
 //int avl_delete(val_t key, avl_intset_t *set, free_list_item **free_list);
 #if defined(MICROBENCH)
 int avl_delete(val_t key, const avl_intset_t *set, int id);
@@ -127,9 +148,11 @@ int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lef
 
 //int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child);
 
-
-int recursive_tree_propagate(avl_intset_t *set, free_list_item *free_list);
-
+#ifdef MICROBENCH
+int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list, volatile AO_t *stopm);
+#else
+int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list);
+#endif
 
 #ifdef REMOVE_LATER
 int finish_removal(avl_intset_t *set, int id);
@@ -210,7 +233,12 @@ rbtree_contains (rbtree_t* r, void* key);
 
 
 #ifdef SEPERATE_MAINTENANCE
+
+#ifdef MICROBENCH
+void do_maintenance_thread(avl_intset_t *tree, volatile AO_t *stop);
+#else
 void do_maintenance_thread(avl_intset_t *tree);
+#endif
 #else
 void check_maintenance(avl_intset_t *tree);
 void do_maintenance(avl_intset_t *tree);

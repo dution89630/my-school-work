@@ -16,19 +16,106 @@
 
 #include "tm.h"
 
+//#define MICROBENCH
+
+
+#ifndef MICROBENCH
+
+#include "types.h"
+
+typedef struct rbtree rbtree_t;
+
+
+#ifdef SEQAVL
+
+#  include "stm.h"
+#  include "mod_mem.h"
+#  include "mod_stats.h"
+
+#  define TM_ARG                        /* nothing */
+#  define TM_ARG_ALONE                  /* nothing */
+#  define TM_ARGDECL                    /* nothing */
+#  define TM_ARGDECL_ALONE              /* nothing */
+#  define TM_CALLABLE                   /* nothing */
+
+//#  define TM_STARTUP(numThread)         /* nothing */
+//#  define TM_SHUTDOWN()                 /* nothing */
+
+//#  define TM_THREAD_ENTER()             /* nothing */
+//#  define TM_THREAD_EXIT()              /* nothing */
+
+#  define NL                             
+#  define EL                            
+#  define TX_START(type)                
+#  define TX_END
+
+
+#  define TX_LOAD(addr)                  printf("should not be here\n")
+#  define TX_UNIT_LOAD(addr)            printf("should not be here\n")
+#  define TX_UNIT_LOAD_TS(addr, timestamp) printf("should not be here\n")
+#  define TX_STORE(addr, val)            printf("should not be here\n")
+
+#  define FREE(addr, size)               printf("should not be here\n")
+#  define MALLOC(size)                   printf("should not be here\n")
+#  define TM_SHARED_READ(addr)           (addr)
+#  define TM_SHARED_WRITE(addr, val)     ((addr) = (val))
+
+//#  define TM_BEGIN()
+//#  define TM_END()
+
+
+#else
+
+
+#  include "stm.h"
+#  include "mod_mem.h"
+#  include "mod_stats.h"
+#  define NL                             1
+#  define EL                             0
+#  define TX_START(type)                 { sigjmp_buf *_e = stm_start(0); if (_e != NULL) sigsetjmp(*_e, 0);
+#  define TX_LOAD(addr)                  stm_load((stm_word_t *)addr)
+#  define TX_UNIT_LOAD(addr)             stm_unit_load((stm_word_t *)addr, NULL)
+//#  define TX_UNIT_LOAD(addr)             stm_load((stm_word_t *)addr)
+#  define TX_UNIT_LOAD_TS(addr, timestamp)  stm_unit_load((stm_word_t *)addr, (stm_word_t *)timestamp)
+#  define TX_STORE(addr, val)            stm_store((stm_word_t *)addr, (stm_word_t)val)
+#  define TX_END stm_commit(); }
+#  define FREE(addr, size)               stm_free(addr, size)
+#  define MALLOC(size)                   stm_malloc(size)
+#  define TM_CALLABLE                    /* nothing */
+#  define TM_ARGDECL_ALONE               /* nothing */
+#  define TM_ARGDECL                     /* nothing */
+#  define TM_ARG                         /* nothing */
+#  define TM_ARG_LAST                    /* nothing */
+#  define TM_ARG_ALONE                   /* nothing */
+#  define TM_THREAD_ENTER()              stm_init_thread()
+
+#endif
+
+#endif
+
 #ifdef TINY10B
+
+#ifdef MICROBENCH
 #define SEPERATE_MAINTENANCE
+#endif
+
 //#define CHANGE_KEY
-#define SEPERATE_BALANCE
+//#define SEPERATE_BALANCE
 //#define SEPERATE_BALANCE1
-#define SEPERATE_BALANCE2
+//#define SEPERATE_BALANCE2
 //#define SEPERATE_BALANCE2DEL
-#define SEPERATE_BALANCE2NLDEL
-#define MICROBENCH
+//#define SEPERATE_BALANCE2NLDEL
 #define REMOVE_LATER
+//#define PRINT_INFO
+#define DEL_COUNT
 #endif
 
 #define ACTIVE_REM_CONSTANT 2
+
+#ifdef DEL_COUNT
+#define DEL_THRESHOLD 1
+#define DEL_COUNT_SLEEP 500
+#endif
 
 #ifdef SEPERATE_MAINTENANCE
 #define THROTTLE_TIME 100000
@@ -50,10 +137,14 @@
 #define DEFAULT_ELASTICITY              4
 #define DEFAULT_ALTERNATE               0
 #define DEFAULT_EFFECTIVE               1
+#define DEFAULT_MOVE                    0
+#define DEFAULT_SNAPSHOT                0
+#define DEFAULT_LOAD                    1
 
-//#define KEYMAP
-//#define SEQUENTIAL
-
+#ifndef MICROBENCH
+#define KEYMAP
+#define SEQUENTIAL
+#endif
 
 #define XSTR(s)                         STR(s)
 #define STR(s)                          #s
@@ -74,6 +165,18 @@ extern unsigned int levelmax;
 
 #define VAL_MIN                         INT_MIN
 #define VAL_MAX                         INT_MAX
+
+
+#ifndef MICROBENCH
+#define TMRBTREE_ALLOC()          TMrbtree_alloc(TM_ARG_ALONE)
+#define TMRBTREE_FREE(r)          TMrbtree_free(TM_ARG  r)
+#define TMRBTREE_INSERT(r, k, v)  TMrbtree_insert(TM_ARG  r, (void*)(k), (void*)(v))
+#define TMRBTREE_DELETE(r, k)     TMrbtree_delete(TM_ARG  r, (void*)(k))
+#define TMRBTREE_UPDATE(r, k, v)  TMrbtree_update(TM_ARG  r, (void*)(k), (void*)(v))
+#define TMRBTREE_GET(r, k)        TMrbtree_get(TM_ARG  r, (void*)(k))
+#define TMRBTREE_CONTAINS(r, k)   TMrbtree_contains(TM_ARG  r, (void*)(k))
+#endif
+
 
 typedef intptr_t val_t;
 //#define val_t void*
@@ -126,7 +229,7 @@ typedef struct avl_intset {
   //manager_t *managerPtr;
 #ifdef SEPERATE_MAINTENANCE
   free_list_item **maint_list_start;
-  free_list_item **maint_list_end;
+  //free_list_item **maint_list_end;
 #endif
   free_list_item **t_free_list;
   free_list_item *free_list;
@@ -135,6 +238,10 @@ typedef struct avl_intset {
   avl_node_t **to_remove;
   avl_node_t **to_remove_parent;
   avl_node_t **to_remove_seen;
+#endif
+
+#ifdef DEL_COUNT
+  int *active_del;
 #endif
 
 #ifdef REMOVE_LATER
@@ -180,10 +287,44 @@ void avl_set_size_node(avl_node_t *node, int* size, int tree);
 
 
 
+#ifndef MICROBENCH
+
+#ifdef KEYMAP
+
+/* =============================================================================
+ * rbtree_alloc
+ * =============================================================================
+ */
+rbtree_t*
+rbtree_alloc (long (*compare)(const void*, const void*), long nb_threads);
 
 
+/* =============================================================================
+ * TMrbtree_alloc
+ * =============================================================================
+ */
+rbtree_t*
+TMrbtree_alloc (TM_ARGDECL  long (*compare)(const void*, const void*));
 
 
+/* =============================================================================
+ * rbtree_free
+ * =============================================================================
+ */
+void
+rbtree_free (rbtree_t* r);
+
+
+/* =============================================================================
+ * TMrbtree_free
+ * =============================================================================
+ */
+void
+TMrbtree_free (TM_ARGDECL  rbtree_t* r);
+
+#endif
+
+#endif
 
 
 

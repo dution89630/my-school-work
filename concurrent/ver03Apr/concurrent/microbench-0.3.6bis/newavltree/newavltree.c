@@ -171,6 +171,7 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
   for(i = 0; i < nb_threads; i++) {
     set->t_free_list[i] = (free_list_item *)malloc(sizeof(free_list_item));
     set->t_free_list[i]->next = NULL;
+    set->t_free_list[i]->to_free = NULL;
   }
 
   set->free_list = (free_list_item *)malloc(sizeof(free_list_item));
@@ -180,14 +181,15 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
 
   set->maint_list_start = (free_list_item **)malloc(nb_threads * sizeof(free_list_item *));
   for(i = 0; i < nb_threads; i++) {
-    set->maint_list_start[i] = set->t_free_list[i];
+    //set->maint_list_start[i] = set->t_free_list[i];
+    set->maint_list_start[i] = NULL;
   }
 
 
-  set->maint_list_end = (free_list_item **)malloc(nb_threads * sizeof(free_list_item *));
-  for(i = 0; i < nb_threads; i++) {
-    set->maint_list_end[i] = set->t_free_list[i];
-  }
+  /* set->maint_list_end = (free_list_item **)malloc(nb_threads * sizeof(free_list_item *)); */
+  /* for(i = 0; i < nb_threads; i++) { */
+  /*   set->maint_list_end[i] = set->t_free_list[i]; */
+  /* } */
 
 
 #endif
@@ -213,6 +215,13 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
   set->to_remove_later = (remove_list_item_t **)malloc(nb_threads * sizeof(remove_list_item_t*));
   for(i = 0; i < nb_threads; i++) {
     set->to_remove_later[i] = NULL;
+  }
+#endif
+
+#ifdef DEL_COUNT
+  set->active_del = (int *)malloc(nb_threads * sizeof(int));
+  for(i = 0; i < nb_threads; i++) {
+    set->active_del[i] = 0;
   }
 #endif
 
@@ -307,3 +316,49 @@ void avl_set_size_node(avl_node_t *node, int* size, int tree) {
 
 }
 
+#ifndef MICROBENCH
+#ifdef KEYMAP
+
+/* =============================================================================
+ * rbtree_alloc
+ * =============================================================================
+ */
+rbtree_t*
+rbtree_alloc (long (*compare)(const void*, const void*), long nb_threads) {
+  return (rbtree_t *)avl_set_new_alloc(0, nb_threads);
+}
+
+
+/* =============================================================================
+ * TMrbtree_alloc
+ * =============================================================================
+ */
+rbtree_t*
+TMrbtree_alloc (TM_ARGDECL  long (*compare)(const void*, const void*)) {
+  return (rbtree_t *)avl_set_new_alloc(1, 0);
+}
+
+
+/* =============================================================================
+ * rbtree_free
+ * =============================================================================
+ */
+void
+rbtree_free (rbtree_t* r) {
+  avl_delete_node_free(((avl_intset_t *)r)->root, 0);
+  free((avl_intset_t *)r);
+}
+
+
+/* =============================================================================
+ * TMrbtree_free
+ * =============================================================================
+ */
+void
+TMrbtree_free (TM_ARGDECL  rbtree_t* r) {
+  avl_delete_node_free(((avl_intset_t *)r)->root, 1);
+  FREE((avl_intset_t *)r, sizeof(avl_intset_t));
+}
+
+#endif
+#endif
