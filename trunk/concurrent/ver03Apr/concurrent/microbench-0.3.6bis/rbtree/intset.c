@@ -92,6 +92,7 @@ int set_contains(intset_t *set, val_t val, int transactional)
 	return result;
 }
 
+
 /* 
  * Adding to the rbtree may require rotations (at least in this implementation)  
  * This operation requires strong dependencies between numerous transactional 
@@ -158,4 +159,37 @@ int set_remove(intset_t *set, val_t val, int transactional)
 			exit(1);
 	}
 	return result;
+}
+
+
+int set_move(intset_t *set, val_t val1, val_t val2, int transactional) {
+  int result;
+
+  if(transactional != 0) {
+    TX_START(NL);
+  }
+  result = 0;
+  if(!set_contains(set, val2, transactional)) {
+    if(set_remove(set, val1, transactional)) {
+      set_add(set, val2, transactional);
+      result = 1;
+    }
+  }
+  if(transactional != 0) {
+    TX_END;
+  }
+
+  return result;
+}
+
+
+int set_snapshot(intset_t *set, int transactional) {
+  int val = 0;
+
+  if(transactional != 0) {
+    val = TMrbtree_snapshot(set);
+  } else {
+    val = rbtree_snapshot(set);
+  }
+  return val;
 }

@@ -28,12 +28,14 @@ extern "C" {
 #include <stddef.h>
 #endif
 
+#include "pair.h"
+
 /* Opaque types */
 typedef struct jsw_rbtree jsw_rbtree_t;
 typedef struct jsw_rbtrav jsw_rbtrav_t;
 
 /* User-defined item handling */
-typedef int   (*cmp_f) ( const void *p1, const void *p2 );
+typedef long   (*cmp_f) ( const void *p1, const void *p2 );
 typedef void *(*dup_f) ( void *p );
 typedef void  (*rel_f) ( void *p );
 

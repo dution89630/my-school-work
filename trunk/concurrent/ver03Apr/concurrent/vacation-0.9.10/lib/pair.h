@@ -78,39 +78,60 @@
 extern "C" {
 #endif
 
+#ifdef VACATION
+
+typedef struct pair {
+    long firstPtr;
+    void* secondPtr;
+} pair_t;
+
+#else
 
 typedef struct pair {
     void* firstPtr;
     void* secondPtr;
 } pair_t;
 
+#endif
 
 /* =============================================================================
  * pair_alloc
  * -- Returns NULL if failure
  * =============================================================================
  */
+#ifdef VACATION
+pair_t*
+pair_alloc (long key, void* data);
+#else
 pair_t*
 pair_alloc (void* firstPtr, void* secondPtr);
-
+#endif
 
 /* =============================================================================
  * Ppair_alloc
  * -- Returns NULL if failure
  * =============================================================================
  */
+#ifdef VACATION
+pair_t*
+Ppair_alloc (long key, void* data);
+#else
 pair_t*
 Ppair_alloc (void* firstPtr, void* secondPtr);
-
+#endif
 
 /* =============================================================================
  * TMpair_alloc
  * -- Returns NULL if failure
  * =============================================================================
  */
+#ifdef VACATION
+pair_t*
+TMpair_alloc (TM_ARGDECL  long firstPtr, void* secondPtr);
+#else
 pair_t*
 TMpair_alloc (TM_ARGDECL  void* firstPtr, void* secondPtr);
-
+#endif
 
 /* =============================================================================
  * pair_free

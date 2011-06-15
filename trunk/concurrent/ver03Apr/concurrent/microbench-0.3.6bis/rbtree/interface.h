@@ -40,6 +40,9 @@
 /* Note: stdio is thread-safe */
 #endif
 
+#define DEFAULT_MOVE                    0
+#define DEFAULT_SNAPSHOT                0
+#define DEFAULT_LOAD                    1
 #define DEFAULT_DURATION                10000
 #define DEFAULT_INITIAL                 256
 #define DEFAULT_NB_THREADS              1

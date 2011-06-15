@@ -35,6 +35,7 @@ do
        mv newavltree/newlf-atmove ${EXPERIMENT_BIN_DIR}/newatmove-${MBENCH_VERSION}-${TARGET}
        mv hashtable/lf-ht ${EXPERIMENT_BIN_DIR}/ht-${MBENCH_VERSION}-${TARGET}
        mv rbtree/lf-rt ${EXPERIMENT_BIN_DIR}/rt-${MBENCH_VERSION}-${TARGET}
+       mv rbtree/lf-rtmove ${EXPERIMENT_BIN_DIR}/rtmove-${MBENCH_VERSION}-${TARGET}
        mv deque/lf-dq ${EXPERIMENT_BIN_DIR}/dq-${MBENCH_VERSION}-${TARGET}
 done
 for LOCK in $LOCKS

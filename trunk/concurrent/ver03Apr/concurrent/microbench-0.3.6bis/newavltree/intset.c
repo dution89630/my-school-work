@@ -131,12 +131,15 @@ int avl_add(avl_intset_t *set, val_t key, int transactional, int id)
 }
 
 int avl_move(avl_intset_t *set, int val1, int val2, int transactional, int id) {
-  int result;
+  int result = 0;
 
   if(!transactional) {
     if(avl_contains(set, val1, 0, id) && !avl_contains(set, val2, 0, id)) {
       avl_req_seq_delete(NULL, set->root, val1, 0, &result);
       avl_req_seq_add(NULL, set->root, val2, val2, 0, &result);
+      result = 1;
+    } else {
+      result = 0;
     }
   } else {
 #if defined(MICROBENCH) && defined(TINY10B)
