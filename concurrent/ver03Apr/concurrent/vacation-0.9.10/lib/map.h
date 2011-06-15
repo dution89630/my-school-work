@@ -154,7 +154,7 @@
     ({ \
         bool_t success = FALSE; \
         pair_t searchPair; \
-        searchPair.firstPtr = (void*)key; \
+        searchPair.firstPtr = key; \
         if (jsw_avlfind(map, (void*)&searchPair) != NULL) { \
             success = TRUE; \
         } \
@@ -165,7 +165,7 @@
         void* dataPtr = NULL; \
         pair_t searchPair; \
 	pair_t* pairPtr; \
-        searchPair.firstPtr = (void*)(key); \
+        searchPair.firstPtr = (key); \
         pairPtr = (pair_t*)jsw_avlfind(map, (void*)&searchPair); \
         if (pairPtr != NULL) { \
             dataPtr = pairPtr->secondPtr; \
@@ -175,7 +175,7 @@
 #  define MAP_INSERT(map, key, data) \
     ({ \
         bool_t success = FALSE; \
-        pair_t* insertPtr = pair_alloc((void*)(key), (void*)data); \
+        pair_t* insertPtr = pair_alloc((key), (void*)data); \
         if (insertPtr != NULL) { \
             if (jsw_avlinsert(map, (void*)insertPtr)) { \
                 success = TRUE; \
@@ -184,17 +184,30 @@
         success; \
      })
 #  define MAP_REMOVE(map, key) \
-    ({ \
-        bool_t success = FALSE; \
-        pair_t searchPair; \
-        searchPair.firstPtr = (void*)(key); \
-        pair_t* pairPtr = (pair_t*)jsw_avlfind(map, (void*)&searchPair); \
-        if (jsw_avlerase(map, (void*)&searchPair)) { \
-            pair_free(pairPtr); \
-            success = TRUE; \
-        } \
-        success; \
-     })
+  ({									\
+    bool_t success = FALSE;						\
+    pair_t searchPair;							\
+    searchPair.firstPtr = (key);					\
+    pair_t* pairPtr = (pair_t*)jsw_avlfind(map, (void*)&searchPair);	\
+    if(pairPtr != NULL) {						\
+      if (jsw_avlerase(map, (void*)&searchPair)) {			\
+	pair_free(pairPtr);						\
+	success = TRUE;							\
+      }									\
+    }									\
+    success;								\
+  })
+    /* ({ \ */
+    /*     bool_t success = FALSE; \ */
+    /*     pair_t searchPair; \ */
+    /*     searchPair.firstPtr = (key); \ */
+    /*     pair_t* pairPtr = (pair_t*)jsw_avlfind(map, (void*)&searchPair); \ */
+    /*     if (jsw_avlerase(map, (void*)&searchPair)) { \ */
+    /*         pair_free(pairPtr); \ */
+    /*         success = TRUE; \ */
+    /*     } \ */
+    /*     success; \ */
+    /*  }) */
 
 #  define PMAP_ALLOC(hash, cmp)        Pjsw_avlnew((cmp_f)cmp)
 #  define PMAP_FREE(map)               Pjsw_avldelete(map)
@@ -242,7 +255,7 @@
     ({ \
         bool_t success = FALSE; \
         pair_t searchPair; \
-        searchPair.firstPtr = (void*)key; \
+        searchPair.firstPtr = key; \
         if (jsw_rbfind(map, (void*)&searchPair) != NULL) { \
             success = TRUE; \
         } \
@@ -253,7 +266,7 @@
         void* dataPtr = NULL; \
         pair_t searchPair; \
 	pair_t* pairPtr; \
-        searchPair.firstPtr = (void*)(key); \
+        searchPair.firstPtr = (key); \
         pairPtr = (pair_t*)jsw_rbfind(map, (void*)&searchPair); \
         if (pairPtr != NULL) { \
             dataPtr = pairPtr->secondPtr; \
@@ -263,7 +276,7 @@
 #  define MAP_INSERT(map, key, data) \
     ({ \
         bool_t success = FALSE; \
-        pair_t* insertPtr = pair_alloc((void*)(key), (void*)data); \
+        pair_t* insertPtr = pair_alloc((key), (void*)data); \
         if (insertPtr != NULL) { \
             if (jsw_rbinsert(map, (void*)insertPtr)) { \
                 success = TRUE; \
@@ -272,17 +285,19 @@
         success; \
      })
 #  define MAP_REMOVE(map, key) \
-    ({ \
-        bool_t success = FALSE; \
-        pair_t searchPair; \
-        searchPair.firstPtr = (void*)(key); \
-        pair_t* pairPtr = (pair_t*)jsw_rbfind(map, (void*)&searchPair); \
-        if (jsw_rberase(map, (void*)&searchPair)) { \
-            pair_free(pairPtr); \
-            success = TRUE; \
-        } \
-        success; \
-     })
+  ({									\
+    bool_t success = FALSE;						\
+    pair_t searchPair;							\
+    searchPair.firstPtr = (key);					\
+    pair_t* pairPtr = (pair_t*)jsw_rbfind(map, (void*)&searchPair);	\
+    if(pairPtr != NULL) {						\
+      if (jsw_rberase(map, (void*)&searchPair)) {			\
+	pair_free(pairPtr);						\
+	success = TRUE;							\
+      }									\
+    }									\
+    success;								\
+  })
 
 #  define TMMAP_CONTAINS(map, key)    MAP_CONTAINS(map, key)
 #  define TMMAP_FIND(map, key)        MAP_FIND(map, key)

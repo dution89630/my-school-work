@@ -1501,6 +1501,51 @@ TMrbtree_get (TM_ARGDECL  rbtree_t* r, void* key) {
 }
 
 
+
+/* =============================================================================
+ * snapshot
+ * =============================================================================
+ */
+
+int
+rbtree_snapshot(rbtree_t *s) {
+  int val = 0;
+
+  rbtree_recsnapshot(LDNODE(s, root), &val);
+  return val;
+}
+
+void
+rbtree_recsnapshot(node_t *n, int *val) {
+  if(n == NULL) return;
+  *val += LDF(n, k);
+  rbtree_recsnapshot(LDNODE(n, l), val);
+  rbtree_recsnapshot(LDNODE(n, r), val);
+}
+
+
+/* =============================================================================
+ * TMsnapshot
+ * =============================================================================
+ */
+
+int
+TMrbtree_snapshot(TM_ARGDECL rbtree_t *s) {
+  int val = 0;
+
+  TMrbtree_recsnapshot(TX_LDNODE(s, root), &val);
+  return val;
+}
+
+void TMrbtree_recsnapshot(TM_ARGDECL node_t *n, int *val) {
+  if(n == NULL) return;
+  *val += LDF(n, k);
+  TMrbtree_recsnapshot(TX_LDNODE(n, l), val);
+  TMrbtree_recsnapshot(TX_LDNODE(n, r), val);
+}
+
+
+
 /* =============================================================================
  * rbtree_contains
  * =============================================================================

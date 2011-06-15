@@ -105,6 +105,7 @@ extern "C" {
 #endif
 
 #include "tm.h"
+#include "pair.h"
 
 /* Opaque types */
 typedef struct jsw_avltree jsw_avltree_t;

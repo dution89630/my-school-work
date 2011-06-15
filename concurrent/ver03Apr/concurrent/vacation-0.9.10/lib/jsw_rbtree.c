@@ -48,7 +48,7 @@ struct jsw_rbtrav {
 static long
 compareKeysDefault (const void* a, const void* b)
 {
-    return ((long)a - (long)b);
+  return ((pair_t *)a)->firstPtr - ((pair_t *)b)->firstPtr;
 }
 
 
@@ -225,7 +225,7 @@ void *jsw_rbfind ( jsw_rbtree_t *tree, void *data )
   jsw_rbnode_t *it = tree->root;
 
   while ( it != NULL ) {
-    int cmp = tree->cmp ( it->data, data );
+    long cmp = tree->cmp ( it->data, data );
 
     if ( cmp == 0 )
       break;

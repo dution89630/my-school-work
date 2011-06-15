@@ -38,3 +38,7 @@ int set_contains(intset_t *set, val_t val, int transactional);
  */ 
 int set_add(intset_t *set, val_t val, int transactional);
 int set_remove(intset_t *set, val_t val, int transactional);
+
+int set_move(intset_t *set, val_t val1, val_t val2, int transactional);
+
+int set_snapshot(intset_t *set, int transactional);

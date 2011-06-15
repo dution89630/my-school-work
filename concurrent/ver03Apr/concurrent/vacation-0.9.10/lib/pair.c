@@ -79,8 +79,13 @@
  * -- Returns NULL if failure
  * =============================================================================
  */
+#ifdef VACATION
+pair_t*
+pair_alloc (long firstPtr, void* secondPtr)
+#else
 pair_t*
 pair_alloc (void* firstPtr, void* secondPtr)
+#endif
 {
     pair_t* pairPtr;
 
@@ -99,8 +104,13 @@ pair_alloc (void* firstPtr, void* secondPtr)
  * -- Returns NULL if failure
  * =============================================================================
  */
+#ifdef VACATION
+pair_t*
+Ppair_alloc (long firstPtr, void* secondPtr)
+#else
 pair_t*
 Ppair_alloc (void* firstPtr, void* secondPtr)
+#endif
 {
     pair_t* pairPtr;
 
@@ -119,8 +129,13 @@ Ppair_alloc (void* firstPtr, void* secondPtr)
  * -- Returns NULL if failure
  * =============================================================================
  */
+#ifdef VACATION
+pair_t*
+TMpair_alloc (TM_ARGDECL  long firstPtr, void* secondPtr)
+#else
 pair_t*
 TMpair_alloc (TM_ARGDECL  void* firstPtr, void* secondPtr)
+#endif
 {
     pair_t* pairPtr;
 

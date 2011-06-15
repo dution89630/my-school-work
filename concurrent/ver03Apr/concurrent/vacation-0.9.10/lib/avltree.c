@@ -130,9 +130,8 @@ struct jsw_avltrav {
 static long
 compareKeysDefault (const void* a, const void* b)
 {
-    return ((long)a - (long)b);
+  return ((pair_t *)a)->firstPtr - ((pair_t *)b)->firstPtr;
 }
-
 
 
 
