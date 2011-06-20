@@ -131,15 +131,12 @@ int avl_add(avl_intset_t *set, val_t key, int transactional, int id)
 }
 
 int avl_move(avl_intset_t *set, int val1, int val2, int transactional, int id) {
-  int result = 0;
+  int result;
 
   if(!transactional) {
     if(avl_contains(set, val1, 0, id) && !avl_contains(set, val2, 0, id)) {
       avl_req_seq_delete(NULL, set->root, val1, 0, &result);
       avl_req_seq_add(NULL, set->root, val2, val2, 0, &result);
-      result = 1;
-    } else {
-      result = 0;
     }
   } else {
 #if defined(MICROBENCH) && defined(TINY10B)
@@ -698,7 +695,7 @@ int avl_search(val_t key, const avl_intset_t *set, int id) {
 int avl_search(val_t key, const avl_intset_t *set) {
 #endif
   int done;
-  intptr_t rem, del;
+  intptr_t rem, del = 0;
   avl_node_t *place, *next;
   val_t k;
 #ifndef MICROBENCH
@@ -858,7 +855,7 @@ int avl_find(val_t key, avl_node_t **place, val_t *val) {
 
 
 int avl_find_parent(val_t key, avl_node_t **place, avl_node_t **parent, val_t *val) {
-  avl_node_t *next, *placet, *parentt;
+  avl_node_t *next, *placet, *parentt = NULL;
   intptr_t rem;
   val_t valt;
 #ifdef CHANGE_KEY
@@ -959,7 +956,7 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
   long id;
 #endif
 #ifdef DEL_COUNT
-  int del_val;
+  int del_val = 0;
 #endif
 
 #ifdef PRINT_INFO
@@ -1102,7 +1099,7 @@ int avl_insert(val_t v, val_t key, const avl_intset_t *set) {
   long id;
 #endif
 #ifdef DEL_COUNT
-  int del_val;
+  int del_val = 0;
 #endif
 
 #ifdef PRINT_INFO
@@ -2318,14 +2315,10 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 
 #endif /* def SEPERATE_BALANCE2 */
 
-#ifdef MICROBENCH
- int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list, volatile AO_t *stopm) {
-#else
  int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list) {
-#endif
   free_list_item *next;
 #ifdef DEL_COUNT
-  int stop, i;
+  int stopm, i;
 #endif
 
   //set->active_remove = 1;
@@ -2340,12 +2333,12 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
   }
 
 #ifdef DEL_COUNT
-  stop = 0;
-  while(!stop) {
-    stop = 0;
+  stopm = 0;
+  while(!stopm) {
+    stopm = 0;
     for(i = 0; i < set->nb_threads; i++) {
       if(set->active_del[i]) {
-	stop = 1;
+	stopm = 1;
 	break;
       }
     }
@@ -2356,14 +2349,14 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 #else
 
 #ifdef ICC
-  if(*stopm != 0) {
+  if(stop != 0) {
 #else
-    if(AO_load_full(stopm) != 0) {
+    if(AO_load_full(&stop) != 0) {
 #endif /* ICC */
       return 0;
     } 
 #endif
-    if(!stop)  {
+    if(!stopm)  {
       //printf("sleeping in del_count\n");
       usleep(DEL_COUNT_SLEEP);
     }
@@ -2376,6 +2369,7 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 #else
   recursive_node_propagate(set, set->root, NULL, next);
 #endif
+
   //printf("Finished full prop\n");
   //printf("deleted count: %lu\n", *deleted_count);
   set->deleted_count = set->current_deleted_count;
@@ -2452,13 +2446,20 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
     return 1;
   }
 
-
 #ifndef MICROBENCH
 #ifndef SEQAVL
-  if(thread_getDone()) {
-    return 0;
-  }
+    if(thread_getDone()) {
+      return 0;
+    }
 #endif
+#else
+#ifdef ICC
+  if(stop != 0) {
+#else
+    if(AO_load_full(&stop) != 0) {
+#endif /* ICC */
+      return 0;
+    } 
 #endif
 
 
@@ -2684,12 +2685,21 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   int should_rotatel, should_rotater;
   free_list_item *next_list_item;
 
+
 #ifndef MICROBENCH
 #ifndef SEQAVL
-  if(thread_getDone()) {
-    return 0;
-  }
+    if(thread_getDone()) {
+      return 0;
+    }
 #endif
+#else
+#ifdef ICC
+  if(stop != 0) {
+#else
+    if(AO_load_full(&stop) != 0) {
+#endif /* ICC */
+      return 0;
+    } 
 #endif
 
   if(node == NULL) {
@@ -2985,9 +2995,9 @@ rbtree_update (rbtree_t* r, void* key, void* val) {
 void*
 rbtree_get (rbtree_t* r, void* key) {
   val_t ret;
-  ret = (void *)avl_seq_get((avl_intset_t *)r, (val_t)key, 0);
+  ret = avl_seq_get((avl_intset_t *)r, (val_t)key, 0);
   //printf("suc seq get %d %d %d\n", key, ret, r);
-  return ret;
+  return (void *)ret;
 }
 #endif
 
@@ -2999,7 +3009,7 @@ bool_t
 rbtree_contains (rbtree_t* r, void* key) {
   int ret;
 
-  ret = avl_contains((avl_intset_t*) r, (val_t)key, 0);
+  ret = avl_contains((avl_intset_t*) r, (val_t)key, 0, thread_getId());
   if(ret) {
     //printf("suc seq cont %d %d\n", key, r);
   } else {
@@ -3347,11 +3357,7 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 
 #ifdef SEPERATE_MAINTENANCE
 
-#ifdef MICROBENCH
- void do_maintenance_thread(avl_intset_t *tree, volatile AO_t *stop)
-#else
  void do_maintenance_thread(avl_intset_t *tree)
-#endif
  {
 
   int done;
@@ -3378,9 +3384,9 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 #else
 
 #ifdef ICC
-  while (*stop == 0) {
+  while (stop == 0) {
 #else
-    while (AO_load_full(stop) == 0) {
+    while (AO_load_full(&stop) == 0) {
 #endif /* ICC */
 
 #endif
@@ -3445,13 +3451,8 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
 #ifndef MICROBENCH
   if(!thread_getDone()) {
 #endif
-
-#ifdef MICROBENCH
-    recursive_tree_propagate(tree, tree->free_list, stop);
-#else  
     recursive_tree_propagate(tree, tree->free_list);
-#endif
-  //printf("done prop\n");
+    //printf("done prop\n");
 
 #ifndef MICROBENCH
   }

@@ -1,9 +1,15 @@
 #!/bin/sh
 
 if [ $# -gt 0 ]; then
+    threads=$1
+    shift;
+if [ $# -gt 0 ]; then
     compid=$1
 else
     compid=""
+fi
+else
+    echo "exe threads (computer_id)"
 fi
 
 lognumber=`cat ./bmnumber`
@@ -14,16 +20,24 @@ lognumber=`expr $lognumber + 1`
 
 fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
 
-logvlowat="${fullpath}/logs/${compid}vac_def_low_at${lognumber}.txt"
-logvhighat="${fullpath}/logs/${compid}vac_def_high_at${lognumber}.txt"
-logvlowrb="${fullpath}/logs/${compid}vac_def_low_rb${lognumber}.txt"
-logvhighrb="${fullpath}/logs/${compid}vac_def_high_rb${lognumber}.txt"
+logvlowat="${fullpath}/logs/${compid}vac_seq_low_at${lognumber}.txt"
+logvhighat="${fullpath}/logs/${compid}vac_seq_high_at${lognumber}.txt"
+logvlowrb="${fullpath}/logs/${compid}vac_seq_low_rb${lognumber}.txt"
+logvhighrb="${fullpath}/logs/${compid}vac_seq_high_rb${lognumber}.txt"
 
-for threads in \
+for j in \
+    "1" \
+    "1" 
+do
+
+for i in \
     "1" \
     "2" \
+    "3" \
     "4" \
+    "6" \
     "8" \
+    "10" \
     "12" \
     "16" \
     "20"
@@ -35,28 +49,21 @@ for k in \
 do
 
 if [ "${k}" = "1" ]; then
+
 vacconfig="-n2 -q90 -u98 -r1048576"
 logvat="${logvlowat}"
 logvrb="${logvlowrb}"
+
 else
+
 vacconfig="-n4 -q60 -u90 -r1048576"
 logvat="${logvhighat}"
 logvrb="${logvhighrb}"
+
 fi
 
-for l in \
-    "1"
-do
-
 trans="4194304"
-
-#if [ ${threads} -gt 24 ]; then
-#trans=`expr $trans \* 24`
-#else
-#trans=`expr $trans \* $threads`
-#fi
-
-trans=`expr $trans \* 12`
+trans=`expr $trans \* $i`
 
 echo "vacation_at -c${threads} ${vacconfig} -t${trans}" >> ${logvat}
 echo "vacation_at -c${threads} ${vacconfig} -t${trans}"

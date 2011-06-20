@@ -20,13 +20,10 @@ logvlowrb="${fullpath}/logs/${compid}vac_def_low_rb${lognumber}.txt"
 logvhighrb="${fullpath}/logs/${compid}vac_def_high_rb${lognumber}.txt"
 
 for threads in \
-    "1" \
-    "2" \
-    "4" \
-    "8" \
-    "12" \
-    "16" \
-    "20"
+    "24"\
+    "28" \
+    "32" \
+    "48"
 do
 
 for k in \
@@ -45,7 +42,8 @@ logvrb="${logvhighrb}"
 fi
 
 for l in \
-    "1"
+    "1" \
+    "2"
 do
 
 trans="4194304"

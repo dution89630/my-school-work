@@ -1,0 +1,90 @@
+#!/bin/sh
+
+if [ $# -gt 0 ]; then
+    compid=$1
+else
+    compid=""
+fi
+
+lognumber=`cat ./bmnumber`
+
+lognumber=`expr $lognumber + 1`
+
+`echo "$lognumber" > ./bmnumber`
+
+fullpath="/home/tcrain/my-school-work/concurrent/ver03Apr/concurrent/"
+
+logvlowat="${fullpath}/logs/${compid}vac_seq_low_at${lognumber}.txt"
+logvhighat="${fullpath}/logs/${compid}vac_seq_high_at${lognumber}.txt"
+logvlowrb="${fullpath}/logs/${compid}vac_seq_low_rb${lognumber}.txt"
+logvhighrb="${fullpath}/logs/${compid}vac_seq_high_rb${lognumber}.txt"
+
+logvlowatjsw="${fullpath}/logs/${compid}vac_jsw_low_at${lognumber}.txt"
+logvhighatjsw="${fullpath}/logs/${compid}vac_jsw_high_at${lognumber}.txt"
+logvlowrbjsw="${fullpath}/logs/${compid}vac_jsw_low_rb${lognumber}.txt"
+logvhighrbjsw="${fullpath}/logs/${compid}vac_jsw_high_rb${lognumber}.txt"
+
+for threads in \
+    "1"
+do
+
+for i in \
+    "20" \
+    "24" \
+    "28" \
+    "32" \
+    "36" \
+    "40"
+
+do
+
+for k in \
+    "1" \
+    "2"
+do
+
+if [ "${k}" = "1" ]; then
+
+vacconfig="-n2 -q90 -u98 -r1048576"
+logvat="${logvlowat}"
+logvrb="${logvlowrb}"
+logvatjsw="${logvlowatjsw}"
+logvrbjsw="${logvlowrbjsw}"
+
+else
+
+vacconfig="-n4 -q60 -u90 -r1048576"
+logvat="${logvhighat}"
+logvrb="${logvhighrb}"
+logvatjsw="${logvhighatjsw}"
+logvrbjsw="${logvhighrbjsw}"
+
+fi
+
+trans="4194304"
+trans=`expr $trans \* $i`
+
+echo "vacation_at_seq -c${threads} ${vacconfig} -t${trans}" >> ${logvat}
+echo "vacation_at_seq -c${threads} ${vacconfig} -t${trans}"
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_at_seq -c${threads} ${vacconfig} -t${trans} | tee -a ${logvat}
+
+echo "vacation_rb_seq -c${threads} ${vacconfig} -t${trans}" >> ${logvrb}
+echo "vacation_rb_seq -c${threads} ${vacconfig} -t${trans}"
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb_seq -c${threads} ${vacconfig} -t${trans} | tee -a ${logvrb}
+
+echo "vacation_at_jsw -c${threads} ${vacconfig} -t${trans}" >> ${logvatjsw}
+echo "vacation_at_jsw -c${threads} ${vacconfig} -t${trans}"
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_at_jsw -c${threads} ${vacconfig} -t${trans} | tee -a ${logvatjsw}
+
+echo "vacation_rb_jsw -c${threads} ${vacconfig} -t${trans}" >> ${logvrbjsw}
+echo "vacation_rb_jsw -c${threads} ${vacconfig} -t${trans}"
+exec ${fullpath}/vacation-0.9.10/vacation/vacation_rb_jsw -c${threads} ${vacconfig} -t${trans} | tee -a ${logvrbjsw}
+
+
+done
+
+done
+
+done
+
+exit
