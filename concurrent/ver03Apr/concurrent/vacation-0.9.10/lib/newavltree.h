@@ -244,6 +244,10 @@ typedef struct avl_intset {
   int *active_del;
 #endif
 
+/* #ifdef MICROBENCH */
+/*   volatile AO_t *stop; */
+/* #endif */
+
 #ifdef REMOVE_LATER
   remove_list_item_t **to_remove_later;
 #endif

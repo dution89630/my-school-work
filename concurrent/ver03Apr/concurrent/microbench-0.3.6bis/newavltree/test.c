@@ -361,7 +361,7 @@ void *test_maintenance(void *data) {
 
 #ifdef TINY10B
 
-      do_maintenance_thread(d->set, &stop);
+      do_maintenance_thread(d->set);
 
 #endif
       
@@ -567,6 +567,7 @@ int main(int argc, char **argv)
 
 	//set = avl_set_new();
 	set = avl_set_new_alloc(0, nb_threads);
+	//set->stop = &stop;
 	//#endif
 	stop = 0;
 	

@@ -434,7 +434,7 @@ void *test_maintenance(void *data) {
 
 #ifdef TINY10B
 
-      do_maintenance_thread(d->set, &stop);
+      do_maintenance_thread(d->set);
 
 #endif
       
@@ -677,6 +677,7 @@ int main(int argc, char **argv)
 	maxhtlength = (unsigned int) initial / load_factor;
 
 	set = avl_set_new_alloc(0, nb_threads);	
+	//set->stop = &stop;
 
 	stop = 0;
 	

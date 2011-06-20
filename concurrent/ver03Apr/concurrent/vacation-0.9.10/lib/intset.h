@@ -148,11 +148,7 @@ int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lef
 
 //int avl_left_rotate(avl_node_t *parent, int go_left, avl_node_t *node, val_t lefth, val_t righth, avl_node_t *right_child);
 
-#ifdef MICROBENCH
-int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list, volatile AO_t *stopm);
-#else
 int recursive_tree_propagate(avl_intset_t *set, free_list_item* free_list);
-#endif
 
 #ifdef REMOVE_LATER
 int finish_removal(avl_intset_t *set, int id);
@@ -233,12 +229,7 @@ rbtree_contains (rbtree_t* r, void* key);
 
 
 #ifdef SEPERATE_MAINTENANCE
-
-#ifdef MICROBENCH
-void do_maintenance_thread(avl_intset_t *tree, volatile AO_t *stop);
-#else
 void do_maintenance_thread(avl_intset_t *tree);
-#endif
 #else
 void check_maintenance(avl_intset_t *tree);
 void do_maintenance(avl_intset_t *tree);
