@@ -17,7 +17,7 @@ LIBAO 		?= $(CONDIR)/libatomic
 
 # Debug/optimization flags
 CFLAGS	 	+= -g -DNDEBUG -O0 -DMICROBENCH
-#CFLAGS          += -O3 -DNDEBUG
+#CFLAGS          += -O3 -DNDEBUG -DMICROBENCH
 SOLARIS_CC 	?= /home/vincent/gcc/bin/gcc
 ROOT 		?= ..
 

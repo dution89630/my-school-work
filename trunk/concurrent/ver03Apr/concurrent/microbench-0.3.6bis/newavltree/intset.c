@@ -2308,7 +2308,6 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 #endif
     }
   }
-  
   return ret;  
 
 }
@@ -2365,9 +2364,9 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 #endif
 
 #ifdef SEPERATE_BALANCE2
-  recursive_node_propagate(set, set->root->bnode, NULL, next);
+  recursive_node_propagate(set, set->root->bnode, NULL, next, 0, 0);
 #else
-  recursive_node_propagate(set, set->root, NULL, next);
+  recursive_node_propagate(set, set->root, NULL, next, 0, 0);
 #endif
 
   //printf("Finished full prop\n");
@@ -2375,7 +2374,7 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
   set->deleted_count = set->current_deleted_count;
   set->tree_size = set->current_tree_size;
 
-  if(set->deleted_count > set->tree_size * ACTIVE_REM_CONSTANT) {
+  if(set->deleted_count > ACTIVE_REM_CONSTANT2) {
     if(!set->active_remove) {
       set->active_remove = 1;
       //printf("active remove\n");
@@ -2434,7 +2433,7 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 }
 
 
- int recursive_node_propagate(avl_intset_t *set, balance_node_t *node, balance_node_t *parent, free_list_item *free_list) {
+ int recursive_node_propagate(avl_intset_t *set, balance_node_t *node, balance_node_t *parent, free_list_item *free_list, uint depth, uint depth_del) {
    balance_node_t *left, *right, *root;
    int rem_succs;
    intptr_t rem;
@@ -2493,21 +2492,31 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   //should do this in a transaction?
   if(anode->deleted) {
     (set->current_deleted_count)++;
-  } else {
-    set->current_tree_size++;
+    depth_del++;
   }
-  if(set->current_deleted_count > set->current_tree_size * ACTIVE_REM_CONSTANT) {
-    if(!set->active_remove) {
-      set->active_remove = 1;
-      //printf("active remove node\n");
-    }
-  } else {
-    if(set->active_remove) {
-      set->active_remove = 0;
-      //printf("non active remove node\n");
-    }
-  }
+  depth++;
+  set->current_tree_size++;
+    
 
+  /* if(set->current_deleted_count > set->current_tree_size * ACTIVE_REM_CONSTANT) { */
+  /*   if(!set->active_remove) { */
+  /*     set->active_remove = 1; */
+  /*     //printf("active remove node\n"); */
+  /*   } */
+  /* } else { */
+  /*   if(set->active_remove) { */
+  /*     set->active_remove = 0; */
+  /*     //printf("non active remove node\n"); */
+  /*   } */
+  /* } */
+
+
+  if(!set->active_remove) {
+    if(depth_del > ACTIVE_REM_CONSTANT3) {
+      set->active_remove = 1;
+    }
+  }
+  
   left = node->left;
   right = node->right;
 
@@ -2563,10 +2572,10 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   }
 
   if(left != NULL) {
-    recursive_node_propagate(set, left, node, free_list);
+    recursive_node_propagate(set, left, node, free_list, depth, depth_del);
   }
   if(right != NULL) {
-    recursive_node_propagate(set, right, node, free_list);
+    recursive_node_propagate(set, right, node, free_list, depth, depth_del);
   }
 
 
@@ -2678,7 +2687,7 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 
 #else
 
- int recursive_node_propagate(avl_intset_t *set, avl_node_t *node, avl_node_t *parent, free_list_item *free_list) {
+ int recursive_node_propagate(avl_intset_t *set, avl_node_t *node, avl_node_t *parent, free_list_item *free_list, uint depth, uint depth_del) {
    avl_node_t *left, *right, *root;
   intptr_t rem, del;
   int rem_succs;
@@ -2714,9 +2723,30 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   TX_END;
 
   if(!rem) {
-
+    //should do this in a transaction?
     if(del) {
       (set->current_deleted_count)++;
+      depth_del++;
+    }
+    depth++;
+    set->current_tree_size++;
+    
+    /* if(depth_del > ACTIVE_REM_CONSTANT3) { */
+    /*   if(!set->active_remove) { */
+    /* 	set->active_remove = 1; */
+    /* 	//printf("active remove node\n"); */
+    /*   } */
+    /* } else { */
+    /*   if(set->active_remove) { */
+    /* 	set->active_remove = 0; */
+    /* 	//printf("non active remove node\n"); */
+    /*   } */
+    /* } */
+
+    if(!set->active_remove) {
+      if(depth_del > ACTIVE_REM_CONSTANT3) {
+	set->active_remove = 1;
+      }
     }
 
     rem_succs = 0;
@@ -2761,10 +2791,10 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 
     
     if(left != NULL) {
-      recursive_node_propagate(set, left, node, free_list);
+      recursive_node_propagate(set, left, node, free_list, depth, depth_del);
     }
     if(right != NULL) {
-      recursive_node_propagate(set, right, node, free_list);
+      recursive_node_propagate(set, right, node, free_list, depth, depth_del);
     }
 
     root = set->root;

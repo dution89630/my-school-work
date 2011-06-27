@@ -235,7 +235,7 @@ avl_intset_t *avl_set_new_alloc(int transactional, long nb_threads)
   set->nb_suc_propogated = 0;
   set->nb_suc_rotated = 0;
   set->nb_removed = 0;
-  set->active_remove = 0;
+  set->active_remove = 1;
 
   set->t_nbtrans = (ulong *)malloc(nb_threads * sizeof(ulong));
   set->t_nbtrans_old = (ulong *)malloc(nb_threads * sizeof(ulong));
