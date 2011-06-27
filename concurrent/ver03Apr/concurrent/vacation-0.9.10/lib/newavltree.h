@@ -111,6 +111,8 @@ typedef struct rbtree rbtree_t;
 #endif
 
 #define ACTIVE_REM_CONSTANT 2
+#define ACTIVE_REM_CONSTANT2 100
+#define ACTIVE_REM_CONSTANT3 10
 
 #ifdef DEL_COUNT
 #define DEL_THRESHOLD 1

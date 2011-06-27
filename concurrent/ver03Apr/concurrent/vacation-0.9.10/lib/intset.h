@@ -160,7 +160,7 @@ int finish_removal(avl_intset_t *set, int id);
 int check_remove_list(avl_intset_t *set, ulong *num_rem, free_list_item *free_list);
 #endif
 
-int recursive_node_propagate(avl_intset_t *set, balance_node_t *node, balance_node_t *parent, free_list_item *free_list);
+int recursive_node_propagate(avl_intset_t *set, balance_node_t *node, balance_node_t *parent, free_list_item *free_list, uint depth, uint depth_del);
 
 int avl_propagate(balance_node_t *node, int left, int *should_rotate);
 
@@ -168,7 +168,7 @@ balance_node_t* check_expand(balance_node_t *node, int go_left);
 
 #else
 
-int recursive_node_propagate(avl_intset_t *set, avl_node_t *node, avl_node_t *parent, free_list_item *free_list);
+int recursive_node_propagate(avl_intset_t *set, avl_node_t *node, avl_node_t *parent, free_list_item *free_list, uint depth, uint depth_del);
 
 int avl_propagate(avl_node_t *node, int left, int *should_rotate);
 
