@@ -58,6 +58,7 @@
 #  define TX_START(type)                 { sigjmp_buf *_e = stm_start(0); if (_e != NULL) sigsetjmp(*_e, 0);
 #  define TX_LOAD(addr)                  stm_load((stm_word_t *)addr)
 #  define TX_UNIT_LOAD(addr)             stm_unit_load((stm_word_t *)addr, NULL)
+#  define UNIT_LOAD(addr)             non_stm_unit_load((stm_word_t *)addr, NULL)
 #  define TX_UNIT_LOAD_TS(addr, timestamp)  stm_unit_load((stm_word_t *)addr, (stm_word_t *)timestamp)
 #  define TX_STORE(addr, val)            stm_store((stm_word_t *)addr, (stm_word_t)val)
 #  define TX_END			 stm_commit(); }

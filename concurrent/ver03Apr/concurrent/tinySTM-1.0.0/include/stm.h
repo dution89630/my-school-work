@@ -489,6 +489,8 @@ int stm_register(void (*on_thread_init)(TXPARAMS void *arg),
  */
 stm_word_t stm_unit_load(volatile stm_word_t *addr, stm_word_t *timestamp);
 
+stm_word_t non_stm_unit_load(volatile stm_word_t *addr, stm_word_t *timestamp);
+
 /**
  * Transaction-safe store.  Write a word-sized value to the specified
  * memory location outside of the context of any transaction.  The

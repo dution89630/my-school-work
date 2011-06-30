@@ -2972,6 +2972,66 @@ int stm_register(void (*on_thread_init)(TXPARAMS void *arg),
   return 1;
 }
 
+
+stm_word_t non_stm_unit_load(volatile stm_word_t *addr, stm_word_t *timestamp) {
+  volatile stm_word_t *lock;
+  stm_word_t l, l2, value; //, version;
+
+  PRINT_DEBUG2("==> stm_unit_load(a=%p)\n", addr);
+
+  /* gettimeofday(&start, NULL); */
+
+  /* Get reference to lock */
+  lock = GET_LOCK(addr);
+
+  /* Read lock, value, lock */
+ restart:
+  l = ATOMIC_LOAD_ACQ(lock);
+ restart_no_load:
+  if (LOCK_GET_OWNED(l)) {
+
+    if (l == LOCK_UNIT) {
+      /* Data modified by a unit store: should not last long => retry */
+      goto restart;
+    }
+
+    /* Locked: wait until lock is free */
+#ifdef WAIT_YIELD
+    sched_yield();
+#endif /* WAIT_YIELD */
+    goto restart;
+    
+  }
+  /* Not locked */
+  value = ATOMIC_LOAD_ACQ(addr);
+  l2 = ATOMIC_LOAD_ACQ(lock);
+  if (l != l2) {
+    l = l2;
+    goto restart_no_load;
+  }
+  
+  if (timestamp != NULL)
+    *timestamp = LOCK_GET_TIMESTAMP(l);
+  
+  /* gettimeofday(&finish, NULL); */
+
+  /* timersub(&finish, &start, &res); */
+
+  /* if(res.tv_sec > 0) { */
+  /*   printf("UNIT READ TOOK: %d, %d\n", res.tv_sec, res.tv_usec); */
+  /* } */
+
+  return value;
+}
+
+
+
+
+
+
+
+
+
 /*
  * Called by the CURRENT thread to load a word-sized value in a unit transaction.
  */
