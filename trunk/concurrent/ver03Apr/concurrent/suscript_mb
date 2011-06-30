@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ $# -gt 2 ]; then
+   firstpart1=$1
+   shift;
+   firstnum=$1
+   shift;
+   secondnum=$1
+   shift;
+else
+    echo "suscript firstpart1 firstnum secondnum"
+exit
+fi
+
+d="\$d"
+
+gawk -f awk_scp_mb.awk ${firstpart1}log_micro_at${firstnum}.txt > at10
+gawk -f awk_scp_mb.awk ${firstpart1}log_micro_at${secondnum}.txt > at20
+
+gawk -f awk_scp_mb.awk ${firstpart1}log_micro_atnomaint${firstnum}.txt > atnomaint10
+gawk -f awk_scp_mb.awk ${firstpart1}log_micro_atnomaint${secondnum}.txt > atnomaint20
+
+gawk -f awk_scp_mb.awk ${firstpart1}log_micro_rb${firstnum}.txt > rb10
+gawk -f awk_scp_mb.awk ${firstpart1}log_micro_rb${secondnum}.txt > rb20

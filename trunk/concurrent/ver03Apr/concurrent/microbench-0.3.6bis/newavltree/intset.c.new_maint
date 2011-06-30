@@ -1356,44 +1356,49 @@ int avl_delete(val_t key, const avl_intset_t *set) {
   //Do the removal in a new trans(or maybe should do this in maintenance?)
 #if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL)
 #ifndef REMOVE_LATER
-  if(ret == 1 && set->active_remove) {
+  if(ret == 1) {
     //printf("removing\n");
-    ret = remove_node(parent, place);
-    if(ret > 1) {
-#ifdef SEPERATE_MAINTENANCE
-      TX_START(NL);
-#endif
-      //free_list = set->t_free_list[id];
-      free_list = (free_list_item *)TX_UNIT_LOAD(&set->t_free_list[id]);
-      //add it to the garbage collection
-      free_item = (free_list_item *)MALLOC(sizeof(free_list_item));
-      free_item->to_free = place;
-#ifdef SEPERATE_MAINTENANCE
-      free_item->next = free_list;
-      TX_STORE(&set->t_free_list[id], free_item);
-      TX_END;
-#else
-      free_item->next = NULL;
-      while(free_list->next != NULL) {
-	free_list = free_list->next;
-      }
-      //printf("adding to free list %d %d\n", place->key, id);
-      //(*free_list)->next = free_item;
-      //free_list->next = free_item;
-      
-      //SHould only do this if in a transaction
-      
-      TX_STORE(&free_list->next, free_item);
-      
-      //do this in a trans (atomic)?
-      //*free_list = free_item;
-      //TX_START(NL);
-      //TX_STORE(&(*free_list), free_item);
-      //TX_END;
-      
-#endif
     
-    }
+
+
+    //ret = remove_node(parent, place);
+
+
+/*     if(ret > 1) { */
+/* #ifdef SEPERATE_MAINTENANCE */
+/*       TX_START(NL); */
+/* #endif */
+/*       //free_list = set->t_free_list[id]; */
+/*       free_list = (free_list_item *)TX_UNIT_LOAD(&set->t_free_list[id]); */
+/*       //add it to the garbage collection */
+/*       free_item = (free_list_item *)MALLOC(sizeof(free_list_item)); */
+/*       free_item->to_free = place; */
+/* #ifdef SEPERATE_MAINTENANCE */
+/*       free_item->next = free_list; */
+/*       TX_STORE(&set->t_free_list[id], free_item); */
+/*       TX_END; */
+/* #else */
+/*       free_item->next = NULL; */
+/*       while(free_list->next != NULL) { */
+/* 	free_list = free_list->next; */
+/*       } */
+/*       //printf("adding to free list %d %d\n", place->key, id); */
+/*       //(*free_list)->next = free_item; */
+/*       //free_list->next = free_item; */
+      
+/*       //SHould only do this if in a transaction */
+      
+/*       TX_STORE(&free_list->next, free_item); */
+      
+/*       //do this in a trans (atomic)? */
+/*       //\*free_list = free_item; */
+/*       //TX_START(NL); */
+/*       //TX_STORE(&(*free_list), free_item); */
+/*       //TX_END; */
+      
+/* #endif */
+    
+/*     } */
   }
 #endif
 #endif
@@ -1501,7 +1506,7 @@ int remove_node(avl_node_t *parent, avl_node_t *place) {
       parent_localh = 1;
     }
 #else
-    parent_localh = (val_t)TX_UNIT_LOAD(&parent->localh);
+    //parent_localh = (val_t)TX_UNIT_LOAD(&parent->localh);
 #endif
 #endif
     left_child = (avl_node_t *)TX_LOAD(&place->left);
@@ -2362,8 +2367,8 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 
   //set->active_remove = 1;
   
-  set->current_deleted_count = 0;
-  set->current_tree_size = 0;
+/*   set->current_deleted_count = 0; */
+/*   set->current_tree_size = 0; */
 
   //Get to the end of the free list so you can add new elements
   next = free_list;
@@ -2393,7 +2398,7 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
     if(AO_load_full(&stop) != 0) {
 #endif /* ICC */
       return 0;
-    } 
+    }
 #endif
     if(!stopm)  {
       //printf("sleeping in del_count\n");
@@ -2411,20 +2416,20 @@ int avl_propagate(balance_node_t *node, int left, int *should_rotate) {
 
   //printf("Finished full prop\n");
   //printf("deleted count: %lu\n", *deleted_count);
-  set->deleted_count = set->current_deleted_count;
-  set->tree_size = set->current_tree_size;
+/*   set->deleted_count = set->current_deleted_count; */
+/*   set->tree_size = set->current_tree_size; */
 
-  if(set->deleted_count > ACTIVE_REM_CONSTANT2) {
-    if(!set->active_remove) {
-      set->active_remove = 1;
-      //printf("active remove\n");
-    }
-  } else {
-    if(set->active_remove) {
-      set->active_remove = 0;
-      //printf("non active remove\n");
-    }
-  }
+/*   if(set->deleted_count > ACTIVE_REM_CONSTANT2) { */
+/*     if(!set->active_remove) { */
+/*       set->active_remove = 1; */
+/*       //printf("active remove\n"); */
+/*     } */
+/*   } else { */
+/*     if(set->active_remove) { */
+/*       set->active_remove = 0; */
+/*       //printf("non active remove\n"); */
+/*     } */
+/*   } */
 
   return 1;
 }
@@ -2532,33 +2537,33 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
     return 0;
   }
 
-  //should do this in a transaction?
-  if(anode->deleted) {
-    (set->current_deleted_count)++;
-    depth_del++;
-  }
-  depth++;
-  set->current_tree_size++;
+/*   //should do this in a transaction? */
+/*   if(anode->deleted) { */
+/*     (set->current_deleted_count)++; */
+/*     depth_del++; */
+/*   } */
+/*   depth++; */
+/*   set->current_tree_size++; */
     
 
-  /* if(set->current_deleted_count > set->current_tree_size * ACTIVE_REM_CONSTANT) { */
-  /*   if(!set->active_remove) { */
-  /*     set->active_remove = 1; */
-  /*     //printf("active remove node\n"); */
-  /*   } */
-  /* } else { */
-  /*   if(set->active_remove) { */
-  /*     set->active_remove = 0; */
-  /*     //printf("non active remove node\n"); */
-  /*   } */
-  /* } */
+/*   /\* if(set->current_deleted_count > set->current_tree_size * ACTIVE_REM_CONSTANT) { *\/ */
+/*   /\*   if(!set->active_remove) { *\/ */
+/*   /\*     set->active_remove = 1; *\/ */
+/*   /\*     //printf("active remove node\n"); *\/ */
+/*   /\*   } *\/ */
+/*   /\* } else { *\/ */
+/*   /\*   if(set->active_remove) { *\/ */
+/*   /\*     set->active_remove = 0; *\/ */
+/*   /\*     //printf("non active remove node\n"); *\/ */
+/*   /\*   } *\/ */
+/*   /\* } *\/ */
 
 
-  if(!set->active_remove) {
-    if(depth_del > ACTIVE_REM_CONSTANT3) {
-      set->active_remove = 1;
-    }
-  }
+/*   if(!set->active_remove) { */
+/*     if(depth_del > ACTIVE_REM_CONSTANT3) { */
+/*       set->active_remove = 1; */
+/*     } */
+/*   } */
   
   left = node->left;
   right = node->right;
@@ -2779,49 +2784,48 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
   TX_END;
 #endif
 
-  if(!rem) {
-    //should do this in a transaction?
-    if(del) {
-      (set->current_deleted_count)++;
-      depth_del++;
-    }
-    depth++;
-    set->current_tree_size++;
+   if(!rem) { 
+/*     //should do this in a transaction? */
+/*     if(del) { */
+/*       (set->current_deleted_count)++; */
+/*       depth_del++; */
+/*     } */
+/*     depth++; */
+/*     set->current_tree_size++; */
     
-    /* if(depth_del > ACTIVE_REM_CONSTANT3) { */
-    /*   if(!set->active_remove) { */
-    /* 	set->active_remove = 1; */
-    /* 	//printf("active remove node\n"); */
-    /*   } */
-    /* } else { */
-    /*   if(set->active_remove) { */
-    /* 	set->active_remove = 0; */
-    /* 	//printf("non active remove node\n"); */
-    /*   } */
-    /* } */
+/*     /\* if(depth_del > ACTIVE_REM_CONSTANT3) { *\/ */
+/*     /\*   if(!set->active_remove) { *\/ */
+/*     /\* 	set->active_remove = 1; *\/ */
+/*     /\* 	//printf("active remove node\n"); *\/ */
+/*     /\*   } *\/ */
+/*     /\* } else { *\/ */
+/*     /\*   if(set->active_remove) { *\/ */
+/*     /\* 	set->active_remove = 0; *\/ */
+/*     /\* 	//printf("non active remove node\n"); *\/ */
+/*     /\*   } *\/ */
+/*     /\* } *\/ */
 
-    if(!set->active_remove) {
-      if(depth_del > ACTIVE_REM_CONSTANT3) {
-	set->active_remove = 1;
-      }
-    }
+/*     if(!set->active_remove) { */
+/*       if(depth_del > ACTIVE_REM_CONSTANT3) { */
+/* 	set->active_remove = 1; */
+/*       } */
+/*     } */
 
     rem_succs = 0;
-    if((left == NULL || right == NULL) && del && parent != NULL) {
-      /* rem_succs = remove_node(parent, node); */
-      /* if(rem_succs > 1) { */
-      /* 	//printf("Removed node in maintenace\n"); */
-      /* 	set->nb_removed++; */
+    if((left == NULL && right == NULL) && del && parent != NULL) {
+      rem_succs = remove_node(parent, node);
+      if(rem_succs > 1) {
+      	//printf("Removed node in maintenace\n");
 	
-      /* 	//add to the list for garbage collection */
-      /* 	next_list_item = (free_list_item *)malloc(sizeof(free_list_item)); */
-      /* 	next_list_item->next = NULL; */
-      /* 	next_list_item->to_free = node; */
-      /* 	free_list->next = next_list_item; */
-      /* 	free_list = next_list_item; */
+      	//add to the list for garbage collection
+      	next_list_item = (free_list_item *)malloc(sizeof(free_list_item));
+      	next_list_item->next = NULL;
+      	next_list_item->to_free = node;
+      	free_list->next = next_list_item;
+      	free_list = next_list_item;
 	
-      /* 	return 1; */
-      /* } */
+      	return 1;
+      }
     }
 
 
@@ -2874,14 +2878,14 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 #endif
 
     if(left != NULL && !rem && left != root) {
-      set->nb_suc_propogated += avl_propagate(left, 1, &should_rotatel);
-      set->nb_suc_propogated += avl_propagate(left, 0, &should_rotater);
+      avl_propagate(left, 1, &should_rotatel);
+      avl_propagate(left, 0, &should_rotater);
       if(should_rotatel || should_rotater) {
 	//printf("Calling rotate method\n");
-	set->nb_suc_rotated += avl_rotate(node, 1, left, free_list);
-	set->nb_rotated++;
+	avl_rotate(node, 1, left, free_list);
+	
       }
-      set->nb_propogated += 2;
+
     }
     
     //should do just left or right rotate here?
@@ -2896,17 +2900,17 @@ balance_node_t* check_expand(balance_node_t *node, int go_left) {
 #endif
 
     if(right != NULL && !rem && right != root) {
-      set->nb_suc_propogated += avl_propagate(right, 1, &should_rotatel);
-      set->nb_suc_propogated += avl_propagate(right, 0, &should_rotater);
+      avl_propagate(right, 1, &should_rotatel);
+      avl_propagate(right, 0, &should_rotater);
       if(should_rotatel || should_rotater) {
 	//printf("Calling rotate method\n");
-	set->nb_suc_rotated += avl_rotate(node, 0, right, free_list);
-	set->nb_rotated++;
+	avl_rotate(node, 0, right, free_list);
+
       }
-      set->nb_suc_propogated += 2;
+
     }
     
-  }
+   }
 
   return 1;
 }
@@ -3530,32 +3534,32 @@ inline int avl_req_seq_update(avl_node_t *parent, avl_node_t *node, val_t val, v
     }
     tree->free_list->next = NULL;
     
-    //#ifndef SEPERATE_BALANCE2
-#if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL)
-    //now do the frees for the ones removed in the non-maint threads
-    for(i = 0; i < tree->nb_threads; i++) {
-      tmp_free = tree->maint_list_start[i];
-      if(tmp_free != NULL) {
-	tree->maint_list_start[i] = tree->maint_list_start[i]->next;
-	tmp_free->next = NULL;
-      }
-      while(tree->maint_list_start[i] != NULL) {
-	if(tree->maint_list_start[i]->to_free != NULL) {
-	  //printf("freeing %d\n", tree->maint_list_start[i]->to_free->key);
-	  free(tree->maint_list_start[i]->to_free);
-	}
-	tmp_item = tree->maint_list_start[i];
-	tree->maint_list_start[i] = tree->maint_list_start[i]->next;
-	free(tmp_item);
-      }
-      //update the t_list
-      //tree->maint_list_end[i] = tree->t_free_list[i];
-      TX_START(NL);
-      tree->maint_list_start[i] = ((free_list_item*)TX_UNIT_LOAD(&tree->t_free_list[i]));
-      TX_END;
-    }
-#endif
-  }
+/*     //#ifndef SEPERATE_BALANCE2 */
+/* #if !defined(SEPERATE_BALANCE2) || defined(SEPERATE_BALANCE2NLDEL) */
+/*     //now do the frees for the ones removed in the non-maint threads */
+/*     for(i = 0; i < tree->nb_threads; i++) { */
+/*       tmp_free = tree->maint_list_start[i]; */
+/*       if(tmp_free != NULL) { */
+/* 	tree->maint_list_start[i] = tree->maint_list_start[i]->next; */
+/* 	tmp_free->next = NULL; */
+/*       } */
+/*       while(tree->maint_list_start[i] != NULL) { */
+/* 	if(tree->maint_list_start[i]->to_free != NULL) { */
+/* 	  //printf("freeing %d\n", tree->maint_list_start[i]->to_free->key); */
+/* 	  free(tree->maint_list_start[i]->to_free); */
+/* 	} */
+/* 	tmp_item = tree->maint_list_start[i]; */
+/* 	tree->maint_list_start[i] = tree->maint_list_start[i]->next; */
+/* 	free(tmp_item); */
+/*       } */
+/*       //update the t_list */
+/*       //tree->maint_list_end[i] = tree->t_free_list[i]; */
+/*       TX_START(NL); */
+/*       tree->maint_list_start[i] = ((free_list_item*)TX_UNIT_LOAD(&tree->t_free_list[i])); */
+/*       TX_END; */
+/*     } */
+/* #endif */
+   } 
 
 #ifndef MICROBENCH
   if(!thread_getDone()) {

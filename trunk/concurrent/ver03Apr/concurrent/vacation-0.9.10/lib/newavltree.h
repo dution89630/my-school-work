@@ -75,6 +75,7 @@ typedef struct rbtree rbtree_t;
 #  define TX_START(type)                 { sigjmp_buf *_e = stm_start(0); if (_e != NULL) sigsetjmp(*_e, 0);
 #  define TX_LOAD(addr)                  stm_load((stm_word_t *)addr)
 #  define TX_UNIT_LOAD(addr)             stm_unit_load((stm_word_t *)addr, NULL)
+#  define UNIT_LOAD(addr)             non_stm_unit_load((stm_word_t *)addr, NULL)
 //#  define TX_UNIT_LOAD(addr)             stm_load((stm_word_t *)addr)
 #  define TX_UNIT_LOAD_TS(addr, timestamp)  stm_unit_load((stm_word_t *)addr, (stm_word_t *)timestamp)
 #  define TX_STORE(addr, val)            stm_store((stm_word_t *)addr, (stm_word_t)val)
@@ -99,12 +100,19 @@ typedef struct rbtree rbtree_t;
 #define SEPERATE_MAINTENANCE
 #endif
 
+#ifdef SEPERATE_MAINTENANCE
+//#define NO_MAINTENANCE
+#define NON_UNIT
+#endif
+
 //#define CHANGE_KEY
 //#define SEPERATE_BALANCE
 //#define SEPERATE_BALANCE1
 //#define SEPERATE_BALANCE2
 //#define SEPERATE_BALANCE2DEL
 //#define SEPERATE_BALANCE2NLDEL
+//#define ENABLE_SLEEPING
+#define BUSY_WAITING
 #define REMOVE_LATER
 //#define PRINT_INFO
 #define DEL_COUNT
