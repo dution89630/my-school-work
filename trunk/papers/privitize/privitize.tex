@@ -1,0 +1,268 @@
+
+% ============================================================================
+% ============================================================================
+\documentclass[11pt]{article}
+\usepackage{epic,eepic,amsmath,latexsym,fullpage,amssymb,color}
+\usepackage{ifthen,graphics,epsfig}
+\usepackage[english]{babel}
+\usepackage{times}
+\usepackage{ulem}
+
+
+\bibliographystyle{plain}
+
+\begin{document}
+%-----------------------for square--------------------------------------------
+\newlength {\squarewidth}
+\renewenvironment {square}
+{
+\setlength {\squarewidth} {\linewidth}
+\addtolength {\squarewidth} {-12pt}
+\renewcommand{\baselinestretch}{0.75} \footnotesize
+\begin {center}
+\begin {tabular} {|c|} \hline
+\begin {minipage} {\squarewidth}
+\medskip
+}{
+\end {minipage}
+\\ \hline
+\end{tabular}
+\end{center}
+}  
+ 
+%--------------------------------------------------------------------
+%--------------------------------------------------------------------
+%-------- macros for algorithm ---------------------------------------
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newcommand{\toto}{xxx}
+\newenvironment{proofT}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofL}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofC}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+
+
+\newcounter{linecounter}
+\newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}
+{(0\arabic{linecounter})}{(\arabic{linecounter})}}
+\renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+\newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+\renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 
+9\else 0\fi \arabic{linecounter}}
+
+
+
+% ----------------------for appendix --------------------------------------
+\newenvironment{lemma-repeat}[1]{\begin{trivlist}
+\item[\hspace{\labelsep}{\bf\noindent Lemma~\ref{#1} }]}%
+{\end{trivlist}}
+
+\newenvironment{theorem-repeat}[1]{\begin{trivlist}
+\item[\hspace{\labelsep}{\bf\noindent Theorem~\ref{#1} }]}%
+{\end{trivlist}}
+
+\newenvironment{corollary-repeat}[1]{\begin{trivlist}
+\item[\hspace{\labelsep}{\bf\noindent Corollary~\ref{#1} }]}%
+{\end{trivlist}}
+
+%==================================================================
+
+% =========================================================================
+\newcommand{\Xomit}[1]{}
+%==========================================================================
+
+
+
+
+\section{Privitization Protocol}
+It has been argued that strong atomicty should be reqired for memeory accesses in and out of transactions.
+I agree with this, otherwise it can make things very complicated for the programmer.
+Either don't allow shared variables accessed from within transaction to be accessed out of transactions at all.
+Or ensure strong atomicity.
+
+There have been protocols proposed for how to implement strong atomicty, but they all require using locks
+and create some memory barriers.
+These barriers occur when a programmer reads or writes to a shared variable outside of a transaction.
+The problem with this is that the programmer thinks he is just preforming basic reads and writes and using
+but what really is going on is a blocking solution that uses locks.
+It would be better to preform these operations without blocking using as little mechanisms as possible.
+
+What is proposed here is a way to preform the shared reads and writes that occur outside of a transaction
+without blocking.
+In order to do this, atomic reads and writes are used, as well as possibly a compare and swap in the case
+of a conflict with a committing transaction.
+
+
+\section{Variables}
+Each transaction has a variable $desc$ allocated in shared memory.
+This variable contains each of the variables written by the transaction as well as their values.
+In order to perform a read you follow these descriptors.
+
+
+%==================================================================
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+{\bf procedure}  ${\sf transactional\_read}(addr)$;\\
+\line{DA01} \> $tmp \gets {\sf load}(addr, \mathit{NT})$; \\
+\line{DA01} \> $tmp2 \gets {\sf load}(addr, \mathit{T})$; \\
+\line{DA01} \> {\bf if} $tmp.status = \mathit{COMMITTED}$ {\bf then} \\
+\line{DA01} \>\> {\bf if} $tmp2.last = tmp$ {\bf then} $tmp \gets tmp2$ {\bf end if} \\
+\line{DA01} \> {\bf end if} \\
+\line{DA01} \> do validation on $tmp$ \\
+\line{DA01} \> {\sf return} $tmp$. \\
+
+{\bf procedure}  ${\sf transactional\_write}()$;\\
+\line{DA01} \> \\
+\line{DA01} \> \\
+
+{\bf procedure}  ${\sf non\_transactional\_read}(addr)$;\\
+\line{DA01} \> $tmp \gets {\sf load}(addr, \mathit{NT})$; \\
+\line{DA01} \> {\bf if} $(tmp.time < time)$ {\bf then} \\
+\line{DA01} \>\> ${\sf check\_last}()$; \\
+\line{DA01} \>\> $tmp2 \gets {\sf load}(addr, T)$; \\
+\line{DA01} \>\> $time \gets {\sf max}(time, timp.time, tmp2.time)$; \\
+\line{DA01} \>\> {\bf if} $(tmp2.status = \mathit{COMMITTED})$ {\bf then} \\
+\line{DA01} \>\>\> {\bf if} $(tmp2.last = last)$ {\bf then} $tmp \gets tmp2$ {\bf end if} \\
+\line{DA01} \>\> {\bf end if} \\
+\line{DA01} \> {\bf end if} \\
+\line{DA01} \> {\sf return} $tmp.val$. \\
+
+{\bf procedure}  ${\sf non\_transactional\_write}(addr, valueaddr, value)$;\\
+\line{DA01} \> ${\sf check\_last}()$; \\
+\line{DA01} \> ${\sf write}()$; \\
+\line{DA01} \> $last\_write \gets {\sf read}(addr, \mathit{})$
+\line{DA01} \> $last\_write \gets {\sf read}(addr, \mathit{})$
+
+{\bf procedure}  ${\sf begin\_transaction}()$;\\
+\line{DA01} \> Allocate new variable $status$ \\
+\line{DA01} \> $status \gets \mathit{LIVE}$; \\
+\line{DA01} \> $ws \gets \emptyset$; $rs \gets \emptyset$; \\
+\line{DA01} \> more??. \\
+
+{\bf procedure}  ${\sf try\_to\_commit}()$;\\
+\line{DA01} \> Acquire locks for $rs$ and $ws$ \\
+\line{DA01} \> Peroform read set validation \\
+\line{DA01} \> {\bf for} $(item \in ws)$ {\bf do} \\
+\line{DA01} \>\> $item.last \gets load(item.addr, NT)$ \\
+\line{DA01} \>\> $item.prev \gets load(item.addr, T)$ \\
+\line{DA01} \>\> $store(item.addr, item)$ \\
+\line{DA01} \> {\bf end if} \\
+\line{DA01} \> {\bf for} $(item \in ws)$ {\bf do} \\
+\line{DA01} \>\> \\
+
+%\line{DA01} \> {\bf if} \=  ($current = \mathit{my\_last\_cmt}$)
+%{\bf then} 
+%$\mathit{after\_my\_last\_cmt} \leftarrow \mathit{true}$ {\bf end if}; \\
+
+
+\line{DA01} \> {\bf for each} $(item \in ws_x \cap rs_x)$ {\bf do} \\
+
+\line{DA01} \>\> $status \gets item.status$; \\
+
+\line{DA01} \>\> {\bf if} $(status = \bot)$ {\bf then} \\
+
+\line{DA01} \>\>\> $status.C\&S(\bot, \uparrow desc)$; \\
+
+\line{DA01} \>\> {\bf end if} \\
+
+\line{DA01} \>\> $status \gets item.status$; \\
+
+\line{DA01} \>\> {\bf if} $(status = \uparrow desc)$ {\bf then} \\
+
+\line{DA01} \>\>\> done with item, go to next item; \\
+
+\line{DA01} \>\> {\bf end if} \\
+
+\line{DA01} \>\> Comment: Now $status$ is a descriptor to another transaction \\
+
+\line{DA01} \>\> {\bf if} $(status.priority > my\_desc.priority)$ {\bf then} \\
+
+\line{DA01} \>\>\> {\bf while} $(\mathit{TRUE})$ {\bf do} \\
+
+\line{DA01} \>\>\>\> $curr \gets status.curr\_status$; \\
+
+\line{DA01} \>\>\>\> {\bf if} $((curr = \mathit{COMMITTED}) \vee (curr = \mathit{ABORTED}))$ {\bf then} \\
+
+\line{DA01} \>\>\>\>\> do something and done with this item, go to next; \\
+
+\line{DA01} \>\>\>\> {\bf endif} \\
+
+\line{DA01} \>\>\>\> $my\_status = my\_desc.curr\_status$; \\
+
+\line{DA01} \>\>\>\> Check if you are aborted/committed, if yes exit, otw continue; \\
+
+\line{DA01} \>\>\>\> $my\_desc.curr\_status.C\&S(my\_status, my\_status \cup \mathit{HELPING} \cup my\_desc.id)$; \\
+
+\line{DA01} \>\>\>\> {\bf if} $(my\_desc.curr\_status = \mathit{HELPING} \cup status.id)$ {\bf then} \\
+
+\line{DA01} \>\>\>\>\> help this one, go to next; \\
+
+\line{DA01} \>\>\>\> {\bf end if} \\
+
+\line{DA01} \>\>\> {\bf end while} \\
+
+\line{DA01} \>\> {\bf else} \\
+
+\line{DA01} \>\>\> {\bf while} $(\mathit{TRUE})$ {\bf do} \\
+
+\line{DA01} \>\>\>\> $curr \gets status.curr\_status$; \\
+
+\line{DA01} \>\>\>\> {\bf if} $((curr = \mathit{COMMITTED}) \vee (curr = \mathit{ABORTED}))$ {\bf then} \\
+
+\line{DA01} \>\>\>\>\> do something and done with this item, go to next; \\
+
+\line{DA01} \>\>\>\> {\bf endif} \\
+
+\line{DA01} \>\>\>\> $status.curr\_status.C\&S(curr, curr \cup \mathit{HELPING} \cup my\_desc.id)$; \\
+
+\line{DA01} \>\>\>\> {\bf if} $(status.curr\_status = \mathit{HELPING} \cup my\_desc.id)$ {\bf then} \\
+
+\line{DA01} \>\>\>\>\> $item.status.C\&S(status, \uparrow desc)$; \\
+
+\line{DA01} \>\>\>\> {\bf end if} \\
+
+\line{DA01} \>\>\> {\bf end while} \\
+
+\line{DA01} \>\> {\bf end if} \\
+
+\line{DA01} \> {\bf end for} \\
+
+\line{DA01} \> repeat the for loop until $desc$ is the value for all items \\
+
+\line{DA01} \> $desc.curr\_status.C\&S(\mathit{COMMITTING}, COMMITTED)$ \\
+
+\line{DA01} \>  TODO: Need to check if should be \emph{helping} in certain places, and need to check where to exit helping
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Procedure  ${\sf prevent\_endless\_looping}()$}
+\label{fig-prevent-looping}
+}
+\end{figure}
+%=================================================================
+
+
+
+
+
+%=========================================================================
+%========================================================================
+\end{document}
+%========================================================================
+%========================================================================
