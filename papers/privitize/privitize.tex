@@ -99,26 +99,111 @@ without blocking.
 In order to do this, atomic reads and writes are used, as well as possibly a compare and swap in the case
 of a conflict with a committing transaction.
 
+
+\section{Basic Idea}
+The idea is to take a word based STM algorithm that uses locks (in this case TL2) and add non-blocking strong isolation.
+
+Assume that we want strong isolation in an STM.  They why should it be non-blocking?
+When a programmer choses to use an STM he should expect that the STM system is uses some sort of syncronization methods to ensure
+transactions are atomic.
+Of course because of this he can expect to make some compromises, for example he might expect the transactions to be blocking, so
+if a thread running a transaction gets descheduled, the progress of other threads might be stopped until the thread is rescheduled.
+Or transactions might be slower to execute in order to ensure atomicity (i.e. because of aborts).
+Or even if a thread running a live transaction crashes, it might block the progress of other transactions.
+
+Now what about for acceses to shared memory outside of transactions?
+Should he expect the same problems here?
+Here we have a word based STM system.
+So the operations done outside of the transactions are single load/store operations.
+Without the STM each of these would be just a (single low level?) atomic operation.
+But when using an STM these operations become blocking, so they have the same progress guarantees as the transactions.
+Should the programmer expect that a single atomic load/store might block forever?
+What I try to propose here is a way to implement non-blocking strong isolation in TL2 hopefully without doing anything too costly.
+
+\section{Strong Isolation}
+The protocol proposed here tries to implement strong isolation in the sense that transactions and non-transactional accesses are
+linearizable.
+
 \section{Description}
 
+\subsection{Memory Setup}
+To the programmer the structure of the memory is the same.
+To the system, instead of each address coresponding to one location in memory, it coresponds to two.
+One area is called the $NT$ area and one the $T$ area.
+Only the non-transactional access modify the $NT$ area, and only transactional accesses modify the $T$ area.
+When a programmer calls ${\sf transactional\_read}()$ or ${\sf non\_transactional\_read}()$ the value returned could come from either
+of the two areas depending on the state of the system.
+
+Each memory word in the $NT$ area points to a shared structure.
+This structure contains the following values:
+$addr$ which is the location of this value in memory.
+$value$ which is the value the programmer passed to some ${\sf non\_transactional\_write}()$ operation.
+$id$ a unique id of the thread that created this structure.
+$local\_time$ the local time value of the thread when it created this structure.
+$time$ the approximate global clock time when the thread created this structure.
+
+Each memory word in the $T$ area points to a shared structure.
+This structure contains the following values:
+$addr$ which is the location of this value in memory.
+$status$ pointer to memory that contains the status $(\mathit{LIVE}, \mathit{ABORTED}, \mathit{COMMITTED})$ of the transaction that wrote this location.
+$value$ which is the value the programmer passed to some ${\sf non\_transactional\_write}()$ operation.
+$time$ the global clock time associated with this transaction.
+$last$ pointer to the most recent $NT$ structure seen by this transaction.
+$prev$ pointer to the $T$ data structure that was at $addr$ before this one was added.
+
+See figure \ref{fig:mem} for a example memory structure.
+
+\begin{figure}[t]
+	\begin{center}
+	\includegraphics[scale=0.55]{./mem-fig.pdf}
+	\caption{Structure of the memory\label{fig:mem}}
+	\end{center}
+\end{figure}
+
+
+{\bf ${\sf transaction\_begin}()$}
+Intialize the transactions.
+Like in TL2, read only transactions do not need to keep a read set.
+The variable $rv$ is set to the global clock time.
+This is used for validation.
+
+{\bf ${\sf non\_transactional\_read}()$}
+Find the most recent value from $T$ and $NT$ memory.
+If there is a live transaction it might have to be aborted
+Update the local value $time$ to the most recent.
+
 {\bf ${\sf transactional\_read}()$}
+Find the most recent value from $T$ and $NT$ memory.
+If it is too recent, then abort.
+Add it to the read set if this is a writing transaction.
+Note that there are two read sets.
+One is for reads done from $T$ memory, the other is for reads done from $NT$ memory.
+The reason for having two read sets is because they have different validations.
+
 Sometimes a transaction might abort due to non-transactional writes.
 A non-transactional write does not increase the global counter, but a transaction does validation based on the
 global counter value it read.
 This means that a read-only transaction might abort forever because it always reads a clock time that is old.
-To avoid this, read only-transactions that abort after $k$ times, start keeping track of their reads of $NT$ locations.
-This way they can ensure their reads of $NT$ locations are still valid.
+To avoid this, when a transaction aborts because it read an NT value, the ${\sf transactional\_read}()$ operation
+will incrament the global counter if the value it read has a greater clock value.
+
+{\bf ${\sf transactional\_write}()$}
+Create a new structure, initialize the values, add it to the $ws$.
 
 {\bf ${\sf try\_to\_commit}()$}
+Return committed if it is a read only transacion.
+
+First lock all the items in the write set.
+Get a new time from the global clock.
+Setup the write locations and update $T$ memory to point to them.
 Validate the read set.
-For each item in the read set we just check if the non-trasactional memory location has been modified, if it has then the transaction aborts.
-This is because writes to the non-transactional locations are serialized after each other.
+For each item in the $T$ and $NT$ read set, make sure the location you read has not been updated.
 
 \section{TODO}
 \subsection{Optimizations}
 I ``tried'' to keep the algorithm as simple as possible.
 There should be ways to optimize the operations.
-For example the $time$ could be used in the ${\sf non\_transactional\_read}()$ operation
+For example the $time$ might be useful in some operations
 in order to avoid some of the checks.
 
 \subsection{Privitization}
@@ -129,11 +214,8 @@ Once the location is privitized and the last transaction to write to the locatio
 is committed or aborted (this can be found by looking at ${\sf load}(addr, T).status$)
 then the location is private and the checks can be avoided.
 
-\section{Variables}
-Each transaction has a variable $desc$ allocated in shared memory.
-This variable contains each of the variables written by the transaction as well as their values.
-In order to perform a read you follow these descriptors.
-
+\section{Algorithm}
+The first version pesudo-code follows.
 
 %==================================================================
 \begin{figure}[htb]
@@ -160,7 +242,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \normalsize
 \end{minipage}
 }
-\caption{load/store procedures}
+\caption{load/store procedures, note that these are just helper function}
 \label{fig-prevent-looping}
 }
 \end{figure}
@@ -181,26 +263,27 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf non\_transactional\_read}(addr)$;\\
 \line{DA01} \> $tmp \gets {\sf load}(addr, T)$; \\
-\line{DA01} \> $time \gets {\sf max}(time, timp.time)$; \\
 \line{DA01} \> {\bf while} $(tmp.status \neq \mathit{COMMITTED})${\bf do} \\
-\line{DA01} \>\> {\bf if} $tmp.time \leq last\_write\_time$ {\bf then} \\
+\line{DA01} \>\> {\bf if} $tmp.time \leq time$ {\bf then} \\
 \line{DA01} \>\>\> ${\sf \mathit{C\&S}}(tmp.status, \mathit{LIVE}, \mathit{ABORTED})$; \\
 \line{DA01} \>\> {\bf else} \\
 \line{DA01} \>\>\> $tmp \gets tmp.last$; \\
 \line{DA01} \>\> {\bf end if} \\
 \line{DA01} \> {\bf end while} \\
 \line{DA01} \> $tmp2 \gets load(addr, NT)$; \\
+\line{DA01} \> $time \gets {\sf max}(time, tmp.time, tmp2.time + 0.5)$; \\
 \line{DA01} \> {\bf if} $(tmp.last \neq tmp2)$ {\bf then} $tmp \gets tmp2$ {\bf end if} \\
 \line{DA01} \> {\sf return} $tmp.val$. \\
 
 {\bf operation}  ${\sf non\_transactional\_write}(addr, valueaddr, value)$;\\
 \line{DA01} \> allocate new variable $next\_write$ \\
 \line{DA01} \> $next\_write.addr \gets addr$; \\
-\line{DA01} \> $next\_write.val \gets value$; \\
+\line{DA01} \> $next\_write.value \gets value$; \\
+\line{DA01} \> $next\_write.time \gets time$; \\
 \line{DA01} \> $next\_write.local\_time \gets local\_time++$; \\
 \line{DA01} \> $next\_write.id \gets id$; \\
 \line{DA01} \> ${\sf store}(addr, next\_write, NT)$; \\
-\line{DA01} \> $last\_write\_time \gets global\_counter$; \\
+\line{DA01} \> $time \gets \mathit{GLOBAL\_CLOCK}$; \\
 
 \end{tabbing}
 \normalsize
@@ -225,12 +308,12 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
-{\bf procedure} ${\sf validate\_ntrs}()$; \\
-\line{DA01} \> {\bf for each} $item$ in $ntrs$ {\bf do} \\
-\line{DA01} \>\> $tmp \gets load(item.addr, \mathit{NT})$; \\
-\line{DA01} \>\> {\bf if} $tmp.id \neq item.id$ {\bf then} ${\sf abort}()$; \\
-\line{DA01} \>\> {\bf else if} $tmp.local\_time \neq item.local\_time$ {\bf then} ${\sf abort}()$ {\bf end if} \\
-\line{DA01} \> {\bf end for} \\
+%{\bf procedure} ${\sf validate\_ntrs}()$; \\
+%\line{DA01} \> {\bf for each} $item$ in $ntrs$ {\bf do} \\
+%\line{DA01} \>\> $tmp \gets load(item.addr, \mathit{NT})$; \\
+%\line{DA01} \>\> {\bf if} $tmp.id \neq item.id$ {\bf then} ${\sf abort}()$; \\
+%\line{DA01} \>\> {\bf else if} $tmp.local\_time \neq item.local\_time$ {\bf then} ${\sf abort}()$ {\bf end if} \\
+%\line{DA01} \> {\bf end for} \\
 
 {\bf procedure} ${\sf validate\_all}()$; \\
 \line{DA01} \> {\bf for each} $item$ in $rs$ {\bf do} \\
@@ -286,6 +369,10 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
 {\bf operation}  ${\sf transactional\_read}(addr)$;\\
+\line{DA01} \> {\bf if} $addr \in ws$ {\bf then} \\
+\line{DA01} \>\> return the $value$ of the $item$ with $addr$ in $ws$ \\
+\line{DA01} \> {\bf end if} \\
+
 \line{DA01} \> $tmp \gets {\sf load}(addr, \mathit{T})$; \\
 
 
@@ -298,11 +385,11 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{DA01} \> {\bf end while} \\
 \line{DA01} \> $tmp2 \gets load(addr, NT)$; \\
 \line{DA01} \> {\bf if} $(tmp.last \neq tmp2)$ {\bf then}  \\
-
-\line{DA01} \>\> {\bf if} $({\sf max}(tmp.time, tmp2.time) + 0.5 > rv)$ {\bf then} \\
-\line{DA01} \>\>\> $rv \gets global\_clock$; \\
-\line{DA01} \>\>\> {\bf if} $(tmp.time + 0.5 > rv)$ {\bf then} \\
-\line{DA01} \>\>\>\> $rv \gets {\sf fetch\&incrament}(global\_clock)$; \\
+\line{DA01} \>\> {\bf if} $({\sf max}(tmp.time + 0.5, tmp2.time) > rv)$ {\bf then} \\
+\line{DA01} \>\>\> $rv \gets \mathit{GLOBAL\_CLOCK}$; \\
+\line{DA01} \>\>\> {\bf if} $(tmp.time + 0.5 \geq rv)$ {\bf then} \\
+\> \% Increment clock to ensure progress in case of abort by NT write \\
+\line{DA01} \>\>\>\> $rv \gets {\sf fetch\&incrament}(\mathit{GLOBAL\_CLOCK})$; \\
 \line{DA01} \>\>\> {\bf end if} \\
 \line{DA01} \>\>\> ${\sf abort\_keep\_rv}()$; \\
 \line{DA01} \>\> {\bf end if} \\
@@ -320,10 +407,16 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{DA01} \> {\sf return} $tmp.val$. \\
 
 
-{\bf operation}  ${\sf transactional\_write}()$;\\
-\line{DA01} \> \\
-\line{DA01} \> \\
-
+{\bf operation}  ${\sf transactional\_write}(addr, value)$;\\
+\line{DA01} \> {\bf if} $addr \not\in ws$ {\bf then} \\
+\line{DA01} \>\> allocate a new variable $item$ \\
+\line{DA01} \>\> $item.addr \gets addr$; \\
+\line{DA01} \>\> $item.value \gets value$; \\
+\line{DA01} \>\> $item.status \gets status$; \\
+\line{DA01} \>\> $ws \gets ws \cup item$; \\
+\line{DA01} \> {\bf else} \\
+\line{DA01} \>\> set $item.value$ with $addr$ in $ws$ to $value$ \\
+\line{DA01} \> {\bf end if} \\
 
 
 
@@ -354,24 +447,28 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf begin\_transaction}()$;\\
 \line{DA01} \> set $write\_transaction$ based on complier/user input \\
-\line{START1} \> $rv \gets global\_counter$; \\
+\line{START1} \> $rv \gets \mathit{GLOBAL\_CLOCK}$; \\
 \line{START2} \> Allocate new variable $status$ \\
 \line{DA01} \> $status \gets \mathit{LIVE}$; \\
-\line{DA01} \> $ws \gets \emptyset$; $rs \gets \emptyset$; \\
+\line{DA01} \> $ws \gets \emptyset$; $rs \gets \emptyset$; $ntrs \gets emptyset$; \\
 \line{DA01} \> more??. \\
 
 {\bf operation}  ${\sf try\_to\_commit}()$;\\
 \line{DA01} \> {\bf if} $(ws = \emptyset)$ {\bf then} ${\sf return}(\mathit{COMMITTED})$ {\bf end if} \\
 \line{DA01} \> Acquire locks for items in $ws$ \\
-\line{DA01} \> $time \gets {\sf fetch\&inc}(global\_counter)$; \\
+\line{DA01} \> $time \gets {\sf fetch\&inc}(\mathit{GLOBAL\_CLOCK})$; \\
 \line{DA01} \> {\bf for each} $(item \in ws)$ {\bf do} \\
 \line{DA01} \>\> $item.last \gets load(item.addr, NT)$; \\
 \line{DA01} \>\> $item.time \gets time$; \\
 \line{DA01} \>\> $item.prev \gets load(item.addr, T)$; \\
 \line{DA01} \>\> $store(item.addr, item, T)$; \\
 \line{DA01} \> {\bf end for} \\
-\line{DA01} \> {\bf if} $\neg{\sf validate\_all}()$ {\bf then} release locks and ${\sf abort}()$ {\bf end if} \\
-\line{DA01} \> {\bf for each} $(item \in ws \cap rs)$ {\bf do} \\
+\line{DA01} \> {\bf if} $\neg{\sf validate\_all}()$ {\bf then} \\
+\line{DA01} \>\> ${\sf \mathit{C\&S}}(status, \mathit{LIVE}, \mathit{ABORTED})$; \\
+\line{DA01} \>\> release locks and ${\sf abort}()$; \\
+\line{DA01} \> {\bf end if} \\
+\> \% Ensure the writes haven't been overwritten by $NT$ writes \\
+\line{DA01} \> {\bf for each} $(item \in ws \backslash ws \cap rs)$ {\bf do} \\
 \line{DA01} \>\> {\bf if} $(item.last \neq load(item.addr, NT))$ {\bf then} \\
 \line{DA01} \>\>\> ${\sf \mathit{C\&S}}(status, \mathit{LIVE}, \mathit{ABORTED})$; \\
 \line{DA01} \>\>\> release locks and ${\sf abort}()$; \\
