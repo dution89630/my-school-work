@@ -11,6 +11,7 @@
 
 \bibliographystyle{plain}
 
+
 \begin{document}
 %-----------------------for square--------------------------------------------
 \newlength {\squarewidth}
@@ -75,14 +76,16 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 \newcommand{\Xomit}[1]{}
 %==========================================================================
 
+\title{Adding non-blocking strong isloation to a locking STM (In this case TL2)}
 
+\section{Protocol}
+I think people overwhelmingly aggree that privitization safety in TM is a good thing.
 
+In addition it has been argued that strong atomicty should be reqired for memeory accesses in and out of transactions.
+One agrument is that without it, things can get complicated for the programmer.
 
-\section{Privitization Protocol}
-It has been argued that strong atomicty should be reqired for memeory accesses in and out of transactions.
-I agree with this, otherwise it can make things very complicated for the programmer.
-Either don't allow shared variables accessed from within transaction to be accessed out of transactions at all.
-Or ensure strong atomicity.
+It has also been argued that strong isolation is a bad thing.
+One of the main arguments against this is that it is too expensive.
 
 There have been protocols proposed for how to implement strong atomicty, but they all require using locks
 and create some memory barriers.
@@ -96,6 +99,35 @@ without blocking.
 In order to do this, atomic reads and writes are used, as well as possibly a compare and swap in the case
 of a conflict with a committing transaction.
 
+\section{Description}
+
+{\bf ${\sf transactional\_read}()$}
+Sometimes a transaction might abort due to non-transactional writes.
+A non-transactional write does not increase the global counter, but a transaction does validation based on the
+global counter value it read.
+This means that a read-only transaction might abort forever because it always reads a clock time that is old.
+To avoid this, read only-transactions that abort after $k$ times, start keeping track of their reads of $NT$ locations.
+This way they can ensure their reads of $NT$ locations are still valid.
+
+{\bf ${\sf try\_to\_commit}()$}
+Validate the read set.
+For each item in the read set we just check if the non-trasactional memory location has been modified, if it has then the transaction aborts.
+This is because writes to the non-transactional locations are serialized after each other.
+
+\section{TODO}
+\subsection{Optimizations}
+I ``tried'' to keep the algorithm as simple as possible.
+There should be ways to optimize the operations.
+For example the $time$ could be used in the ${\sf non\_transactional\_read}()$ operation
+in order to avoid some of the checks.
+
+\subsection{Privitization}
+If the algorithm is correct then it already is privitation safe.
+But, there could be optimizations done for privitation.
+Consider that we know which transactions privitize memory locations (for example, user defined, complier defined).
+Once the location is privitized and the last transaction to write to the location
+is committed or aborted (this can be found by looking at ${\sf load}(addr, T).status$)
+then the location is private and the checks can be avoided.
 
 \section{Variables}
 Each transaction has a variable $desc$ allocated in shared memory.
@@ -115,149 +147,253 @@ In order to perform a read you follow these descriptors.
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
-{\bf procedure}  ${\sf transactional\_read}(addr)$;\\
-\line{DA01} \> $tmp \gets {\sf load}(addr, \mathit{NT})$; \\
-\line{DA01} \> $tmp2 \gets {\sf load}(addr, \mathit{T})$; \\
-\line{DA01} \> {\bf if} $tmp.status = \mathit{COMMITTED}$ {\bf then} \\
-\line{DA01} \>\> {\bf if} $tmp2.last = tmp$ {\bf then} $tmp \gets tmp2$ {\bf end if} \\
-\line{DA01} \> {\bf end if} \\
-\line{DA01} \> do validation on $tmp$ \\
-\line{DA01} \> {\sf return} $tmp$. \\
+{\bf procedure} ${\sf load}(addr, place)$; \\
+\line{DA01} \> {\bf if} $(place = \mathit{T})$ {\bf then} ${\sf return} \downarrow addr$ {\bf end if} \\
+\line{DA01} \> ${\sf return} \downarrow (addr + \mathit{MEM\_SIZE})$. \\
 
-{\bf procedure}  ${\sf transactional\_write}()$;\\
-\line{DA01} \> \\
-\line{DA01} \> \\
-
-{\bf procedure}  ${\sf non\_transactional\_read}(addr)$;\\
-\line{DA01} \> $tmp \gets {\sf load}(addr, \mathit{NT})$; \\
-\line{DA01} \> {\bf if} $(tmp.time < time)$ {\bf then} \\
-\line{DA01} \>\> ${\sf check\_last}()$; \\
-\line{DA01} \>\> $tmp2 \gets {\sf load}(addr, T)$; \\
-\line{DA01} \>\> $time \gets {\sf max}(time, timp.time, tmp2.time)$; \\
-\line{DA01} \>\> {\bf if} $(tmp2.status = \mathit{COMMITTED})$ {\bf then} \\
-\line{DA01} \>\>\> {\bf if} $(tmp2.last = last)$ {\bf then} $tmp \gets tmp2$ {\bf end if} \\
-\line{DA01} \>\> {\bf end if} \\
-\line{DA01} \> {\bf end if} \\
-\line{DA01} \> {\sf return} $tmp.val$. \\
-
-{\bf procedure}  ${\sf non\_transactional\_write}(addr, valueaddr, value)$;\\
-\line{DA01} \> ${\sf check\_last}()$; \\
-\line{DA01} \> ${\sf write}()$; \\
-\line{DA01} \> $last\_write \gets {\sf read}(addr, \mathit{})$
-\line{DA01} \> $last\_write \gets {\sf read}(addr, \mathit{})$
-
-{\bf procedure}  ${\sf begin\_transaction}()$;\\
-\line{DA01} \> Allocate new variable $status$ \\
-\line{DA01} \> $status \gets \mathit{LIVE}$; \\
-\line{DA01} \> $ws \gets \emptyset$; $rs \gets \emptyset$; \\
-\line{DA01} \> more??. \\
-
-{\bf procedure}  ${\sf try\_to\_commit}()$;\\
-\line{DA01} \> Acquire locks for $rs$ and $ws$ \\
-\line{DA01} \> Peroform read set validation \\
-\line{DA01} \> {\bf for} $(item \in ws)$ {\bf do} \\
-\line{DA01} \>\> $item.last \gets load(item.addr, NT)$ \\
-\line{DA01} \>\> $item.prev \gets load(item.addr, T)$ \\
-\line{DA01} \>\> $store(item.addr, item)$ \\
-\line{DA01} \> {\bf end if} \\
-\line{DA01} \> {\bf for} $(item \in ws)$ {\bf do} \\
-\line{DA01} \>\> \\
-
-%\line{DA01} \> {\bf if} \=  ($current = \mathit{my\_last\_cmt}$)
-%{\bf then} 
-%$\mathit{after\_my\_last\_cmt} \leftarrow \mathit{true}$ {\bf end if}; \\
-
-
-\line{DA01} \> {\bf for each} $(item \in ws_x \cap rs_x)$ {\bf do} \\
-
-\line{DA01} \>\> $status \gets item.status$; \\
-
-\line{DA01} \>\> {\bf if} $(status = \bot)$ {\bf then} \\
-
-\line{DA01} \>\>\> $status.C\&S(\bot, \uparrow desc)$; \\
-
-\line{DA01} \>\> {\bf end if} \\
-
-\line{DA01} \>\> $status \gets item.status$; \\
-
-\line{DA01} \>\> {\bf if} $(status = \uparrow desc)$ {\bf then} \\
-
-\line{DA01} \>\>\> done with item, go to next item; \\
-
-\line{DA01} \>\> {\bf end if} \\
-
-\line{DA01} \>\> Comment: Now $status$ is a descriptor to another transaction \\
-
-\line{DA01} \>\> {\bf if} $(status.priority > my\_desc.priority)$ {\bf then} \\
-
-\line{DA01} \>\>\> {\bf while} $(\mathit{TRUE})$ {\bf do} \\
-
-\line{DA01} \>\>\>\> $curr \gets status.curr\_status$; \\
-
-\line{DA01} \>\>\>\> {\bf if} $((curr = \mathit{COMMITTED}) \vee (curr = \mathit{ABORTED}))$ {\bf then} \\
-
-\line{DA01} \>\>\>\>\> do something and done with this item, go to next; \\
-
-\line{DA01} \>\>\>\> {\bf endif} \\
-
-\line{DA01} \>\>\>\> $my\_status = my\_desc.curr\_status$; \\
-
-\line{DA01} \>\>\>\> Check if you are aborted/committed, if yes exit, otw continue; \\
-
-\line{DA01} \>\>\>\> $my\_desc.curr\_status.C\&S(my\_status, my\_status \cup \mathit{HELPING} \cup my\_desc.id)$; \\
-
-\line{DA01} \>\>\>\> {\bf if} $(my\_desc.curr\_status = \mathit{HELPING} \cup status.id)$ {\bf then} \\
-
-\line{DA01} \>\>\>\>\> help this one, go to next; \\
-
-\line{DA01} \>\>\>\> {\bf end if} \\
-
-\line{DA01} \>\>\> {\bf end while} \\
-
-\line{DA01} \>\> {\bf else} \\
-
-\line{DA01} \>\>\> {\bf while} $(\mathit{TRUE})$ {\bf do} \\
-
-\line{DA01} \>\>\>\> $curr \gets status.curr\_status$; \\
-
-\line{DA01} \>\>\>\> {\bf if} $((curr = \mathit{COMMITTED}) \vee (curr = \mathit{ABORTED}))$ {\bf then} \\
-
-\line{DA01} \>\>\>\>\> do something and done with this item, go to next; \\
-
-\line{DA01} \>\>\>\> {\bf endif} \\
-
-\line{DA01} \>\>\>\> $status.curr\_status.C\&S(curr, curr \cup \mathit{HELPING} \cup my\_desc.id)$; \\
-
-\line{DA01} \>\>\>\> {\bf if} $(status.curr\_status = \mathit{HELPING} \cup my\_desc.id)$ {\bf then} \\
-
-\line{DA01} \>\>\>\>\> $item.status.C\&S(status, \uparrow desc)$; \\
-
-\line{DA01} \>\>\>\> {\bf end if} \\
-
-\line{DA01} \>\>\> {\bf end while} \\
-
-\line{DA01} \>\> {\bf end if} \\
-
-\line{DA01} \> {\bf end for} \\
-
-\line{DA01} \> repeat the for loop until $desc$ is the value for all items \\
-
-\line{DA01} \> $desc.curr\_status.C\&S(\mathit{COMMITTING}, COMMITTED)$ \\
-
-\line{DA01} \>  TODO: Need to check if should be \emph{helping} in certain places, and need to check where to exit helping
+{\bf procedure} ${\sf store}(addr, value, place)$; \\
+\line{DA01} \> {\bf if} $(place = \mathit{T})$ {\bf then} $\downarrow addr \gets value$ {\bf end if} \\
+\line{DA01} \> $\downarrow (addr + \mathit{MEM\_SIZE}) \gets value$. \\
 
 
 \end{tabbing}
 \normalsize
 \end{minipage}
 }
-\caption{Procedure  ${\sf prevent\_endless\_looping}()$}
+\caption{load/store procedures}
 \label{fig-prevent-looping}
 }
 \end{figure}
 %=================================================================
 
 
+%==================================================================
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+{\bf operation}  ${\sf non\_transactional\_read}(addr)$;\\
+\line{DA01} \> $tmp \gets {\sf load}(addr, T)$; \\
+\line{DA01} \> $time \gets {\sf max}(time, timp.time)$; \\
+\line{DA01} \> {\bf while} $(tmp.status \neq \mathit{COMMITTED})${\bf do} \\
+\line{DA01} \>\> {\bf if} $tmp.time \leq last\_write\_time$ {\bf then} \\
+\line{DA01} \>\>\> ${\sf \mathit{C\&S}}(tmp.status, \mathit{LIVE}, \mathit{ABORTED})$; \\
+\line{DA01} \>\> {\bf else} \\
+\line{DA01} \>\>\> $tmp \gets tmp.last$; \\
+\line{DA01} \>\> {\bf end if} \\
+\line{DA01} \> {\bf end while} \\
+\line{DA01} \> $tmp2 \gets load(addr, NT)$; \\
+\line{DA01} \> {\bf if} $(tmp.last \neq tmp2)$ {\bf then} $tmp \gets tmp2$ {\bf end if} \\
+\line{DA01} \> {\sf return} $tmp.val$. \\
+
+{\bf operation}  ${\sf non\_transactional\_write}(addr, valueaddr, value)$;\\
+\line{DA01} \> allocate new variable $next\_write$ \\
+\line{DA01} \> $next\_write.addr \gets addr$; \\
+\line{DA01} \> $next\_write.val \gets value$; \\
+\line{DA01} \> $next\_write.local\_time \gets local\_time++$; \\
+\line{DA01} \> $next\_write.id \gets id$; \\
+\line{DA01} \> ${\sf store}(addr, next\_write, NT)$; \\
+\line{DA01} \> $last\_write\_time \gets global\_counter$; \\
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Non-transactional operations}
+\label{fig-prevent-looping}
+}
+\end{figure}
+%=================================================================
+
+
+%==================================================================
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+{\bf procedure} ${\sf validate\_ntrs}()$; \\
+\line{DA01} \> {\bf for each} $item$ in $ntrs$ {\bf do} \\
+\line{DA01} \>\> $tmp \gets load(item.addr, \mathit{NT})$; \\
+\line{DA01} \>\> {\bf if} $tmp.id \neq item.id$ {\bf then} ${\sf abort}()$; \\
+\line{DA01} \>\> {\bf else if} $tmp.local\_time \neq item.local\_time$ {\bf then} ${\sf abort}()$ {\bf end if} \\
+\line{DA01} \> {\bf end for} \\
+
+{\bf procedure} ${\sf validate\_all}()$; \\
+\line{DA01} \> {\bf for each} $item$ in $rs$ {\bf do} \\
+\line{DA01} \>\> {\bf if} $item.addr$ is locked {\bf then} ${\sf return}(0)$ {\bf end if} \\
+\line{DA01} \>\> $tmp \gets load(item.addr, \mathit{T})$; \\
+\line{DA01} \>\> $tmp2 \gets load(item.addr, \mathit{NT})$; \\
+\line{DA01} \>\> {\bf if} $(tmp.last \neq tmp2)$ {\bf then} ${\sf return}(0)$; \\
+\line{DA01} \>\> {\bf else if} $tmp.time > rv$ {\bf then} ${\sf return}(0)$; \\
+\line{DA01} \>\> {\bf end if} \\
+\line{DA01} \> {\bf for each} $item$ in $ntrs$ {\bf do} \\
+\line{DA01} \>\> {\bf if} $item.addr$ is locked {\bf then} ${\sf return}(0)$ {\bf end if} \\
+\line{DA01} \>\> {\bf if} $(load(item.addr, \mathit{T}).time > rv)$ {\bf then} ${\sf return}(0)$ {\bf end if} \\
+\line{DA01} \>\> $tmp \gets load(item.addr, \mathit{NT})$; \\
+\line{DA01} \>\> {\bf if} $tmp.id \neq item.id$ {\bf then} ${\sf return}(0)$; \\
+\line{DA01} \>\> {\bf else if} $tmp.local\_time \neq item.local\_time$ {\bf then} ${\sf return}(0)$ {\bf end if} \\
+\line{DA01} \> {\bf end for} \\
+\line{DA01} \> ${\sf return}(1)$. \\
+
+
+{\bf procedure} ${\sf abort}()$; \\
+\line{DA01} \> free items in $ws$, $rs$, and $ntrs$ \\
+\line{DA01} \> jump to line \ref{START1}. \\
+
+{\bf procedure} ${\sf abort\_keep\_rv}()$; \\
+\line{DA01} \> free items in $ws$, $rs$, and $ntrs$ \\
+\line{DA01} \> jump to line \ref{START2}. \\
+
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transactional helper procedures}
+\label{fig-prevent-looping}
+}
+\end{figure}
+%=================================================================
+
+
+
+
+%==================================================================
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+{\bf operation}  ${\sf transactional\_read}(addr)$;\\
+\line{DA01} \> $tmp \gets {\sf load}(addr, \mathit{T})$; \\
+
+
+\line{DA01} \> {\bf while} $(tmp.status \neq \mathit{COMMITTED})$ {\bf do} \\
+\line{DA01} \>\> {\bf if} $addr$ is locked {\bf then} \\
+\line{DA01} \>\>\> ${\sf abort}()$; \\
+\line{DA01} \>\> {\bf else} \\
+\line{DA01} \>\>\> $tmp \gets tmp.last$; \\
+\line{DA01} \>\> {\bf end if} \\
+\line{DA01} \> {\bf end while} \\
+\line{DA01} \> $tmp2 \gets load(addr, NT)$; \\
+\line{DA01} \> {\bf if} $(tmp.last \neq tmp2)$ {\bf then}  \\
+
+\line{DA01} \>\> {\bf if} $({\sf max}(tmp.time, tmp2.time) + 0.5 > rv)$ {\bf then} \\
+\line{DA01} \>\>\> $rv \gets global\_clock$; \\
+\line{DA01} \>\>\> {\bf if} $(tmp.time + 0.5 > rv)$ {\bf then} \\
+\line{DA01} \>\>\>\> $rv \gets {\sf fetch\&incrament}(global\_clock)$; \\
+\line{DA01} \>\>\> {\bf end if} \\
+\line{DA01} \>\>\> ${\sf abort\_keep\_rv}()$; \\
+\line{DA01} \>\> {\bf end if} \\
+\line{DA01} \>\> {\bf if} $write\_transaction$ {\bf then} \\
+\line{DA01} \>\>\> add $tmp2$ to $ntrs$ \\
+\line{DA01} \>\> {\bf end if} \\
+\line{DA01} \>\> {\sf return} $tmp2.val$; \\
+
+\line{DA01} \> {\bf end if} \\
+
+\line{DA01} \> {\bf if} $(tmp.time > rv)$ {\bf then} ${\sf abort}()$ {\bf end if} \\
+\line{DA01} \> {\bf if} $write\_transaction$ {\bf then} \\
+\line{DA01} \>\> add $tmp$ to $rs$ \\
+\line{DA01} \> {\bf end if} \\
+\line{DA01} \> {\sf return} $tmp.val$. \\
+
+
+{\bf operation}  ${\sf transactional\_write}()$;\\
+\line{DA01} \> \\
+\line{DA01} \> \\
+
+
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transaction read/write}
+\label{fig-prevent-looping}
+}
+\end{figure}
+%=================================================================
+
+
+
+%==================================================================
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+
+{\bf operation}  ${\sf begin\_transaction}()$;\\
+\line{DA01} \> set $write\_transaction$ based on complier/user input \\
+\line{START1} \> $rv \gets global\_counter$; \\
+\line{START2} \> Allocate new variable $status$ \\
+\line{DA01} \> $status \gets \mathit{LIVE}$; \\
+\line{DA01} \> $ws \gets \emptyset$; $rs \gets \emptyset$; \\
+\line{DA01} \> more??. \\
+
+{\bf operation}  ${\sf try\_to\_commit}()$;\\
+\line{DA01} \> {\bf if} $(ws = \emptyset)$ {\bf then} ${\sf return}(\mathit{COMMITTED})$ {\bf end if} \\
+\line{DA01} \> Acquire locks for items in $ws$ \\
+\line{DA01} \> $time \gets {\sf fetch\&inc}(global\_counter)$; \\
+\line{DA01} \> {\bf for each} $(item \in ws)$ {\bf do} \\
+\line{DA01} \>\> $item.last \gets load(item.addr, NT)$; \\
+\line{DA01} \>\> $item.time \gets time$; \\
+\line{DA01} \>\> $item.prev \gets load(item.addr, T)$; \\
+\line{DA01} \>\> $store(item.addr, item, T)$; \\
+\line{DA01} \> {\bf end for} \\
+\line{DA01} \> {\bf if} $\neg{\sf validate\_all}()$ {\bf then} release locks and ${\sf abort}()$ {\bf end if} \\
+\line{DA01} \> {\bf for each} $(item \in ws \cap rs)$ {\bf do} \\
+\line{DA01} \>\> {\bf if} $(item.last \neq load(item.addr, NT))$ {\bf then} \\
+\line{DA01} \>\>\> ${\sf \mathit{C\&S}}(status, \mathit{LIVE}, \mathit{ABORTED})$; \\
+\line{DA01} \>\>\> release locks and ${\sf abort}()$; \\
+\line{DA01} \>\> {\bf end if} \\
+\line{DA01} \> {\bf end for} \\
+\line{DA01} \> ${\sf \mathit{C\&S}}(status, \mathit{LIVE}, \mathit{COMMITTED})$; \\
+\line{DA01} \> {\bf if} $(status \neq \mathit{COMMITTED})$ {\bf then} \\
+\line{DA01} \>\> release locks and ${\sf abort}()$; \\
+\line{DA01} \> {\bf end if} \\
+\line{DA01} \> Release locks \\
+\line{DA01} \> ${\sf return}(\mathit{COMMITTED})$. \\
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transaction begin/commit}
+\label{fig-prevent-looping}
+}
+\end{figure}
+%=================================================================
 
 
 
