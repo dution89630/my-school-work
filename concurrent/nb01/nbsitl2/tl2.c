@@ -122,6 +122,22 @@ typedef int            BitMap;
 typedef uintptr_t      vwLock;  /* (Version,LOCKBIT) */
 typedef unsigned char  byte;
 
+
+/********************************************
+ * NEW read item
+ *******************************************/
+typedef struct _MemItem {
+  intptr_t Valu;
+} MemItem;
+
+typedef struct _LockItem {
+  vwLock lock;
+  MemItem *item;
+} LockItem;
+
+
+
+
 /* Read set and write-set log entry */
 typedef struct _AVPair {
     struct _AVPair* Next;
@@ -295,7 +311,8 @@ AtomicIncrement (volatile intptr_t* addr)
  * Alternately, we could mmap() the region with anonymous DZF pages.
  */
 #  define _TABSZ  (1<< 20)
-static volatile vwLock LockTab[_TABSZ];
+//static volatile vwLock LockTab[_TABSZ];
+static volatile LockItem LockTab[_TABSZ];
 
 /*
  * We use GClock[32] as the global counter.  It must be the sole occupant
@@ -578,7 +595,11 @@ volatile long global_stats[4096];
  */
 #define PSSHIFT                         ((sizeof(void*) == 4) ? 2 : 3)
 
-#  define PSLOCK(a) (LockTab + (((UNS(a)+COLOR) >> PSSHIFT) & TABMSK)) /* PS1M */
+//#  define PSLOCK(a) (LockTab + (((UNS(a)+COLOR) >> PSSHIFT) & TABMSK)) /* PS1M */
+
+#  define PSLOCK(a) (&(LockTab[((UNS(a)+COLOR) >> PSSHIFT) & TABMSK].lock)) /* PS1M */
+
+# define PSLOAD(a) (LockTab[((UNS(a)+COLOR) >> PSSHIFT) & TABMSK].item) /* PS1M */
 
 /*
  * CCM: for debugging
@@ -769,8 +790,17 @@ WriteBackForward (Log* k)
 {
     AVPair* e;
     AVPair* End = k->put;
+    MemItem *item, *old;
     for (e = k->List; e != End; e = e->Next) {
-        *(e->Addr) = e->Valu;
+      *(e->Addr) = e->Valu;
+
+      item = malloc(sizeof(MemItem));
+      item->Valu = e->Valu;
+      old = PSLOAD(e->Addr);
+      CAS(&PSLOAD(e->Addr), old, item);
+      //if(*(e->Addr) != NULL) *(e->Addr) = NULL;
+
+      //CAS(e->Addr, *(e->Addr), e->Valu);
     }
 }
 
@@ -2087,6 +2117,8 @@ TxLoad (Thread* Self, volatile intptr_t* Addr)
      * If the LD fails we'd like to call TxAbort()
      * TL2 does not permit zombie/doomed txns to run
      */
+    intptr_t Valu2 = NULL;
+    if(PSLOAD(Addr) != NULL) Valu2 = (PSLOAD(Addr))->Valu;
     volatile vwLock* LockFor = PSLOCK(Addr);
     vwLock rdv = LDLOCK(LockFor) & ~LOCKBIT;
     MEMBARLDLD();
@@ -2100,7 +2132,10 @@ TxLoad (Thread* Self, volatile intptr_t* Addr)
             }
         }
         PROF_STM_READ_END();
-        return Valu;
+	//if(Valu == Valu2) //return Valu2;
+	  //printf("%d, %d\n", Valu, Valu2);
+	//return ((MemItem *)Valu)->Valu;
+	return Valu;
     }
 
     /*
