@@ -94,6 +94,10 @@ typedef struct rbtree rbtree_t;
 
 #endif
 
+#ifndef TINY10B
+#define TFAVLSEQ
+#endif
+
 #ifdef TINY10B
 
 #ifdef MICROBENCH

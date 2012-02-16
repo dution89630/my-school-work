@@ -78,6 +78,12 @@ void barrier_cross(barrier_t *b)
 inline long rand_range(long r) {
 	int m = RAND_MAX;
 	int d, v = 0;
+
+#ifdef BIAS_RANGE
+	if(rand() > RAND_MAX / 2) {
+	  r = r /10;
+	}
+#endif
 	
 	do {
 		d = (m > r ? r : m);		
@@ -91,6 +97,12 @@ inline long rand_range(long r) {
 inline long rand_range_re(unsigned int *seed, long r) {
 	int m = RAND_MAX;
 	int d, v = 0;
+
+#ifdef BIAS_RANGE
+	if(rand_r(seed) > RAND_MAX / 2) {
+	  r = r /10;
+	}
+#endif
 	
 	do {
 		d = (m > r ? r : m);		

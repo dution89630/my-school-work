@@ -59,6 +59,7 @@ final public class Context implements org.deuce.transaction.Context {
 	}
 
 	public void init(int blockId, String metainf) {
+		System.out.println("Starting trans");
 		readSet.clear();
 		writeSet.clear();
 		

@@ -108,15 +108,17 @@ int avl_add(avl_intset_t *set, val_t key, int transactional, int id)
   int result = 0;
 
   if (!transactional) {
-		
-    //result = avl_seq_add(set, key);
+
+#ifdef TFAVLSEQ
+    result = tfavl_add(set, key, key);
+#else
     avl_req_seq_add(NULL, set->root, key, key, 0, &result);
+#endif
 	
   } else {
 
 #ifdef SEQUENTIAL
 		
-    //result = avl_seq_add(set, v);
     avl_req_seq_add(NULL, set->root, key, key, 0, &result);
 		
 #elif defined(MICROBENCH) && defined(TINY10B)
@@ -130,15 +132,146 @@ int avl_add(avl_intset_t *set, val_t key, int transactional, int id)
   return result;
 }
 
+#ifdef TFAVLSEQ
+
+int tfavl_move(avl_intset_t *set, int key1, int key2) {
+  avl_node_t *next, *prev, *new_node, *first;
+
+  next = set->root;
+  while(next != NULL) {
+    prev = next;
+    if(prev->key == key1) {
+      if(prev->deleted) {
+	first = prev;
+      } else {
+	return 0;
+      }
+    } else if(prev->key < key1) {
+      next = prev->right;
+    } else {
+      next = prev->left;
+    }
+  }
+
+  next = set->root;
+  while(next != NULL) {
+    prev = next;
+    if(prev->key == key2) {
+      if(prev->deleted) {
+	first->deleted = 1;
+	prev->deleted = 0;
+	return 1;
+      } else {
+	return 0;
+      }
+    } else if(prev->key < key2) {
+      next = prev->right;
+    } else {
+      next = prev->left;
+    }
+  }
+
+  new_node = avl_new_simple_node(key2, key2, 0);
+  if(prev->key < key2) {
+    first->deleted = 1;
+    prev->right = new_node;
+  } else {
+    first->deleted = 1;
+    prev->left = new_node;;
+  }
+  
+  return 1;
+}
+
+int tfavl_delete(avl_intset_t *set, int key) {
+  int ret;
+  avl_node_t *next, *prev, *parent, *child;
+
+  next = set->root;
+  prev = next;
+  while(next != NULL) {
+    parent = prev;
+    prev = next;
+    if(prev->key == key) {
+      if(prev->deleted) {
+	ret = 0;
+      } else {
+	prev->deleted = 1;
+	ret = 1;
+      }
+      
+      child = 0x1;
+      if(prev->right == NULL) {
+      	child = prev->left;
+      } else if(prev->left == NULL) {
+      	child = prev->right;
+      }
+      if(child != 0x1) {
+      	if(parent->right == prev) {
+      	  parent->right = child;
+      	} else {
+      	  parent->left = child;
+      	}
+	free(prev);
+      }
+
+      return ret;
+    } else if(prev->key < key) {
+      next = prev->right;
+    } else {
+      next = prev->left;
+    }
+  }
+
+  return 0;
+}
+
+int tfavl_add(avl_intset_t *set, int val, int key) {
+  avl_node_t *next, *prev, *new_node;
+
+  next = set->root;
+  while(next != NULL) {
+    prev = next;
+    if(prev->key == key) {
+      if(prev->deleted) {
+	prev->deleted = 0;
+	return 1;
+      } else {
+	return 0;
+      }
+    } else if(prev->key < key) {
+      next = prev->right;
+    } else {
+      next = prev->left;
+    }
+  }
+
+  new_node = avl_new_simple_node(val, key, 0);
+  if(prev->key < key) {
+    prev->right = new_node;
+  } else {
+    prev->left = new_node;
+  }
+
+  return 1;
+}
+
+#endif
+
 int avl_move(avl_intset_t *set, int val1, int val2, int transactional, int id) {
   int result;
 
   if(!transactional) {
+#ifdef TFAVLSEQ
+    result = tfavl_move(set, val1, val2);
+#else
     if(avl_contains(set, val1, 0, id) && !avl_contains(set, val2, 0, id)) {
       avl_req_seq_delete(NULL, set->root, val1, 0, &result);
       avl_req_seq_add(NULL, set->root, val2, val2, 0, &result);
     }
-  } else {
+#endif
+  } 
+  else {
 #if defined(MICROBENCH) && defined(TINY10B)
     result = avl_mv(val1, val2, set, id);
 #endif
@@ -183,7 +316,11 @@ int avl_remove(avl_intset_t *set, val_t key, int transactional)
 	
 #ifdef SEQUENTIAL
 	
+#ifdef TFAVLSEQ
+  result = tfavl_delete(set, key);
+#else
   avl_req_seq_delete(NULL, set->root, key, 0, &result);
+#endif
 
 #elif defined TINY10B
 
