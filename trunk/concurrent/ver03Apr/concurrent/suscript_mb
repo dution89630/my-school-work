@@ -22,3 +22,14 @@ gawk -f awk_scp_mb.awk ${firstpart1}log_micro_atnomaint${secondnum}.txt > atnoma
 
 gawk -f awk_scp_mb.awk ${firstpart1}log_micro_rb${firstnum}.txt > rb10
 gawk -f awk_scp_mb.awk ${firstpart1}log_micro_rb${secondnum}.txt > rb20
+
+gawk -f awk_scp_mbseq.awk ${firstpart1}log_micro_rbseq${firstnum}.txt > rbseq10
+gawk -f awk_scp_mbseq.awk ${firstpart1}log_micro_rbseq${secondnum}.txt > rbseq20
+
+gawk -f awk_scp_mbseq.awk ${firstpart1}log_micro_tfatseq${firstnum}.txt > tfatseq10
+gawk -f awk_scp_mbseq.awk ${firstpart1}log_micro_tfatseq${secondnum}.txt > tfatseq20
+
+gawk -f awk_scp_mbseq.awk ${firstpart1}log_micro_atseq${firstnum}.txt > atseq10
+gawk -f awk_scp_mbseq.awk ${firstpart1}log_micro_atseq${secondnum}.txt > atseq20
+
+
