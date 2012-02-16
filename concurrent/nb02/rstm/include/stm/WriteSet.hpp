@@ -339,6 +339,9 @@ namespace stm
       WriteSet(const size_t initial_capacity);
       ~WriteSet();
 
+      void init();
+
+
       /**
        *  Search function.  The log is an in/out parameter, and the bool
        *  tells if the search succeeded. When we are byte-logging, the log's
@@ -347,6 +350,7 @@ namespace stm
        */
       bool find(WriteSetEntry& log) const
       {
+	//if(index == NULL) this.init();
           size_t h = hash(log.addr);
 
           while (index[h].version == version) {
@@ -542,8 +546,8 @@ namespace stm
 
   // };
 
-  struct NOrec2List : public MiniVector<WriteSet> {
-      NOrec2List(const unsigned long cap) : MiniVector<WriteSet>(cap) {
+  struct NOrec2List : public MiniVector<WriteSet*> {
+      NOrec2List(const unsigned long cap) : MiniVector<WriteSet*>(cap) {
       }
   };
 

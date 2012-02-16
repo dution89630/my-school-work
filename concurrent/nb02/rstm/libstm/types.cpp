@@ -60,6 +60,7 @@ namespace stm
   template void MiniVector<qtable_t>::expand();
   template void MiniVector<ValueListEntry>::expand();
   template void MiniVector<UndoLogEntry>::expand();
+  template void MiniVector<WriteSet*>::expand();
 
   /**
    * This doubles the size of the index. This *does not* do anything as
@@ -75,15 +76,18 @@ namespace stm
       return ilength;
   }
 
-
-
-  /***  Writeset constructor.  Note that the version must start at 1. */
-  WriteSet::WriteSet()
-      : index(NULL), shift(8 * sizeof(uint32_t)), ilength(0),
-        version(1), list(NULL), capacity(64), lsize(0),
-	next(NULL), done(true), writer(-1)
+  void WriteSet::init()
   {
-    printf("write set cons 1\n");
+      index = NULL;
+      shift = 8 * sizeof(uint32_t);
+      ilength = 0;
+      version = 1;
+      list = NULL;
+      capacity = 64;
+      lsize = 0;
+      next = NULL;
+      done = true;
+      writer = -1;
       // Find a good index length for the initial capacity of the list.
       while (ilength < 3 * 64)
           doubleIndexLength();
@@ -100,7 +104,6 @@ namespace stm
         version(1), list(NULL), capacity(initial_capacity), lsize(0),
 	next(NULL), done(true), writer(-1)
   {
-    printf("write set cons 2\n");
       // Find a good index length for the initial capacity of the list.
       while (ilength < 3 * initial_capacity)
           doubleIndexLength();
