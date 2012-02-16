@@ -59,8 +59,8 @@ namespace {
       while (true) {
           // read the lock until it is even
 	WriteSet* s = (WriteSet*)(timestamp.val);
-          if (!(s->done))
-              continue;
+	// if (!(s->done))
+	//         continue;
 
           // check the read set
           CFENCE;
@@ -68,7 +68,7 @@ namespace {
           // validation early
           bool valid = true;
           foreach (ValueList, i, tx->vlist)
-              valid &= i->isValid();
+              valid &= i->isValid(s);
 
           if (!valid)
               return VALIDATION_FAILED;
@@ -130,6 +130,7 @@ namespace {
 
       //new to set the start pointer
       timestamp.val = (uintptr_t)&start_writeset;
+
   }
 
   template <class CM>
@@ -174,13 +175,21 @@ namespace {
       }
 
       // get the lock and validate (use RingSTM obstruction-free technique)
-      while (!bcasptr(&timestamp.val, tx->start_time, tx->current_writes))
+
+      while (!((WriteSet*)tx->start_time)->done) {
+      }
+
+      while (!bcasptr(&timestamp.val, tx->start_time, tx->current_writes)) {
 	if ((tx->start_time = validate(tx)) == VALIDATION_FAILED) {
 	  tx->tmabort(tx);
+	} else {
+	  while (!((WriteSet*)tx->start_time)->done) {
+	  }
 	}
+      }
 
       tx->current_writes->writeback(STM_WHEN_PROTECT_STACK(upper_stack_bound));
-      tx->current_writes->done = 1;
+      tx->current_writes->done = true;
       tx->n2listloc = (tx->n2listloc + 1) % tx->n2list.size();
       //tx->norec2_desc->writes.writeback(STM_WHEN_PROTECT_STACK(upper_stack_bound));
 
@@ -213,13 +222,23 @@ namespace {
       // writeback and increments the seqlock again
 
       // get the lock and validate (use RingSTM obstruction-free technique)
-    while (!bcasptr(&timestamp.val, tx->start_time, tx->current_writes))
+
+
+      while (!((WriteSet*)tx->start_time)->done) {
+      }
+
+      while (!bcasptr(&timestamp.val, tx->start_time, tx->current_writes)) {
 	if ((tx->start_time = validate(tx)) == VALIDATION_FAILED) {
 	  tx->tmabort(tx);
+	} else {
+	  while (!((WriteSet*)tx->start_time)->done) {
+	  }
 	}
+      }
+
 
       tx->current_writes->writeback(STM_WHEN_PROTECT_STACK(upper_stack_bound));
-      tx->current_writes->done = 1;
+      tx->current_writes->done = true;
       tx->n2listloc = (tx->n2listloc + 1) % tx->n2list.size();
       //tx->norec2_desc->writes.writeback(STM_WHEN_PROTECT_STACK(upper_stack_bound));
 
@@ -323,6 +342,7 @@ namespace {
 
       tx->vlist.reset();
       tx->current_writes->reset();
+      tx->current_writes->done = true;
       return stm::PostRollback(tx, read_ro, write_ro, commit_ro);
   }
 } // (anonymous namespace)

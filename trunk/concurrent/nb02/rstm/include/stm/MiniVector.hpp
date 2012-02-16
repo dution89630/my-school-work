@@ -72,10 +72,12 @@ namespace stm
           expand();
       }
 
-      TM_INLINE T* get(long loc) const { return m_elements + loc; }
+      TM_INLINE T get(long loc) const { return m_elements[loc]; }
 
       /*** Simple getter to determine the array size */
       TM_INLINE unsigned long size() const { return m_size; }
+
+      TM_INLINE unsigned long capacity() const { return m_cap; }
 
       /*** iterator interface, just use a basic pointer */
       typedef T* iterator;

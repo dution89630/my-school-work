@@ -33,6 +33,7 @@
  */
 #include "stm/config.h"
 #include "stm/MiniVector.hpp"
+#include "../../libstm/algs/RedoRAWUtils.hpp"
 
 namespace stm {
   /**
@@ -54,6 +55,17 @@ namespace stm {
       bool isValid() const {
           return *addr == val;
       }
+
+    TM_INLINE bool isValid(WriteSet* ws) const {
+      if(!ws->done) {
+	WriteSetEntry log(STM_WRITE_SET_ENTRY(addr, NULL, 0));
+	//bool found = tx->norec2_desc->writes.find(log);
+	bool found = ws->find(log);
+	REDO_RAW_CHECK(found, log, mask);
+      }
+          return *addr == val;
+    }
+
   };
 
   /**
@@ -103,6 +115,11 @@ namespace stm {
       bool isValid() const {
           return ((uintptr_t)val & mask) == ((uintptr_t)*addr & mask);
       }
+
+    //not yet implemeinted
+    bool isValid(WriteSet* ws) const {
+          return false;
+    }
   };
 
 #if defined(STM_WS_WORDLOG) || defined(STM_USE_WORD_LOGGING_VALUELIST)
