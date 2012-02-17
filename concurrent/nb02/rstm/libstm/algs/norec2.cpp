@@ -59,19 +59,21 @@ namespace {
       while (true) {
           // read the lock until it is even
 	WriteSet* s = (WriteSet*)(timestamp.val);
-	// if (!(s->done))
-	//         continue;
+	 if (!(s->done))
+	         continue;
 
           // check the read set
           CFENCE;
           // don't branch in the loop---consider it backoff if we fail
           // validation early
-          bool valid = true;
+          //bool valid = true;
           foreach (ValueList, i, tx->vlist)
-              valid &= i->isValid(s);
+	    if(!i->isValid())
+	       return VALIDATION_FAILED;
+          //     valid &= i->isValid(s);
 
-          if (!valid)
-              return VALIDATION_FAILED;
+          // if (!valid)
+          //     return VALIDATION_FAILED;
 
           // restart if timestamp changed during read set iteration
           CFENCE;
@@ -144,13 +146,16 @@ namespace {
       // Sample the sequence lock, if it is even decrement by 1
       tx->start_time = timestamp.val;// & ~(1L);
 
+      while (!((WriteSet*)tx->start_time)->done) {
+      }
+
+
       // notify the allocator
       tx->allocator.onTxBegin();
 
       tx->current_writes = tx->n2list.get(tx->n2listloc);
       
       if(!tx->current_writes->done) printf("Looping and not done\n");
-      tx->current_writes->done = false;
       tx->current_writes->reset();
       // notify CM
       CM::onBegin(tx);
@@ -175,6 +180,7 @@ namespace {
       }
 
       // get the lock and validate (use RingSTM obstruction-free technique)
+      tx->current_writes->done = false;
 
       while (!((WriteSet*)tx->start_time)->done) {
       }
@@ -236,7 +242,7 @@ namespace {
 	}
       }
 
-
+      tx->current_writes->done = false;
       tx->current_writes->writeback(STM_WHEN_PROTECT_STACK(upper_stack_bound));
       tx->current_writes->done = true;
       tx->n2listloc = (tx->n2listloc + 1) % tx->n2list.size();
@@ -338,7 +344,7 @@ namespace {
       // Perform writes to the exception object if there were any... taking the
       // branch overhead without concern because we're not worried about
       // rollback overheads.
-      STM_ROLLBACK(tx->writes, upper_stack_bound, except, len);
+      STM_ROLLBACK((*(tx->current_writes)), upper_stack_bound, except, len);
 
       tx->vlist.reset();
       tx->current_writes->reset();
