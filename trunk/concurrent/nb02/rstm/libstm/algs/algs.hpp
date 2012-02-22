@@ -46,6 +46,8 @@ namespace stm
       OrecLazy,  OrecLazyHour,  OrecLazyBackoff,  OrecLazyHB,
       NOrec,     NOrecHour,     NOrecBackoff,     NOrecHB,
       NOrec2,     NOrec2Hour,     NOrec2Backoff,     NOrec2HB,
+      NOrec3,     NOrec3Hour,     NOrec3Backoff,     NOrec3HB,
+      NOrec4,     NOrec4Hour,     NOrec4Backoff,     NOrec4HB,
       // ProfileTM support.  These are not true STMs
       ProfileTM, ProfileAppAvg, ProfileAppMax, ProfileAppAll,
       // end with a distinct value
@@ -72,6 +74,7 @@ namespace stm
    *  detection in our STM systems
    */
   extern pad_word_t    timestamp;
+  extern pad_word_t    timestamp2;
   extern orec_t        orecs[NUM_STRIPES];             // set of orecs
   extern pad_word_t    last_init;                      // last logical commit
   extern pad_word_t    last_complete;                  // last physical commit

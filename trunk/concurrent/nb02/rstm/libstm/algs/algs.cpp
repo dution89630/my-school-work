@@ -20,6 +20,7 @@ namespace stm
    *  RingSW ring index
    */
   pad_word_t timestamp = {0};
+  pad_word_t timestamp2 = {0};
 
   /**
    *  Sometimes we use the Timestamp not as a counter, but as a bool.  If we

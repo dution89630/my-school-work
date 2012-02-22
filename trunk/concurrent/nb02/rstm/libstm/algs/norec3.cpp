@@ -43,7 +43,7 @@ namespace {
 
 
   template <class CM>
-  struct NOrec2_Generic
+  struct NOrec3_Generic
   {
       static TM_FASTCALL bool begin(TxThread*);
       static TM_FASTCALL void commit(STM_COMMIT_SIG(,));
@@ -124,33 +124,31 @@ namespace {
 
   template <typename CM>
   void
-  NOrec2_Generic<CM>::initialize(int id, const char* name)
+  NOrec3_Generic<CM>::initialize(int id, const char* name)
   {
       // set the name
       stm::stms[id].name = name;
 
       // set the pointers
-      stm::stms[id].begin     = NOrec2_Generic<CM>::begin;
-      stm::stms[id].commit    = NOrec2_Generic<CM>::commit_ro;
-      stm::stms[id].read      = NOrec2_Generic<CM>::read_ro;
-      stm::stms[id].write     = NOrec2_Generic<CM>::write_ro;
+      stm::stms[id].begin     = NOrec3_Generic<CM>::begin;
+      stm::stms[id].commit    = NOrec3_Generic<CM>::commit_ro;
+      stm::stms[id].read      = NOrec3_Generic<CM>::read_ro;
+      stm::stms[id].write     = NOrec3_Generic<CM>::write_ro;
       stm::stms[id].irrevoc   = irrevoc;
       stm::stms[id].switcher  = onSwitchTo;
       stm::stms[id].privatization_safe = true;
-      stm::stms[id].rollback  = NOrec2_Generic<CM>::rollback;
+      stm::stms[id].rollback  = NOrec3_Generic<CM>::rollback;
 
       //new to set the start pointer
-      start_writeset.time = 1;
-      start_writeset.done = true;
       timestamp2.val = (uintptr_t)&start_writeset;
 
   }
 
   template <class CM>
   bool
-  NOrec2_Generic<CM>::begin(TxThread* tx)
+  NOrec3_Generic<CM>::begin(TxThread* tx)
   {
-      // Originally, NOrec2 required us to wait until the timestamp is odd
+      // Originally, NOrec3 required us to wait until the timestamp is odd
       // before we start.  However, we can round down if odd, in which case
       // we don't need control flow here.
 
@@ -175,7 +173,7 @@ namespace {
 
   // template <class CM>
   // void
-  // NOrec2_Generic<CM>::commit(STM_COMMIT_SIG(tx,upper_stack_bound))
+  // NOrec3_Generic<CM>::commit(STM_COMMIT_SIG(tx,upper_stack_bound))
   // {
   //     // From a valid state, the transaction increments the seqlock.  Then it
   //     // does writeback and increments the seqlock again
@@ -224,10 +222,10 @@ namespace {
 
   template <class CM>
   void
-  NOrec2_Generic<CM>::commit_ro(STM_COMMIT_SIG(tx,))
+  NOrec3_Generic<CM>::commit_ro(STM_COMMIT_SIG(tx,))
   {
       // Since all reads were consistent, and no writes were done, the read-only
-      // NOrec2 transaction just resets itself and is done.
+      // NOrec3 transaction just resets itself and is done.
 
       CM::onCommit(tx);
       tx->vlist.reset();
@@ -252,7 +250,7 @@ namespace {
 
   template <class CM>
   void
-  NOrec2_Generic<CM>::commit_rw(STM_COMMIT_SIG(tx,upper_stack_bound))
+  NOrec3_Generic<CM>::commit_rw(STM_COMMIT_SIG(tx,upper_stack_bound))
   {
       // From a valid state, the transaction increments the seqlock.  Then it does
       // writeback and increments the seqlock again
@@ -270,21 +268,18 @@ namespace {
       while (!bcasptr(&timestamp2.val, tx->start_time, tx->current_writes)) {
 	//while (!bcasptr(&timestamp.val, tx->start_time, tx->start_time + 1)) {
 	if ((tx->start_time = validate(tx)) == VALIDATION_FAILED) {
-	  tx->current_writes->done = true;
 	  tx->tmabort(tx);
 	} //else {
 	  // while (!((WriteSet*)tx->start_time)->done) {
 	  // }
 	  //}
 	tx->current_writes->next = (WriteSet*)tx->start_time;
-	tx->current_writes->time = ((WriteSet*)tx->start_time)->time + 1;
       }
-      //tx->last_write = tx->current_writes->time + 1;
       timestamp.val += 1;
 
       WriteSet* next;
       while(tx->current_writes->writer == MAXINTVAL) {
-	next = (WriteSet*)timestamp2.val;
+	next = tx->current_writes;
 	while(next->next->writer == MAXINTVAL) {
 	  next = (WriteSet*)next->next;
 	}
@@ -299,7 +294,7 @@ namespace {
 	break;
       }
       tx->n2listloc = (tx->n2listloc + 1) % tx->n2list.size();
-      
+            
       // Release the sequence lock, then clean up
       CFENCE;
       //bcasptr(&timestamp.val, timestamp.val, tx->start_time + 2);
@@ -317,46 +312,36 @@ namespace {
   }
 
 
-  TM_INLINE void* getLoc(STM_READ_SIG(tx,addr,mask)) {
-    WriteSet* next = (WriteSet*)(tx->start_time);
-    while(!next->done) {
+  TM_INLINE void validate_read(STM_READ_SIG(tx,addr,mask)) {
+    WriteSet* next = (WriteSet*)(timestamp2.val);
+    while(next != (WriteSet*)tx->start_time) {
       WriteSetEntry log(STM_WRITE_SET_ENTRY(addr, NULL, 0));
       //bool found = tx->norec2_desc->writes.find(log);
-      bool found = next->find(log);
-      //need to do this because have a fixed number of write sets in the list
-      if(__builtin_expect(found, false)) {
-	if(next->time > tx->start_time2 + WRITESETLISTSIZE) {
-	  printf("aborting b/c of list size");
-	  tx->tmabort(tx);
-	}
-      }      
-      REDO_RAW_CHECK(found, log, mask);
+      if(next->find(log)) {
+	 tx->tmabort(tx);
+      }
       next = (WriteSet*)next->next;
     }
-    return *addr;
+
   }
 
   template <class CM>
   void*
-  NOrec2_Generic<CM>::read_ro(STM_READ_SIG(tx,addr,mask))
+  NOrec3_Generic<CM>::read_ro(STM_READ_SIG(tx,addr,mask))
   {
       // A read is valid iff it occurs during a period where the seqlock does
       // not change and is even.  This code also polls for new changes that
       // might necessitate a validation.
 
       // read the location to a temp
-      void* tmp = getLoc(tx, addr STM_MASK(mask & ~log.mask));
+    void* tmp = *addr;
     
       CFENCE;
 
       // if the timestamp has changed since the last read, we must validate and
       // restart this read
-      while (tx->start_time != timestamp2.val) {
-          if ((tx->start_time = validate(tx)) == VALIDATION_FAILED)
-              tx->tmabort(tx);
-          tmp = getLoc(tx, addr STM_MASK(mask & ~log.mask));
-          CFENCE;
-      }
+      //validate_read(tx, addr STM_MASK(mask & ~log.mask));
+
 
       // log the address and value
       tx->vlist.insert(STM_VALUE_LIST_ENTRY(addr, tmp, mask));
@@ -366,9 +351,8 @@ namespace {
 
   template <class CM>
   void*
-  NOrec2_Generic<CM>::read_rw(STM_READ_SIG(tx,addr,mask))
+  NOrec3_Generic<CM>::read_rw(STM_READ_SIG(tx,addr,mask))
   {
-
       // check the log for a RAW hazard, we expect to miss
       WriteSetEntry log(STM_WRITE_SET_ENTRY(addr, NULL, mask));
       //bool found = tx->norec2_desc->writes.find(log);
@@ -389,12 +373,11 @@ namespace {
 
   template <class CM>
   void
-  NOrec2_Generic<CM>::write_ro(STM_WRITE_SIG(tx,addr,val,mask))
+  NOrec3_Generic<CM>::write_ro(STM_WRITE_SIG(tx,addr,val,mask))
   {
       tx->current_writes = tx->n2list.get(tx->n2listloc);
       //tx->current_writes = tx->n2list.get(0);
       if(!tx->current_writes->done) printf("Looping and not done\n");
-      //tx->current_writes->time = tx->last_write;
       tx->current_writes->reset();
       
       // buffer the write, and switch to a writing context
@@ -407,7 +390,7 @@ namespace {
 
   template <class CM>
   void
-  NOrec2_Generic<CM>::write_rw(STM_WRITE_SIG(tx,addr,val,mask))
+  NOrec3_Generic<CM>::write_rw(STM_WRITE_SIG(tx,addr,val,mask))
   {
       // just buffer the write
       tx->current_writes->insert(WriteSetEntry(STM_WRITE_SET_ENTRY(addr, val, mask)));
@@ -416,7 +399,7 @@ namespace {
 
   template <class CM>
   stm::scope_t*
-  NOrec2_Generic<CM>::rollback(STM_ROLLBACK_SIG(tx, upper_stack_bound, except, len))
+  NOrec3_Generic<CM>::rollback(STM_ROLLBACK_SIG(tx, upper_stack_bound, except, len))
   {
     
       stm::PreRollback(tx);
@@ -432,29 +415,29 @@ namespace {
 
       tx->vlist.reset();
       //tx->writes.reset();
-      //tx->current_writes->reset();
-      //tx->current_writes->done = true;
+      tx->current_writes->reset();
+      tx->current_writes->done = true;
       return stm::PostRollback(tx, read_ro, write_ro, commit_ro);
   }
 } // (anonymous namespace)
 
-// Register NOrec2 initializer functions. Do this as declaratively as
+// Register NOrec3 initializer functions. Do this as declaratively as
 // possible. Remember that they need to be in the stm:: namespace.
-#define FOREACH_NOREC2(MACRO)                    \
-    MACRO(NOrec2, HyperAggressiveCM)             \
-    MACRO(NOrec2Hour, HourglassCM)               \
-    MACRO(NOrec2Backoff, BackoffCM)              \
-    MACRO(NOrec2HB, HourglassBackoffCM)
+#define FOREACH_NOREC3(MACRO)                    \
+    MACRO(NOrec3, HyperAggressiveCM)             \
+    MACRO(NOrec3Hour, HourglassCM)               \
+    MACRO(NOrec3Backoff, BackoffCM)              \
+    MACRO(NOrec3HB, HourglassBackoffCM)
 
-#define INIT_NOREC2(ID, CM)                      \
+#define INIT_NOREC3(ID, CM)                      \
     template <>                                 \
     void initTM<ID>() {                         \
-        NOrec2_Generic<CM>::initialize(ID, #ID);     \
+        NOrec3_Generic<CM>::initialize(ID, #ID);     \
     }
 
 namespace stm {
-  FOREACH_NOREC2(INIT_NOREC2)
+  FOREACH_NOREC3(INIT_NOREC3)
 }
 
-#undef FOREACH_NOREC2
-#undef INIT_NOREC2
+#undef FOREACH_NOREC3
+#undef INIT_NOREC3

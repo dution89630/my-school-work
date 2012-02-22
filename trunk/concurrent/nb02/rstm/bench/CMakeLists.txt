@@ -20,9 +20,9 @@ include (AddTargetDefinitions)
 # this (it's a CMake FAQ).
 set(
   benchmarks
-#  CounterBench
+  CounterBench
   TreeBench
-#  ListBench
+  ListBench
 #  DListBench
 #  WWPathologyBench
 #  HashBench

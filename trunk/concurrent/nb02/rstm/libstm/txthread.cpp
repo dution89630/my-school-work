@@ -64,8 +64,10 @@ namespace stm
         allocator(),
         num_commits(0), num_aborts(0), num_restarts(0),
         num_ro(0), scope(NULL),
-        start_time(0), tmlHasLock(false), undo_log(64), vlist(64), writes(64),
-	n2listloc(0), n2list(11), current_writes(NULL),
+        start_time(0), start_time2(0),
+	tmlHasLock(false), undo_log(64), vlist(64), writes(64),
+	n2listloc(0), n2list(WRITESETLISTSIZE+1),
+	current_writes(NULL),
         r_orecs(64), locks(64),
         wf((filter_t*)FILTER_ALLOC(sizeof(filter_t))),
         rf((filter_t*)FILTER_ALLOC(sizeof(filter_t))),
@@ -88,7 +90,7 @@ namespace stm
 
 
       //init write sets
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < WRITESETLISTSIZE; i++) {
 	//n2list.get(i)->init();
 	n2list.insert(new WriteSet(64));
       }
