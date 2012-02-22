@@ -28,6 +28,8 @@
 #include "stm/ValueList.hpp"
 #include "WBMMPolicy.hpp"
 
+#define WRITESETLISTSIZE 100
+
 namespace stm
 {
   /**
@@ -56,6 +58,7 @@ namespace stm
       uint32_t       num_ro;        // stats counter: read-only commits
       scope_t* volatile scope;      // used to roll back; also flag for isTxnl
       uintptr_t      start_time;    // start time of transaction
+      uintptr_t      start_time2;    // start time of transaction
       uintptr_t      end_time;      // end time of transaction
       uintptr_t      ts_cache;      // last validation time
       bool           tmlHasLock;    // is tml thread holding the lock

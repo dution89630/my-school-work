@@ -38,6 +38,8 @@ set(sources
   algs/nano.cpp
   algs/norec.cpp
   algs/norec2.cpp
+  algs/norec3.cpp
+  algs/norec4.cpp
   algs/norecprio.cpp
   algs/oreau.cpp
   algs/orecala.cpp

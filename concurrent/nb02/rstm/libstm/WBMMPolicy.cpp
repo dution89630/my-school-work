@@ -54,6 +54,7 @@ void WBMMPolicy::handle_full_prelimbo()
 
     // If current != NULL, it is the head of a list of reclaimables
     if (current) {
+      
         // detach /current/ from the list
         prev->older = NULL;
 

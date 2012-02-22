@@ -328,11 +328,12 @@ namespace stm
 
     public:
 
+
     //For lock-free
     volatile WriteSet* next;
     volatile bool done;
     volatile uint32_t writer;
-
+    volatile uint32_t time;
 
 
       WriteSet();
