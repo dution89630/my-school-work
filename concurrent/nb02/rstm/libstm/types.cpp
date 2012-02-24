@@ -62,6 +62,13 @@ namespace stm
   template void MiniVector<UndoLogEntry>::expand();
   template void MiniVector<WriteSet*>::expand();
 
+  /******************************************************************************
+   *Normal Write Set
+   *
+   *
+   ******************************************************************************/
+
+
   /**
    * This doubles the size of the index. This *does not* do anything as
    * far as actually doing memory allocation. Callers should delete[] the
@@ -203,6 +210,142 @@ namespace stm
   }
 #else
 #endif
+
+
+
+  /**********************************************************************************
+   *  Write Set 2
+   *
+   *
+   *
+   **********************************************************************************/
+
+
+
+
+
+  /**
+   * This doubles the size of the index. This *does not* do anything as
+   * far as actually doing memory allocation. Callers should delete[] the
+   * index table, increment the table size, and then reallocate it.
+   */
+  inline size_t WriteSet2::doubleIndexLength()
+  {
+      assert(shift != 0 &&
+             "ERROR: the writeset doesn't support an index this large");
+      shift   -= 1;
+      ilength  = 1 << (8 * sizeof(uint32_t) - shift);
+      return ilength;
+  }
+
+  void WriteSet2::init()
+  {
+      index = NULL;
+      shift = 8 * sizeof(uint32_t);
+      ilength = 0;
+      version = 1;
+      list = NULL;
+      capacity = 64;
+      lsize = 0;
+      next = NULL;
+      done = true;
+      writer = -1;
+      // Find a good index length for the initial capacity of the list.
+      while (ilength < 3 * 64)
+          doubleIndexLength();
+
+      index = new index_t[ilength];
+      list  = typed_malloc<WriteSetEntry>(capacity);
+  }
+
+
+
+  /***  Writeset constructor.  Note that the version must start at 1. */
+  WriteSet2::WriteSet2(const size_t initial_capacity)
+      : index(NULL), shift(8 * sizeof(uint32_t)), ilength(0),
+        version(1), list(NULL), capacity(initial_capacity), lsize(0),
+	next(NULL), done(true), writer(-1)
+  {
+      // Find a good index length for the initial capacity of the list.
+      while (ilength < 3 * initial_capacity)
+          doubleIndexLength();
+
+      index = new index_t[ilength];
+      list  = typed_malloc<WriteSetEntry>(capacity);
+  }
+
+  /***  Writeset destructor */
+  WriteSet2::~WriteSet2()
+  {
+      delete[] index;
+      free((void*)list);
+  }
+
+  /***  Rebuild the writeset */
+  void WriteSet2::rebuild()
+  {
+      assert(version != 0 && "ERROR: the version should *never* be 0");
+
+      // extend the index
+      delete[] index;
+      index = new index_t[doubleIndexLength()];
+
+      for (size_t i = 0; i < lsize; ++i) {
+          const volatile WriteSetEntry& l = list[i];
+          size_t h = hash(l.addr);
+
+          // search for the next available slot
+          while (index[h].version == version)
+              h = (h + 1) % ilength;
+
+          index[h].address = l.addr;
+          index[h].version = version;
+          index[h].index   = i;
+      }
+  }
+
+  /***  Resize the writeset */
+  void WriteSet2::resize()
+  {
+      volatile WriteSetEntry* temp  = list;
+      capacity     *= 2;
+      list          = typed_malloc<WriteSetEntry>(capacity);
+      //memcpy(list, temp, sizeof(WriteSetEntry) * lsize);
+      for (size_t i = 0; i < lsize; i++) {
+	list[i].addr = temp[i].addr;
+	list[i].val = temp[i].val;
+      }
+      free((void*)temp);
+  }
+
+  /***  Another writeset reset function that we don't want inlined */
+  void WriteSet2::reset_internal()
+  {
+    //memset(index, 0, sizeof(index_t) * ilength);
+    for (size_t i = 0; i < ilength; i++) {
+          list[i].addr = NULL;
+          list[i].val = NULL;
+      }
+      version = 1;
+  }
+
+
+  /**********************************************************************************
+   *End write sets
+   *
+   *
+   *
+   **********************************************************************************/
+
+
+
+
+
+
+
+
+
+
 
 #if !defined(STM_PROTECT_STACK) && !defined(STM_ABORT_ON_THROW)
   void UndoLog::undo()
