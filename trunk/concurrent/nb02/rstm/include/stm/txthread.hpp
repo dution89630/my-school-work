@@ -24,6 +24,7 @@
 #include "common/ThreadLocal.hpp"
 #include "stm/metadata.hpp"
 #include "stm/WriteSet.hpp"
+#include "stm/WriteSet2.hpp"
 #include "stm/UndoLog.hpp"
 #include "stm/ValueList.hpp"
 #include "WBMMPolicy.hpp"
@@ -70,6 +71,7 @@ namespace stm
     uint32_t n2listloc;
     NOrec2List n2list;
     WriteSet* current_writes;
+    WriteSet2* atempwriteset;
 
       OrecList       r_orecs;       // read set for orec STMs
       OrecList       locks;         // list of all locks held by tx
