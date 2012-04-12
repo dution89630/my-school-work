@@ -76,19 +76,21 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 \newcommand{\Xomit}[1]{}
 %==========================================================================
 
-\title{Adding non-blocking strong isloation to a locking STM (In this case TL2)}
+\title{Adding non-blocking strong isolation to a locking STM (In this case TL2)}
+\maketitle
 
 \section{Protocol}
-I think people overwhelmingly aggree that privitization safety in TM is a good thing.
+I think people overwhelmingly agree that privatization safety in TM is a good thing.
 
-In addition it has been argued that strong atomicty should be reqired for memeory accesses in and out of transactions.
-One agrument is that without it, things can get complicated for the programmer.
+In addition it has been argued that strong atomicity should be required for concurrent memory accesses inside and outside of transactions.
+One argument is that without it, things can get complicated for the programmer.
 
 It has also been argued that strong isolation is a bad thing.
 One of the main arguments against this is that it is too expensive.
 
-There have been protocols proposed for how to implement strong atomicty, but they all require using locks
-and create some memory barriers.
+There have been protocols proposed that implement strong atomicity, but they all require using locks
+and create some memory barriers
+(although I guess there are some hardware transactional memory supports strong isolation by default).
 These barriers occur when a programmer reads or writes to a shared variable outside of a transaction.
 The problem with this is that the programmer thinks he is just preforming basic reads and writes and using
 but what really is going on is a blocking solution that uses locks.
@@ -99,22 +101,24 @@ without blocking.
 In order to do this, atomic reads and writes are used, as well as possibly a compare and swap in the case
 of a conflict with a committing transaction.
 
+The STM protocol itself uses locks and I tried to model it after TL2.
+
 
 \section{Basic Idea}
 The idea is to take a word based STM algorithm that uses locks (in this case TL2) and add non-blocking strong isolation.
 
-Assume that we want strong isolation in an STM.  They why should it be non-blocking?
-When a programmer choses to use an STM he should expect that the STM system is uses some sort of syncronization methods to ensure
+Assume that we want strong isolation in an STM.  Then why should it be non-blocking?
+When a programmer choses to use an STM he should expect that the STM system will use some sort of synchronization methods to ensure
 transactions are atomic.
 Of course because of this he can expect to make some compromises, for example he might expect the transactions to be blocking, so
-if a thread running a transaction gets descheduled, the progress of other threads might be stopped until the thread is rescheduled.
-Or transactions might be slower to execute in order to ensure atomicity (i.e. because of aborts).
+if a thread running a transaction gets descheduled, then the progress of other threads might be stopped until the thread is rescheduled.
+Or in order to ensure atomicity transactions might be slower to execute then normal code (i.e. because of aborts among other things).
 Or even if a thread running a live transaction crashes, it might block the progress of other transactions.
 
-Now what about for acceses to shared memory outside of transactions?
+Now what about for accesses to shared memory outside of transactions?
 Should he expect the same problems here?
 Here we have a word based STM system.
-So the operations done outside of the transactions are single load/store operations.
+So the read/write operations to shared memory done outside of the transactions are single load/store operations.
 Without the STM each of these would be just a (single low level?) atomic operation.
 But when using an STM these operations become blocking, so they have the same progress guarantees as the transactions.
 Should the programmer expect that a single atomic load/store might block forever?
@@ -122,13 +126,13 @@ What I try to propose here is a way to implement non-blocking strong isolation i
 
 \section{Strong Isolation}
 The protocol proposed here tries to implement strong isolation in the sense that transactions and non-transactional accesses are
-linearizable.
+linearizable in the same history.
 
 \section{Description}
 
 \subsection{Memory Setup}
-To the programmer the structure of the memory is the same.
-To the system, instead of each address coresponding to one location in memory, it coresponds to two.
+To the programmer the structure of the memory is a normal set of addresses.
+To the system, instead of each address corresponding to one location in memory, it corresponds to two.
 One area is called the $NT$ area and one the $T$ area.
 Only the non-transactional access modify the $NT$ area, and only transactional accesses modify the $T$ area.
 When a programmer calls ${\sf transactional\_read}()$ or ${\sf non\_transactional\_read}()$ the value returned could come from either
@@ -161,16 +165,22 @@ See figure \ref{fig:mem} for a example memory structure.
 \end{figure}
 
 
-{\bf ${\sf transaction\_begin}()$}
-Intialize the transactions.
-Like in TL2, read only transactions do not need to keep a read set.
-The variable $rv$ is set to the global clock time.
-This is used for validation.
+\subsection{Operations Descriptions}
 
 {\bf ${\sf non\_transactional\_read}()$}
 Find the most recent value from $T$ and $NT$ memory.
-If there is a live transaction it might have to be aborted
+If there is a live transaction in the commit process it might have to be aborted to ensure safety.
 Update the local value $time$ to the most recent.
+
+{\bf ${\sf non\_transactional\_write}()$}
+Create a new structure in shared memory, initialize the values, add to write set.
+
+
+{\bf ${\sf transaction\_begin}()$}
+Initialize the transactions.
+Like in TL2, read only transactions do not need to keep a read set.
+The variable $rv$ is set to the global clock time.
+This is used for validation.
 
 {\bf ${\sf transactional\_read}()$}
 Find the most recent value from $T$ and $NT$ memory.
@@ -185,13 +195,13 @@ A non-transactional write does not increase the global counter, but a transactio
 global counter value it read.
 This means that a read-only transaction might abort forever because it always reads a clock time that is old.
 To avoid this, when a transaction aborts because it read an NT value, the ${\sf transactional\_read}()$ operation
-will incrament the global counter if the value it read has a greater clock value.
+will increment the global counter if the value it read has a greater clock value.
 
 {\bf ${\sf transactional\_write}()$}
-Create a new structure, initialize the values, add it to the $ws$.
+Create a new structure in shared memory, initialize the values, add it to the $ws$.
 
 {\bf ${\sf try\_to\_commit}()$}
-Return committed if it is a read only transacion.
+Return committed if it is a read only transaction.
 
 First lock all the items in the write set.
 Get a new time from the global clock.
@@ -200,19 +210,36 @@ Validate the read set.
 For each item in the $T$ and $NT$ read set, make sure the location you read has not been updated.
 
 \section{TODO}
+\subsection{Other Algorithms}
+TL2 is probably the most popular STM algorithm.
+What about non-blocking STM algorithms, how can strong isolation be added to those?
+
 \subsection{Optimizations}
 I ``tried'' to keep the algorithm as simple as possible.
 There should be ways to optimize the operations.
 For example the $time$ might be useful in some operations
 in order to avoid some of the checks.
 
+
+Should move the validation to before the items are stored to shared memory in the try to commit!!!!!
+
+Also can some of the pointers be removed?
+Less indirection?
+
 \subsection{Privitization}
-If the algorithm is correct then it already is privitation safe.
-But, there could be optimizations done for privitation.
-Consider that we know which transactions privitize memory locations (for example, user defined, complier defined).
-Once the location is privitized and the last transaction to write to the location
+If the algorithm is correct then it already is privatization safe.
+But, there could be optimizations done for privatization.
+Consider that we know which transactions privatize memory locations (for example, user defined, complier defined).
+Once the location is privatized and the last transaction to write to the location
 is committed or aborted (this can be found by looking at ${\sf load}(addr, T).status$)
 then the location is private and the checks can be avoided.
+
+\subsection{Fixes}
+Probably lots.
+
+Some $NT$ locations are compared by using memory addresses, instead they should use the $local\_time$ and $id$ for comparison.
+
+The freeing of locations is either done incorrectly, or not done at all.
 
 \section{Algorithm}
 The first version pesudo-code follows.
@@ -264,26 +291,29 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 {\bf operation}  ${\sf non\_transactional\_read}(addr)$;\\
 \line{DA01} \> $tmp \gets {\sf load}(addr, T)$; \\
 \line{DA01} \> {\bf while} $(tmp.status \neq \mathit{COMMITTED})${\bf do} \\
-\line{DA01} \>\> {\bf if} $tmp.time \leq time$ {\bf then} \\
+\line{DA01} \>\> {\bf if} $(tmp.time \leq time \wedge tmp.status = \mathit{LIVE})$ {\bf then} \\
 \line{DA01} \>\>\> ${\sf \mathit{C\&S}}(tmp.status, \mathit{LIVE}, \mathit{ABORTED})$; \\
 \line{DA01} \>\> {\bf else} \\
-\line{DA01} \>\>\> $tmp \gets tmp.last$; \\
+\line{DA01} \>\>\> $tmp \gets tmp.prev$; \\
 \line{DA01} \>\> {\bf end if} \\
 \line{DA01} \> {\bf end while} \\
 \line{DA01} \> $tmp2 \gets load(addr, NT)$; \\
-\line{DA01} \> $time \gets {\sf max}(time, tmp.time, tmp2.time + 0.5)$; \\
-\line{DA01} \> {\bf if} $(tmp.last \neq tmp2)$ {\bf then} $tmp \gets tmp2$ {\bf end if} \\
+
+\line{DA01} \> {\bf if} $(tmp.last \neq tmp2)$ {\bf then} $tmp \gets tmp2$; \\
+\line{DA01} \>\> $time \gets {\sf max}(time, tmp.time + 0.1, tmp2.time + 0.1)$; \\
+\line{DA01} \>\> {\bf else} $time \gets {\sf max}(time, tmp.time, tmp2.time + 0.1)$; \\
+\line{DA01} \> {\bf end if} \\
 \line{DA01} \> {\sf return} $tmp.val$. \\
 
-{\bf operation}  ${\sf non\_transactional\_write}(addr, valueaddr, value)$;\\
+{\bf operation}  ${\sf non\_transactional\_write}(addr, value)$;\\
 \line{DA01} \> allocate new variable $next\_write$ \\
+\line{DA01} \> $time \gets {\sf max}(time, \mathit{GLOBAL\_CLOCK})$; \\
 \line{DA01} \> $next\_write.addr \gets addr$; \\
 \line{DA01} \> $next\_write.value \gets value$; \\
 \line{DA01} \> $next\_write.time \gets time$; \\
 \line{DA01} \> $next\_write.local\_time \gets local\_time++$; \\
 \line{DA01} \> $next\_write.id \gets id$; \\
 \line{DA01} \> ${\sf store}(addr, next\_write, NT)$; \\
-\line{DA01} \> $time \gets \mathit{GLOBAL\_CLOCK}$; \\
 
 \end{tabbing}
 \normalsize
@@ -317,8 +347,11 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf procedure} ${\sf validate\_all}()$; \\
 \line{DA01} \> {\bf for each} $item$ in $rs$ {\bf do} \\
-\line{DA01} \>\> {\bf if} $item.addr$ is locked {\bf then} ${\sf return}(0)$ {\bf end if} \\
+\line{DA01} \>\> {\bf if} $item.addr$ is locked by someone else {\bf then} ${\sf return}(0)$ {\bf end if} \\
 \line{DA01} \>\> $tmp \gets load(item.addr, \mathit{T})$; \\
+\line{DA01} \>\> {\bf while} $tmp.status \neq \mathit{COMMITTED}$ {\bf do} \\
+\line{DA01} \>\>\> $tmp \gets tmp.prev$; \\
+\line{DA01} \>\> {\bf end while} \\
 \line{DA01} \>\> $tmp2 \gets load(item.addr, \mathit{NT})$; \\
 \line{DA01} \>\> {\bf if} $(tmp.last \neq tmp2)$ {\bf then} ${\sf return}(0)$; \\
 \line{DA01} \>\> {\bf else if} $tmp.time > rv$ {\bf then} ${\sf return}(0)$; \\
@@ -385,11 +418,11 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{DA01} \> {\bf end while} \\
 \line{DA01} \> $tmp2 \gets load(addr, NT)$; \\
 \line{DA01} \> {\bf if} $(tmp.last \neq tmp2)$ {\bf then}  \\
-\line{DA01} \>\> {\bf if} $({\sf max}(tmp.time + 0.5, tmp2.time) > rv)$ {\bf then} \\
+\line{DA01} \>\> {\bf if} $({\sf max}(tmp.time + 0.1, tmp2.time + 0.1) > rv)$ {\bf then} \\
 \line{DA01} \>\>\> $rv \gets \mathit{GLOBAL\_CLOCK}$; \\
-\line{DA01} \>\>\> {\bf if} $(tmp.time + 0.5 \geq rv)$ {\bf then} \\
+\line{DA01} \>\>\> {\bf if} $({\sf max}(tmp.time + 0.1, tmp2.time + 0.1) > rv)$ {\bf then} \\
 \> \% Increment clock to ensure progress in case of abort by NT write \\
-\line{DA01} \>\>\>\> $rv \gets {\sf fetch\&incrament}(\mathit{GLOBAL\_CLOCK})$; \\
+\line{DA01} \>\>\>\> $rv \gets {\sf incrament\&fetch}(\mathit{GLOBAL\_CLOCK})$; \\
 \line{DA01} \>\>\> {\bf end if} \\
 \line{DA01} \>\>\> ${\sf abort\_keep\_rv}()$; \\
 \line{DA01} \>\> {\bf end if} \\
@@ -450,7 +483,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{START1} \> $rv \gets \mathit{GLOBAL\_CLOCK}$; \\
 \line{START2} \> Allocate new variable $status$ \\
 \line{DA01} \> $status \gets \mathit{LIVE}$; \\
-\line{DA01} \> $ws \gets \emptyset$; $rs \gets \emptyset$; $ntrs \gets emptyset$; \\
+\line{DA01} \> $ws \gets \emptyset$; $rs \gets \emptyset$; $ntrs \gets \emptyset$; \\
 \line{DA01} \> more??. \\
 
 {\bf operation}  ${\sf try\_to\_commit}()$;\\
