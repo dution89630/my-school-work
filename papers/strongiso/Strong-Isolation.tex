@@ -1023,8 +1023,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \\
 {\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
 \line{B01} \> allocate new variable $\mathit{next\_write}$ of type NT; \\
-\line{B03} \> $\mathit{local\_time} \gets \mathit{local\_time} + 1$; \\
-\line{B04} \> $\mathit{next\_write} \gets \mathit{(addr, value, \infty, local\_time, id)}$; \\
+\line{B04} \> $\mathit{next\_write} \gets \mathit{(addr, value, \infty)}$; \\
 \line{B05} \> ${\sf store}(\mathit{addr, next\_write})$ \\
 \line{B02} \> $\mathit{time} \gets \mathit{GVC}$; \\
 \line{B02} \> $\mathit{next\_write.time} \gets \mathit{time}$; \\
@@ -1682,6 +1681,12 @@ Privatization techniques for software transactional memory.
 \section{Without Changing the Memory Layout}
 
 
+
+
+
+
+
+
 \begin{figure}[htb]
 \centering{ \fbox{
 \begin{minipage}[t]{150mm}
@@ -1695,25 +1700,20 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
-\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \cap \mathit{tmp.status} \neq$ COMMITTED ) {\bf then} \\
-\line{A03}  \>\>  {\bf if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
+\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T ) {\bf then} \\
+\line{A03}  \>\>  {\bf if}  $\mathit{tmp.status} = $ LIVE \\
 \line{A04} \>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) \\
 \line{A07} \>\> {\bf end if} \\
 \line{A04} \>\> {\bf if} $tmp.status = $ ABORTED {\bf then} \\
-\line{A04} \>\>\> $\mathit{tmp} \gets \mathit{tmp.last}$ \\
+\line{A13} \>\>\> ${\sf return}$ ($\mathit{tmp.old\_val}$) \\
+\line{A13} \>\> {\bf else} ${\sf return}$ ($\mathit{tmp.val}$) \\
 \line{A07} \>\> {\bf end if} \\
 \line{A07} \> {\bf end if} \\
-\line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \sf{min}(\mathit{tmp.time, GCV}))$ \\
-\line{A13} \> ${\sf return}$ ($\mathit{tmp.val}$) \\
+\line{A13} \> ${\sf return}$ ($\mathit{tmp}$) \\
 {\bf end operation}. \\
 \\
 {\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
-\line{B01} \> allocate new variable $\mathit{next\_write}$ of type NT; \\
-\line{B03} \> $\mathit{local\_time} \gets \mathit{local\_time} + 1$; \\
-\line{B04} \> $\mathit{next\_write} \gets \mathit{(addr, value, \infty, local\_time, id)}$; \\
-\line{B05} \> ${\sf store}(\mathit{addr, next\_write})$ \\
-\line{B02} \> $\mathit{time} \gets \mathit{GVC}$; \\
-\line{B02} \> $\mathit{next\_write.time} \gets \mathit{time}$; \\
+\line{B05} \> ${\sf store}$($\mathit{addr,} \sf{unMark}(\mathit{value}$)) \\
 {\bf end operation}.
 
 \end{tabbing}
@@ -1724,17 +1724,6 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \label{fig:ntops}
 }
 \end{figure}
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1761,20 +1750,19 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{C01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
 \line{C04} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\
 \line{C05} \> {\bf if} 
-   ($\mathit{tmp}$ is of type $T \cap~ (\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$ {\bf then} \\
-\line{C06} \>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}()$  {\bf else} $\mathit{tmp} \gets \mathit{tmp.last}$ {\bf end if} \\
-\line{C11} \> {\bf end if}; \\
-\line{C12} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
-\line{C15} \>\> {\bf then} {\bf if} $\mathit{tmp.time} >= \mathit{rv}$  \\
+   ($\mathit{tmp}$ is of type $T$ ) {\bf then} \\
+\line{C06} \>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}$() \\
+\line{C06} \>\> {\bf else if} ($\mathit{status} =$ COMMITTED {\bf then}  \\
+\line{C25} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+\line{C25} \>\>\> $\mathit{tmp} \gets \mathit{tmp.val}$ \\
+\line{C06} \>\> {\bf else} $\mathit{tmp} \gets \mathit{tmp.old\_val}$ {\bf end if} \\
+\line{C06} \> {\bf else} \\
 \> \% Do validation to prevent abort due to a non-transactional write \\
-\line{C16} \>\>\> {\bf then} $\mathit{rv} \gets {\sf validate\_by\_value}()$ {\bf end if}; \\
-\line{C20} \>\> {\bf if} this is an update transaction {\bf then} add $\mathit{tmp}$ to $\mathit{ntrs}$ {\bf end if}; \\
-\line{C23} \>\> ${\sf return}$ $(\mathit{tmp.val})$ \\
-\line{C24} \> {\bf end if}; \\
-\line{C25} \> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{C26} \> {\bf if} this is an update transaction 
-                        {\bf then} add $\mathit{tmp}$ to $\mathit{rs}$ {\bf end if}; \\
-\line{C29} \> ${\sf return}$ ($\mathit{tmp.val}$) \\
+\line{C16} \>\> $\mathit{rv} \gets {\sf validate\_by\_value}()$ {\bf end if}; \\
+\line{C16} \> {\bf end if} \\
+\line{C20} \> {\bf if} this is an update transaction {\bf then} add $\mathit{tmp}$ to $\mathit{rs}$ {\bf end if}; \\
+\line{C23} \> ${\sf return}$ $(\mathit{tmp})$ \\
+
 {\bf end operation}. \\
 \\
 {\bf operation}  ${\sf transactional\_write}(\mathit{addr, value})$ {\bf is}\\
@@ -1793,8 +1781,6 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \label{fig:tops}
 }
 \end{figure}
-
-
 
 
 
