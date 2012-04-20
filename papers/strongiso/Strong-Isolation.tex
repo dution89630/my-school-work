@@ -62,6 +62,8 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 \renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 
 9\else 0\fi \arabic{linecounter}}
 
+\newcommand{\tuple}[1]{\ensuremath{\left \langle #1 \right \rangle }}
+
 %----------------------------------------------------------------------
 
 \title{\bf STM systems: Enforcing strong isolation\\
@@ -739,7 +741,7 @@ operations. The operation denoted
 ${\sf Fetch\&increment}()$ atomically adds one to the register and 
 returns its previous value. 
  The operation denoted 
-${\sf C\&S}()$ (for compare ans swap) is a conditional write. 
+${\sf C\&S}()$ (for compare and swap) is a conditional write. 
 ${\sf C\&S}(x,a,b)$ writes $b$ into $x$ iff $x=a$. In that case it 
 returns $\mathit{true}$. Otherwise it returns  $\mathit{false}$. 
 
@@ -758,50 +760,50 @@ variable denoted $\mathit{time}$,  which is used in order to keep
 track of when, with
 respect to the $\mathit{GVC}$, a non-transactional operation 
 or a transaction was last performed by
-the  process. Each  process's  $\mathit{time}$   variable is   
+the  process.
+This variable is then used during non-transactional operations to ensure
+the linearization of operations is not violated.
+Each  process's  $\mathit{time}$   variable is   
 therefore incremented
-both through transactions and outside  
-of  them. Update  transactions  increment their  $\mathit{time}$ variable  by
-performing an increment-and-fetch  
-on  $\mathit{GVC}$.  As  will  be explained  in  detail  later  on,
+both during transactional and non-transactional operations.
+Like TL2, update  transactions are assigned a logical time by
+performing an increment-and-fetch
+on  $\mathit{GVC}$, in this algorithm this value is also used to set the
+value of the $\mathit{time}$ variable.  As  will  be explained  in  detail  later  on,
 non-transactional operations update  
-their $\mathit{time}$ variable either by  assigning it the value of 
+their process's $\mathit{time}$ variable either by  assigning it the value of 
 the $\mathit{GVC}$, or by assigning it the  
-logical date of a shared variable that they are accessing, or by incrementing
-it by a factor of $\alpha$.  
-In either  case, the value of $\mathit{time}$ after an update  is higher than
-the value  it had before  the update\footnote{In the   following paragraphs
-and algorithm listings, we will assume that the factor $\alpha$ is equal   
-to $0.1$.}.
+logical date of a shared variable that they are accessing.
 
-As TL2, the  algorithm maintains a  shared array of locks  and each
+In TL2 a  shared array of locks is maintained and each
 shared memory word  
-is associated with a lock in this array. Contrary to TL2, however, a memory
-word does not contain  
-the value of the variable that  is stored in it. Instead, the algorithm uses
-a  special memory setup:  
-Each   write  operation  on   variable  $\mathit{var}$,   transactional  or
-otherwise, creates an algorithm-specific data  
+is associated with a lock in this array. Given this, a memory
+word directly contains  
+the value of the variable that  is stored in it.
+Instead, the algorithm presented here, uses
+a  different memory setup that does not require a lock array, but does requires
+an extra level of indirection when loading and storing values in memory.
+Instead of storing a value of a variable directly to a memory word,
+each  write  operation  on   variable  $\mathit{var}$,   transactional  or
+non-transactional, creates an algorithm-specific data  
 structure where  it stores  the value to  be written to  $\mathit{var}$, as
 well as necessary meta-data.
 
+Instead of locking each location in the write set during the commit operation like TL2, this algorithm
+performs a compare and swap to each location setting the value of the word to point
+a structure from the transaction's write set, effectively locking the location.
+This process is described in detail later in this document.
 
 \paragraph{T-record  and NT-record}
 The  algorithm-specific  data structures  are shared  and  can be  of 
-either  two  kinds, which will be referred   to as T-record and NT-record. 
+either  two  kinds, which will be referred   to as T-records and NT-records. 
 A T-record is created by a transactional write operation while an 
 NT-record is created by a  non-transactional write operation. A memory word
 that is used to store  
-variable $\mathit{var}$ will then no more contain the value of $\mathit{x}$
-but will instead contain a pointer to a  
-record of either of the  aforementioned types. Multiple write operations to
-the variable will not  
-overwrite previous values, but will instead form a list of records, as they
-add the record  they created to the already existing ones. 
-This  is illustrated in Figure  \ref{fig:mem_setup}. There, it is shown how
-consecutive write operations on a given memory  
-word $\mathit{x}$ end up forming a list  of records
-which can be parsed starting  from the pointer stored in $x$. 
+variable $\mathit{var}$ ad addres $\mathit{addr}$ will then contain a pointer to a  
+record of either of the  aforementioned types within this structure
+the actual vaule for  $\mathit{var}$ stroted as a field. 
+This  is illustrated in Figure  \ref{fig:mem_setup}.
 
 \begin{figure*}[h]
 \centerline{
@@ -812,13 +814,11 @@ algorithm.}
 \label{fig:mem_setup}
 \end{figure*}
 
-When  a new  T-record is  created  for variable  $\mathit{var}$ at  address
-$\mathit{x}$, it is not appended  
-to the list  pointed to by the pointer stored  in $\mathit{x}$. Instead, it
-is placed at the head of the list.  
-Contrary to that, when a  new NT-record is created, any previously existing
-list is discarded  and the pointer  in $\mathit{x}$ is made to point to the
-new NT-record.  
+New T-records are created during the transactional write operations.
+Then during
+the commit operation the pointer stored at $\mathit{addr}$ is updated to point to this new T-record.
+During NT-write operations new NT-records are created and the pointer at $\mathit{addr}$
+is updated to point to the records.
 
 When a read operation - be it transactional or non-transactional - accesses 
 a shared variable it cannot know beforehand what type of record it will find 
@@ -829,106 +829,100 @@ whether it is a T-record or an NT-record (for example, line \ref{A02} in Figure
 \ref{fig:ntops} contains such a check. A T-record is {}``of type T'', while an 
 NT-record is {}``of type NT''). 
 
-The  fact  that  operations  happen   concurrently  and  the  fact  that  a
-transaction may  first  update a shared variable but  may then abort, makes
-that the first item on the  
-list  is  not   necessarily  the  current  correct  value   of  the  shared
-variable. Faced with a  variable  representation that consists of a list of
-records, a read operation,  
-transactional or otherwise, needs to determine which record in the list is the 
-relevant one.  This is done by  evaluating the meta-data of  the records in
-the  list.   The  two record  types  and  the  meta-data they  include  are
-described below.  
-
 
 \paragraph{T-record}
-A T-record is a record that consist of five fields.
+A T-record is a structure containing the following fields.
 \begin{itemize}
 \vspace{-0.1cm}
-\item[$\mathit{addr}$]
-This field contains address of the memory word that is to be accessed. 
-In Figure \ref{fig:mem_setup}, some records form a list which is accessed 
-through the pointer stored in shared memory address $\mathit{x}$. 
-Consequently, the 
-value of field $\mathit{addr}$ for these records would be $\mathit{x}$.
-\vspace{-0.2cm}
 \item[$\mathit{status}$]
 This  field  indicates  the  state  of the  transaction  that  created  the
 T-record. The  
-state can either be LIVE, COMMITTED or ABORTED. 
-The $\mathit{status}$ field is a 
-pointer to a memory location that contains information about this state.
+state can either be LIVE, COMMITTED or ABORTED.
+The state is intially set to LIVE and is not set to COMMITTED until during the commit operation when 
+all locations of the transaction's write set have been set to point to the transaction's T-records
+and the transaction has validated its read set.
+What is important to recognize is that during the commit operation, after a transaction has set some location to point to a T-record
+of this transaciton, and before the transactions status has been set to COMMITTED or ABORTED, the transaction has effectively
+taken the lock on this location.
+Like in TL2, any concurrent transaction that reads the location and sees that it is locked ($\mathit{status} = $ LIVE) will
+abort itself.
+
+Since a transaction can write to multiple locations, the $\mathit{status}$ field
+does not directly store the state, instead it contains
+pointer to a memory location containing the state specific to a single transaction.
+Therefore the $\mathit{status}$ field of each T-record created by the same transaction will point to the same location.
+This ensures that any change to the transaction's state is immediately recognized at each record.
 \vspace{-0.2cm}
 \item[$\mathit{time}$]
 The  $\mathit{time}$  field of  a T-record  contains the  
 value of  the $\mathit{GVC}$  at  the  moment the  record  was 
-inserted  into the  list of   records. 
+inserted  into the  list of   records.
+This is similar to the logical time values of TL2 that are stored in the lock array.
 \vspace{-0.2cm}
 \item[$\mathit{value}$]
 This field contains the value that is meant to be written to the chosen 
 memory location.
 \vspace{-0.2cm}
-\item[$\mathit{prev}$]
-On a list of records that starts at a shared memory location, new records 
-are not appended but  instead, they are placed at the head  of the list. In
-order to  maintain the linking, a  pointer to the previous head of the list
-is maintained. It is  represented by the field $\mathit{prev}$.
+\item[$\mathit{last}$]
+As previously mentioned, during the commit operation, locations are updated to point
+to the committing transaction's T-records, effectivly locking the location, but also overwriting the previous value
+that was stored in this location.
+Like in TL2, validation is performed after locking the write locations, which might cause the transaction to abort.
+In the case of the abort, the previous value of the location needs to be availble for future reads.
+In order to account for this, the $\mathit{last}$ field of a T-record
+stores the previous value of this location before this T-record was pointed to.
+
 \end{itemize}
-
-As follows from the description of  the records, the locks that are used by
-this  algorithm need no longer have a logical date  field,
- given that the logical date  of a variable is stored in the $\mathit{time}$ 
-field of the shared records that represent it.
-
 
 
 \paragraph{NT-record}
-Similarly to a T-record, an NT-record is also a record that consist 
-of five fields:
+An NT-record is a structure containing the following fields.
 \begin{itemize}
 \vspace{-0.1cm}
-\item[$\mathit{addr}$]
-As for  the T-records, this field  indicates the memory  address the record
-belongs  to.  In  Figure  \ref{fig:mem_setup},  this  means  that  the
-NT-record pointed to by the   pointer in memory location $\mathit{y}$ would
-have the value $\mathit{y}$ in its $\mathit{addr}$ field. 
-\vspace{-0.2cm}
 \item[$\mathit{value}$]
 This field contains the value that is meant to be written to the chosen 
 memory location.
-\vspace{-0.2cm}
-\item[$\mathit{id}$]
-Each process has a unique id, denoted $\mathit{id}$. When a 
-process creates an NT-record, this id is  stored in
- the  record{}'s $\mathit{id}$ field. 
-This  field is used to detect cases of the ABA problem.
-\vspace{-0.2cm}
-\item[$\mathit{local\_time}$]
-In order to avoid ABA problems, a process keeps track of multiple accesses 
-that it  makes non-transactionally  to the same  memory location.  For this
-operation,  the NT-record includes the field $\mathit{local\_time}$,
- which acts as an operation count by  a process on the memory location. 
 \vspace{-0.2cm}
 \item[$\mathit{time}$]
 As in the case of T-records, the $\mathit{time}$ field of NT-records 
 also stores the value 
-of the $\mathit{GVC}$ at the moment the record was created. This field is 
+of the $\mathit{GVC}$ when the write took place. This field is 
 used to avoid inconsistencies such as the ones illustrated by Figure 
 \ref{fig:timent}. 
 \end{itemize}
 
 Using these control data, the most  recent valid value  of a variable  can be
-determined.  Should the item at the  head of the list be of type NT-record,
-then it is the most  
-recent valid value  of the variable. On the other hand,  should the item at
-the head of   the list be an  T-record, then if the $\mathit{status}$ field of
+determined.  Should the item be of type NT-record,
+then it's $\mathit{value}$ field contains the most  
+recent valid value  of the variable. On the other hand,  should the item
+ be a  T-record, then if the $\mathit{status}$ field of
 the record is equal to COMMITTED,  
-the item represents the current valid value of the variable. Otherwise, the
-first T-record  
-item to  be found  with a  $\mathit{status}$ field  equal to  COMMITTED, while
-traversing the list,  represents the last valid value. 
+the $\mathit{value}$ field represents the current value of the variable. Otherwise, the
+$\mathit{last}$ field contains the current value.
 
+\paragraph{Transactional Read and Write Sets}
+Like TL2, read only transactions do not use read sets while update transactions do.
+The read set is made up of a set of tuples for each location read, $\tuple{\mathit{addr, value}}$
+where $\mathit{addr}$ is the address of the location read and $\mathit{value}$ is the vaule
+read from the location.
+The write set is also made up of tuples for each location written by the transaction,
+$\tuple{\mathit{addr, item}}$ where $\mathit{addr}$ is the location to be written
+and $\mathit{item}$ is a T-record that will be pointed to during the commit operation.
 
+\subsubsection{Discussion}
+One advantage of the TL2 algorithm is in its memory layout.
+This is because reads and writes happen directly to memory (without indirection)
+and the main ammount of additional memory that is used is in the lock array.
+Unfortunately this algorithm breaks that and requires an additional level of indirection
+as well as additional memory per location.
+These additional requirements can be an accetable trade-off given that they are only
+needed for memory that will shared between transactions.
+Still, in the appendix we present two variations of the algorithm that trade
+off different memory schemes for differnt costs to the transactional and
+non-transactional operations.
+
+***Note: In order to save more memory, the time variable of the T-record can be combined
+with the status variable.
 
 %====================================================================
 
@@ -939,18 +933,18 @@ in such a way that  the non-transactional  operations are never blocked.
 In order  to achieve this,  the algorithm delegates most of  
 concurrency   control   and  consistency   checks   to  the   transactional
 code. Non-transactional  
-operations access  a memory  location without concern  about whether  it is
-locked or not  and it is  up to transactions accessing the same location to
+operations access and modify  memory  locations without waiting for concurrent transactions
+ and it is mainy up to transactions accessing the same location to
 do it in a way that ensures safe  
 concurrency - and to abort if this  is not possible.  As a
 result, this algorithm gives high  priority   to non-transactional code. 
 
 Given the particular memory arrangement  that the algorithm uses, two helper
 procedures are used  to perform load  or store. They are
-presented  in  Figure  \ref{fig:aux}\footnote{The following  notation  is
+presented  in  Figure  \ref{fig:aux}.\footnote{The following  notation  is
 used. If $pt$ is a pointer, $pt\downarrow$ is the object pointed to by $pt$. 
 if $aa$ is an object, $\uparrow aa$ is a pointer to $aa$. Hence 
-$((\uparrow aa)\downarrow =aa$ and $ \uparrow(pt \downarrow)=pt$.}.
+$((\uparrow aa)\downarrow =aa$ and $ \uparrow(pt \downarrow)=pt$.}
 
 
 \begin{figure}[htb]
@@ -993,7 +987,7 @@ it is allocated the memory word at address $\mathit{addr}$.
 \subsection{Non-transactional operations}
 In  order  to  comply  with  the  algorithm a  programmer  has  to  use  the
 algorithm-specific   read  and write  operations when a  variable has  to be
-accessed outside of a transaction.  
+accessed outside of a transaction.  This can also be applied by a complier.
 Algorithms for these operations is presented in Figure \ref{fig:ntops}. 
 
 \begin{figure}[htb]
@@ -1012,21 +1006,22 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \cap \mathit{tmp.status} \neq$ COMMITTED ) {\bf then} \\
 \line{A03}  \>\>  {\bf if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
 \line{A04} \>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) \\
-\line{A07} \>\> {\bf end if} \\
-\line{A04} \>\> {\bf if} $tmp.status = $ ABORTED {\bf then} \\
-\line{A04} \>\>\> $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{A07} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if} \\
-\line{A07} \> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if} \\
-\line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \sf{min}(\mathit{tmp.time, GCV}))$ \\
-\line{A13} \> ${\sf return}$ ($\mathit{value}$) \\
+\line{A05} \>\> {\bf end if} \\
+\line{A06} \>\> {\bf if} $tmp.status \neq $ COMMITTED {\bf then} \\
+\line{A07} \>\>\> $\mathit{value} \gets \mathit{tmp.last}$ \\
+\line{A08} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if} \\
+\line{A09} \> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if} \\
+\line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \mathit{tmp.time})$ \\
+\line{A11} \> {\bf if} ($\mathit{time} = \infty$) {\bf then} $\mathit{time} = \mathit{GCV}$ {\bf end if} \\
+\line{A12} \> ${\sf return}$ ($\mathit{value}$) \\
 {\bf end operation}. \\
 \\
 {\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
 \line{B01} \> allocate new variable $\mathit{next\_write}$ of type NT; \\
-\line{B04} \> $\mathit{next\_write} \gets \mathit{(addr, value, \infty)}$; \\
-\line{B05} \> ${\sf store}(\mathit{addr, next\_write})$ \\
-\line{B02} \> $\mathit{time} \gets \mathit{GVC}$; \\
-\line{B02} \> $\mathit{next\_write.time} \gets \mathit{time}$; \\
+\line{B02} \> $\mathit{next\_write} \gets \mathit{(addr, value, \infty)}$; \\
+\line{B03} \> ${\sf store}(\mathit{addr, next\_write})$ \\
+\line{B04} \> $\mathit{time} \gets \mathit{GVC}$; \\
+\line{B05} \> $\mathit{next\_write.time} \gets \mathit{time}$; \\
 {\bf end operation}.
 
 \end{tabbing}
@@ -1039,78 +1034,68 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \end{figure}
 
 \paragraph{Non-transactional read}
-The   operation  ${\sf   non\_transactional\_read()}$  is   used   to  read
-$\mathit{va}r$ in non-transactional code.  
+The   operation  ${\sf   non\_transactional\_read()}$  is   used   to  read,
+when not in a transaction, the value stored at
+$\mathit{addr}$.
 The  operation first  dereferences  the pointer  stored at  $\mathit{addr}$
-(line \ref{A01}). After that, the  
-operation  attempts to  detect the  last valid  value of  $\mathit{var}$ by
-scanning the list of records accessed  
-through the pointer in $\mathit{var}$. 
-If the first item of the list is a T-record that was created by a 
-transaction which  has not yet  committed, it is be the  most recent
-valid value and the list  
-will  have to  be  traversed in  order  to find  it  (line \ref{A02},  line
-\ref{A08}). Given that the list has  
-a finite number of  items, the loop that is used to  scan it does terminate
-(therefore it does not  
-compromise the liveness requirement for the non-transactional reads). While
-the operation  
-traverses the  list, it detects  whether there are  items on it  which were
-created by transactions that  
-are still live  but that have a  $\mathit{time}$ field which is  less or equal
-the process{}'s local $\mathit{time}$  
-value  (line \ref{A03}).  Should  a record  with  these characteristics  be
-encountered, then the transaction  
-that created it has to be aborted. 
-If the transaction is not aborted and the record that it created is read as 
-the  most  recent valid  value  for  $\mathit{var}$,  consistency could  be
-violated, given that the transaction  
-could later be aborted. In this case, the non-transactional read would have
-violated containment,  
-which  is  why  the  algorithm  directs  the  transaction  to  be  aborted,
-preemptively (line \ref{A04}).      
+(line \ref{}).
+If the item is a T-record that was created by a 
+transaction which  has not yet  committed then the $\mathit{value}$ field
+cannot be immedately read as the transaction might abort.
+If the current process has read a value that is more recent then the transaction
+(meaning the process's $\mathit{time}$ field is greater or equal to the T-records
+$\mathit{time}$, line \ref{}) then the transaction must be directed to abort (line \ref{})
+in order to insure containment? is not violated.
 
-Once  the required  record  has been  found  and stored  in local  variable 
-$\mathit{tmp}$, the local $\mathit{time}$   
-variable  is updated  (lines \ref{A09}-\ref{A12}).  The updated  {\sf time}
-value is used by operation  
-${\sf non\_transactional\_write()}$ and is necessary in order to allow 
+From a T-record with a transaction that is not committed, the value from the $\mathit{last}$
+field is stored to a local variable (line \ref{}) and will be returned on operation completion.
+Otherwise the $\mathit{value}$ field of the T or NT-record is used (line \ref{}).
+
+Once  the correct value  has been  found  and stored  in local  variable 
+$\mathit{value}$, the local $\mathit{time}$   
+variable  is updated  (lines \ref{}-\ref{}).  The updated  $\mathit{time}$
+value is used by non-transactional operations and is necessary in order to allow 
 the detection of consistency 
 violations such as the one illustrated by Figure \ref{fig:timent}. 
 By advancing the value of $\mathit{time}$ 
 through a non-transactional read operation, 
 the serialization order of this read operation with 
 respect to transactional or non-transactional operations 
-that it read from is reflected. Future write 
-operations by the same thread will timestamp the shared variables 
-that they write to with a value  of $\mathit{time}$ greater or equal to the one 
-determined by the non-transactional read, continuing to 
-reflect how the operations should be correctly serialized. 
+that it read from is reflected.
 
-If $\mathit{tmp}$ is an NT-record, then $\mathit{time}$ is advanced to 
+The process local variable $\mathit{time}$ is advanced to 
 the maximal 
 value among its current 
-value and the logical date of $\mathit{tmp}$, incremented by $\alpha$ 
-(taking  $0 < \alpha < 1$  entails less transactions to abort). 
-If $\mathit{tmp}$ is a T-record, then $\mathit{time}$ is updated to the 
-maximal value among its current value and the logical date of $\mathit{tmp}$.
- Once these book-keeping 
-operations are performed, the $\mathit{value}$ field of the detected record 
-is returned (line \ref{A13}).
+value and the logical date of the T or NT-record whose value was read.
+Finally if $\mathit{time}$ was set to $\infty$ on line \ref{}, then it is updated
+to the $\mathit{GCV}$ on line \ref{}.
+Once these book-keeping 
+operations are finished, the local variable $\mathit{value}$
+is returned (line \ref{}).
 
 \paragraph{Non-transactional write}
 The operation ${\sf non\_transactional\_write()}$ is used to write to 
 a shared variable $\mathit{var}$ 
-by non-transactional code. This operation  
+by non-transactional code.
+The operation takes as input the address of the shared variable as well as the 
+value that has to be written to it as arguments.
+This operation  
 creates a  new  NT-record  (line  \ref{B01}),  fills  in  its  fields  (line
 \ref{B04})  and 
-change the pointer stored in $\mathit{addr}$ so that it references the 
-new record it has created  (line \ref{B05}). 
-The operation receives the address of the shared variable as well as the 
-value that has to be written to it as arguments. Also in the spirit of 
-providing a way to  detect consistency violations such as the one shown 
-in Figure \ref{fig:timent}, the local 
-variable $\mathit{time}$ is updated (line \ref{B02}).
+changes the pointer stored in $\mathit{addr}$ so that it references the 
+new record it has created  (line \ref{B05}).
+Unlike update transactions, non-trasactional writes do not increment
+the global clock variable $\mathit{GCV}$.
+Instead they just read $\mathit{GCV}$ and set the NT-record's time value as well as
+the process local $\mathit{time}$ to the value read.
+Since the $\mathit{GCV}$ is not incremented, several NT-records might have the same
+$\mathit{time}$ value as some transaction.
+When such a situation is recognized where a live transaction has the same time value
+as an NT-record the transaction is aborted (if during an NT-read operation,
+line \ref{}) or read set validation is performed (if during a transactional
+read operation, line \ref{}).
+This is done in order to prevent consistency volations such as the one shown 
+in Figure \ref{fig:timent}.
 
 
 %==================================================================
@@ -1120,71 +1105,53 @@ The transactional operations for performing reads and writes are
 presented in Figure \ref{fig:tops}. 
 
 \paragraph{Transactional read}
-As in TL2, when a transaction reads a shared variable, it adds it to a read
-set. Differing from TL2,  
-however, is  the fact that in  the present algorithm, a  transaction has to
-maintain two different read sets,  
-one to store T-records, called  $\mathit{rs}$, and one to store NT-records,
-called $\mathit{ntrs}$. This is necessary  
-because according to the type  of the record, a different validation method
-will have to be used.  
+
 The operation ${\sf  transactional\_read()}$ receives $\mathit{addr}$ as an
-input argument. It starts of by checking  
+input argument. It starts by checking  
 whether the  desired variable already  exists in the  transaction{}'s write
 set, in which  
 case  the   value  stored  in  the   write  set  will   be  returned  (line
-\ref{C01}). If the variable is not contained  
+\ref{}). If the variable is not contained  
 in  the write  set, the  pointer in  $\mathit{addr}$ is  dereferenced (line
-\ref{C04}), in order to scan the list and  
-determine the most recent valid value for $\mathit{var}$ 
-(lines \ref{C05} - \ref{C11}). The operation preemptively 
-aborts the transaction if it detects that a T-record in the 
-list belongs to a not committed transaction 
-while $\mathit{addr}$ is still locked (line \ref{C06}). 
-The record that represents the current valid value of 
-$\mathit{var}$ will be stored in local variable $\mathit{tmp}$. 
+\ref{}) and set to $\mathit{tmp}$. Once the structure pointed to is detected to be a T or NT-record
+some checks are then performed in order to ensure correctness.
 
-The post-validation that has to take place after a value was read is different, 
-according to whether $\mathit{tmp}$ is a T-record or an NT-record. 
+In the case that $\mathit{tmp}$ is a T-record the operation must check to see
+if the status of the transaction for this record is still LIVE (line \ref{}), and if it is
+the current transaction is aborted (line \ref{}).
+This is similar to TL2 aborting the transaction when a locked location is found.
+Next, the T-record's $\mathit{time}$ field is checked, and (similar to TL2) if it 
+greater then the process's local $\mathit{rv}$ value the transaction must abort 
+(line \ref{}).
+If this succeeds without aborting then the local variable $\mathit{value}$
+is set depending on the stats of the transaction that created the T-record (line \ref{}-\ref{}).
+
+
 In case $\mathit{tmp}$ is an 
-NT-record (line \ref{C12}), the post-validation consists of 
-checking whether the $\mathit{time}$ 
-field of the record (incremented by 0.1) is greater than the 
-transaction{}'s read version number, 
-stored in local variable $\mathit{rv}$ (line \ref{C15}). 
-If it is, then this validation fails, and the 
-transaction must abort (line \ref{C16}). However, it can occur 
-that the current 
-transaction is the only transaction in the system. 
-Let this transaction be $\mathit{T_s}$.
-Given that $\mathit{tmp}$ is an NT-record, its $\mathit{time}$ 
-field was written by a non-transactional 
-write operation (lines \ref{B02}, \ref{B05}). $\mathit{T_s}$ 
-detects that $\mathit{tmp}$ is an NT-record, 
-aborts and is then restarted.  As $\mathit{T_s}$ is assumed 
-to be the only transaction in the system, 
-$\mathit{GVC}$ has not been incremented by any other transaction 
-between the abort of $\mathit{T_s}$ 
-and its restart. This, in turn, means that the restarted 
-$\mathit{T_s}$ will have the same $\mathit{rv}$ that 
-it had before aborting. For this reason, when the restarted 
-$\mathit{T_s}$ performs the check of line \ref{C15}, 
-it will be forced to abort again. This can compromise the 
-non-blocking   property   by   leading    to  an   infinite   
-sequence   of  abort/restart for $\mathit{T_s}$.  
-In order to avoid situations like this, $\mathit{T_s}$  performs the 
-$\mathit{GVC}$ increment itself (line \ref{C16}), before ultimately aborting. 
+NT-record (line \ref{C12}), the operation
+checks whether the value of the $\mathit{time}$ field is
+greater or equal to the process local $\mathit{rv}$ value.
+If it is, then this write has possibly occured after the start of this
+transaction and there are several possibilities.
+In the case of a read only transaction, the transaction
+is aborted and restarted as an update transaction (line \ref{}),
+while an update transaction must perform validation, ensuring
+that none of the values it has read have been updated (line \ref{}).
+Finally local variable $\mathit{value}$ is set to be the value
+of the $\mathit{value}$ field of the $\mathit{tmp}$ (line \ref{}).
 
-In case $\mathit{tmp}$ is a T-record, validation is performed by checking 
-whether its $ time$ field is less or 
-equal to the read version number and if it is not, the transaction aborts 
-(line \ref{C25}). If validation is 
-successful, however, $\mathit{tmp}$ must be added to a read set. 
-If $\mathit{tmp}$ is an NT-record, it will be added 
-to $\mathit{ntrs}$ (line \ref{C20}), otherwise, it will be added to 
-$\mathit{rs}$ (line \ref{C26}). To complete the read 
-operation, the $\mathit{value}$ field of $\mathit{tmp}$ is returned 
-(lines \ref{C23}, \ref{C29}).
+It should be noted that the reason why the checks are performed differently
+for NT-records and T-records is because the NT-write operations do not
+update the global clock value while update transaction do.
+This means that the checks must be more conservative in order to ensure correctness.
+If performing per value validation or restarting the transaction as an update transaction
+is found to be too expensive, a third possibilty would be to just increment the global
+clock, then restart the transaction as normal.
+
+
+Finally to finish the read operation, the $\tuple{\mathit{addr, value}}$
+is added to the read set if the transaction is an update transaction (line \ref{}),
+and the value of the local variable $\mathit{value}$  is returned.
 
 \begin{figure} %[htb]
 \centering{ \fbox{
@@ -1199,33 +1166,34 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{C01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
-\line{C04} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\
+\line{C02} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\
 
-\line{C12} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
-\line{C15} \>\> {\bf then} {\bf if} $\mathit{tmp.time} >= \mathit{rv}$  \\
+\line{C03} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
+\line{C04} \>\> {\bf then} {\bf if} $\mathit{tmp.time} >= \mathit{rv}$ {\bf then} \\
 \> \% Do validation to prevent abort due to a non-transactional write \\
-\line{C16} \>\>\> {\bf then} ${\sf validate\_by\_value}()$ {\bf end if}; \\
-\line{C23} \>\> $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{C05} \>\>\> {\bf if} this is an update transaction {\bf then} ${\sf validate\_by\_value}$ () \\
+\line{C06} \>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
+\line{C07} \>\> $\mathit{value} \gets \mathit{tmp.value}$ \\
 
-\line{C05} \> {\bf else} \\
-\line{C05} \>\> {\bf if} ($(\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$ {\bf then} \\
-\line{C06} \>\>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}()$  {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ {\bf end if} \\
+\line{C08} \> {\bf else} \\
+\line{C09} \>\> {\bf if} ($(\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$ {\bf then} \\
+\line{C10} \>\>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}()$  {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ {\bf end if} \\
 \line{C11} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if}; \\
-\line{C25} \>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{D09} \> {\bf end if} \\
+\line{C12} \>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+\line{C13} \> {\bf end if} \\
 
-\line{C26} \> {\bf if} this is an update transaction 
-                        {\bf then} add $\mathit{value}$ to $\mathit{rs}$ {\bf end if}; \\
-\line{C29} \> ${\sf return}$ ($\mathit{value}$) \\
+\line{C14} \> {\bf if} this is an update transaction 
+                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+\line{C15} \> ${\sf return}$ ($\mathit{value}$) \\
 {\bf end operation}. \\
 \\
 {\bf operation}  ${\sf transactional\_write}(\mathit{addr, value})$ {\bf is}\\
 \line{D01} \> {\bf if} $\mathit{addr} \not\in \mathit{ws}$  \\
 \line{D02} \>\> {\bf then} \> allocate a new variable $item$ of type $T$; \\
-\line{D03} \>\>\> $\mathit{item}  \gets (\mathit{addr, value, status, \infty})$; 
-                   $\mathit{ws} \gets \mathit{ws} \cup \mathit{item}$ \\
-\line{D07} \>\> {\bf else} \> set $\mathit{item.value}$ with $\mathit{addr}$ in $\mathit{ws}$ to $\mathit{value}$ \\
-\line{D09} \> {\bf end if} \\
+\line{D03} \>\>\> $\mathit{item}  \gets (\mathit{value, status, \infty})$; 
+                   $\mathit{ws} \gets \mathit{ws} \cup \tuple{\mathit{addr, item}}$ \\
+\line{D04} \>\> {\bf else} \> set $\mathit{item.value}$ with $\mathit{addr}$ in $\mathit{ws}$ to $\mathit{value}$ \\
+\line{D05} \> {\bf end if} \\
 {\bf end operation}.
 \end{tabbing}
 \normalsize
@@ -1245,12 +1213,11 @@ performs commit-time updates of the variables it writes to.
 For this reason, the transactional write  
 operation simply creates a T-record and fills in some of its 
 fields (lines \ref{D02} - \ref{D03}) and also 
-adds it to the transaction{}'s write set, 
-if $\mathit{addr}$ was not present there (lines \ref{D01}, \ref{D03}). 
-In case,  however,  the variable was already present in  the write set, the
-{\sf value} field of the corresponding  
+adds it to the transaction{}'s write set.
+However, in the case that a T-record coreepoinding to $\mathit{addr}$  was
+already present in  the write set, the
+$\mathit{value}$ field of the corresponding  
 T-record is simply updated (line \ref{D07}).
-
 
 
 \paragraph{Begin and end of a transaction} 
@@ -1273,53 +1240,53 @@ $\mathit{status}$ and the read and write sets
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf begin\_transaction}()$ {\bf is}\\
-\line{DA1} \> determine whether transaction is update transaction based on compiler/user input \\
-\line{START1} \> $\mathit{rv} \gets \mathit{GVC}$; 
+\line{START1} \> determine whether transaction is update transaction based on compiler/user input \\
+\line{START2} \> $\mathit{rv} \gets \mathit{GVC}$; 
                  Allocate new variable $\mathit{status}$; \\
-\line{DA2} \> $\mathit{status} \gets $LIVE; \ $\mathit{ws} \gets \emptyset$; $\mathit{rs} \gets \emptyset$; $\mathit{ntrs} \gets \emptyset$ \\
+\line{START3} \> $\mathit{status} \gets $LIVE; \ $\mathit{ws} \gets \emptyset$; $\mathit{rs} \gets \emptyset$; $\mathit{ntrs} \gets \emptyset$ \\
 %\line{DA03} \> more??? \\
 {\bf end operation}. \\
 \\
 {\bf operation}  ${\sf try\_to\_commit}()$ {\bf is}\\
 \line{DA01} \> {\bf if} $(\mathit{ws} = \emptyset)$ {\bf then} ${\sf return}$ (COMMITTED) {\bf end if}; \\
 
-\line{DA16} \> 
+\line{DA02} \> 
 {\bf for each} $(\mathit{item} \in \mathit{ws})$ {\bf do} \\
 
-\line{C04} \>\> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\
+\line{DA03} \>\> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\
 
 
-\line{C05} \>\> {\bf if} 
+\line{DA04} \>\> {\bf if} 
    ($\mathit{tmp}$ is of type $T \cap~ (\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$ {\bf then} \\
-\line{C06} \>\>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}()$  {\bf else} $\mathit{item.last} \gets \mathit{tmp.last}$ {\bf end if} \\
-\line{C11} \>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp.value}$ {\bf end if}; \\
+\line{DA05} \>\>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}()$  {\bf else} $\mathit{item.last} \gets \mathit{tmp.last}$ {\bf end if} \\
+\line{DA06} \>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp.value}$ {\bf end if}; \\
+\line{DA07} \>\> $\mathit{item.time} \gets \mathit{tmp.time}$; \\
 
-
-\line{DA07} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{item.addr, tmp, item}))$  \\
-\line{DA08} \>\>\> {\bf then} ${\sf abort}()$ \\
+\line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{item.addr, tmp, item}))$  \\
+\line{DA09} \>\>\> {\bf then} ${\sf abort}()$ \\
 \line{DA10} \>\> {\bf end if} \\
 
-\line{DA21} \> {\bf end for}; \\
+\line{DA11} \> {\bf end for}; \\
 
-\line{DA03} \> $\mathit{time} \gets {\sf fetch\&increment}(\mathit{GVC})$; \\
+\line{DA12} \> $\mathit{time} \gets {\sf fetch\&increment}(\mathit{GVC})$; \\
 
-\line{DA12} \> ${\sf validate\_by\_value}()$;  \\
+\line{DA13} \> ${\sf validate\_by\_value}()$;  \\
 
 
 \> \% Ensure the writes haven't been overwritten by non-transactional writes \\
-\line{DA16} \> 
+\line{DA14} \> 
 {\bf for each} ($\mathit{item} \in \mathit{ws}$) {\bf do} \\
-
-\line{DA17} \>\> {\bf if} $(\mathit{item} \neq load(\mathit{item.addr}))$  
+\line{DA15} \>\> $\mathit{item.time} \gets \mathit{time}$ \\
+\line{DA16} \>\> {\bf if} $(\mathit{item} \neq load(\mathit{item.addr}))$  
                  {\bf then}  
                    ${\sf abort}()$ 
                 {\bf end if} \\
-\line{C11} \>\> $\mathit{item.time} \gets \mathit{time}$ \\
-\line{DA21} \> {\bf end for}; \\
-\line{DA23} \> {\bf if} ${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED) \\
-\line{DA23'} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
-\line{DA25} \> \> {\bf else} \= ${\sf abort}()$ \\
-\line{DA26} \> {\bf end if}  \\
+
+\line{DA17} \> {\bf end for}; \\
+\line{DA18} \> {\bf if} ${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED) \\
+\line{DA19} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
+\line{DA20} \> \> {\bf else} \= ${\sf abort}()$ \\
+\line{DA21} \> {\bf end if}  \\
 {\bf end operation}.
 
 \end{tabbing}
@@ -1396,21 +1363,21 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation} ${\sf validate\_by\_value}()$ {\bf is}\\
 \line{H01} \> $\mathit{rv} \gets \mathit{GVC}$; \\
-\line{H01} \> {\bf for each} $\mathit{item}$ in $\mathit{rs}$ {\bf do} \\
-\line{H03} \>\> $\mathit{tmp} \gets load(\mathit{item.addr})$; \\
+\line{H02} \> {\bf for each} $\tuple{\mathit{addr, value}}$ in $\mathit{rs}$ {\bf do} \\
+\line{H03} \>\> $\mathit{tmp} \gets load(\mathit{addr})$; \\
 \line{H04} \>\> {\bf if} ($\mathit{tmp}$ is of type T $ \cap \mathit{tmp.status} \neq $ COMMITTED) {\bf then} \\
-\line{H02} \>\>\> {\bf if} $\mathit{tmp.status} =$ LIVE $\cap \mathit{item} \not \in \mathit{ws}$
+\line{H05} \>\>\> {\bf if} $\mathit{tmp.status} =$ LIVE $\cap \mathit{item} \not \in \mathit{ws}$
      {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{H05} \>\>\> $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{H06} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if}; \\
-\line{H02} \>\> {\bf if} $\mathit{item.value} \neq \mathit{value}$
+\line{H06} \>\>\> $\mathit{new\_value} \gets \mathit{tmp.last}$ \\
+\line{H07} \>\> {\bf else} $\mathit{new\_value} \gets \mathit{tmp.value}$ {\bf end if}; \\
+\line{H08} \>\> {\bf if} $\mathit{new\_value} \neq \mathit{value}$
      {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{H19} \> {\bf end for}; \\
+\line{H09} \> {\bf end for}; \\
 {\bf end operation}. \\
 \\
 {\bf operation} ${\sf abort}()$ {\bf is}\\
-\line{H21} \> $\mathit{status} \gets $ ABORTED; \\
-\line{H21} \> the transaction is aborted and restarted \\
+\line{AB01} \> $\mathit{status} \gets $ ABORTED; \\
+\line{AB02} \> the transaction is aborted and restarted \\
 %\line{H21} \> free items in $\mathit{ws}$, $\mathit{rs}$, and $\mathit{ntrs}$; \\
 %\line{H22} \> jump to line \ref{START1} \\
 {\bf end operation}. \\
