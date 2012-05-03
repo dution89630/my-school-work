@@ -1003,16 +1003,18 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
-\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \cap \mathit{tmp.status} \neq$ COMMITTED ) {\bf then} \\
-\line{A03}  \>\>  {\bf if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
-\line{A04} \>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) \\
-\line{A05} \>\> {\bf end if} \\
-\line{A06} \>\> {\bf if} $tmp.status \neq $ COMMITTED {\bf then} \\
-\line{A07} \>\>\> $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{A08} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if} \\
-\line{A09} \> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if} \\
+\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \cap \mathit{tmp.status} \neq$ COMMITTED ) \\
+\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
+\line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
+%\line{A05} \>\> {\bf end if} \\
+\line{A06} \>\>\> {\bf if} ($tmp.status \neq $ COMMITTED)  \\
+\line{A07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
+\line{A08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{A05} \>\>\> {\bf end if}; \\
+\line{A09} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{A09A} \> {\bf end if}; \\
 \line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \mathit{tmp.time})$ \\
-\line{A11} \> {\bf if} ($\mathit{time} = \infty$) {\bf then} $\mathit{time} = \mathit{GCV}$ {\bf end if} \\
+\line{A11} \> {\bf if} ($\mathit{time} = \infty$) {\bf then} $\mathit{time} = \mathit{GCV}$ {\bf end if}; \\
 \line{A12} \> ${\sf return}$ ($\mathit{value}$) \\
 {\bf end operation}. \\
 \\
@@ -1169,18 +1171,21 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{C02} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\
 
 \line{C03} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
-\line{C04} \>\> {\bf then} {\bf if} $\mathit{tmp.time} >= \mathit{rv}$ {\bf then} \\
+\line{C04} \>\> {\bf then} {\bf if} ($\mathit{tmp.time} >= \mathit{rv}$) \\
 \> \% Do validation to prevent abort due to a non-transactional write \\
-\line{C05} \>\>\> {\bf if} this is an update transaction {\bf then} ${\sf validate\_by\_value}$ () \\
-\line{C06} \>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
-\line{C07} \>\> $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{C05} \>\>\> {\bf then if} this is an update transaction {\bf then} ${\sf validate\_by\_value}$() \\
+\line{C06} \>\>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
 
-\line{C08} \> {\bf else} \\
-\line{C09} \>\> {\bf if} ($(\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$ {\bf then} \\
-\line{C10} \>\>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}()$  {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ {\bf end if} \\
-\line{C11} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ {\bf end if}; \\
-\line{C12} \>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{C13} \> {\bf end if} \\
+\line{C06A} \>\>\> {\bf end if}; \\
+\line{C07} \>\>\> $\mathit{value} \gets \mathit{tmp.value}$; \\
+
+\line{C08} \>\> {\bf else} \\
+\line{C09} \>\>\> {\bf if} ($(\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$ \\
+\line{C10} \>\>\>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}()$  {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ {\bf end if}; \\
+\line{C11} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{C11A} \>\>\> {\bf end if}; \\
+\line{C12} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+\line{C13} \> {\bf end if}; \\
 
 \line{C14} \> {\bf if} this is an update transaction 
                         {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
@@ -1191,9 +1196,9 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{D01} \> {\bf if} $\mathit{addr} \not\in \mathit{ws}$  \\
 \line{D02} \>\> {\bf then} \> allocate a new variable $item$ of type $T$; \\
 \line{D03} \>\>\> $\mathit{item}  \gets (\mathit{value, status, \infty})$; 
-                   $\mathit{ws} \gets \mathit{ws} \cup \tuple{\mathit{addr, item}}$ \\
+                   $\mathit{ws} \gets \mathit{ws} \cup \tuple{\mathit{addr, item}}$; \\
 \line{D04} \>\> {\bf else} \> set $\mathit{item.value}$ with $\mathit{addr}$ in $\mathit{ws}$ to $\mathit{value}$ \\
-\line{D05} \> {\bf end if} \\
+\line{D05} \> {\bf end if}; \\
 {\bf end operation}.
 \end{tabbing}
 \normalsize
@@ -1261,14 +1266,15 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
 \line{DA04} \>\> {\bf if} 
-   ($\mathit{tmp}$ is of type $T \cap~ (\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$ {\bf then} \\
-\line{DA05} \>\>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}()$  {\bf else} $\mathit{item.last} \gets \mathit{tmp.last}$ {\bf end if} \\
-\line{DA06} \>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp.value}$ {\bf end if}; \\
+   ($\mathit{tmp}$ is of type $T \wedge (\mathit{status} \gets \mathit{tmp.status}) \neq$ COMMITTED $)$  \\
+\line{DA05} \>\>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}()$  {\bf else} $\mathit{item.last} \gets \mathit{tmp.last}$ {\bf end if}; \\
+\line{DA06} \>\>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp.value}$ \\
+\line{DA06A} \>\> {\bf end if}; \\
 \line{DA07} \>\> $\mathit{item.time} \gets \mathit{tmp.time}$; \\
 
-\line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{addr, tmp, item}))$  \\
-\line{DA09} \>\>\> {\bf then} ${\sf abort}()$ \\
-\line{DA10} \>\> {\bf end if} \\
+\line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{addr, tmp, item}))$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+%\line{DA09} \>\>\> {\bf then} ${\sf abort}()$ \\
+%\line{DA10} \>\> {\bf end if} \\
 
 \line{DA11} \> {\bf end for}; \\
 
@@ -1280,17 +1286,17 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \> \% Ensure the writes haven't been overwritten by non-transactional writes \\
 \line{DA14} \> 
 {\bf for each} ($\tuple{\mathit{addr, item}} \in \mathit{ws}$) {\bf do} \\
-\line{DA15} \>\> $\mathit{item.time} \gets \mathit{time}$ \\
+\line{DA15} \>\> $\mathit{item.time} \gets \mathit{time}$; \\
 \line{DA16} \>\> {\bf if} $(\mathit{item} \neq load(\mathit{addr}))$  
                  {\bf then}  
                    ${\sf abort}()$ 
-                {\bf end if} \\
+                {\bf end if}; \\
 
 \line{DA17} \> {\bf end for}; \\
 \line{DA18} \> {\bf if} ${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED) \\
 \line{DA19} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
 \line{DA20} \> \> {\bf else} \= ${\sf abort}()$ \\
-\line{DA21} \> {\bf end if}  \\
+\line{DA21} \> {\bf end if};  \\
 {\bf end operation}.
 
 \end{tabbing}
@@ -1371,11 +1377,12 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{H01} \> $\mathit{rv} \gets \mathit{GVC}$; \\
 \line{H02} \> {\bf for each} $\tuple{\mathit{addr, value}}$ in $\mathit{rs}$ {\bf do} \\
 \line{H03} \>\> $\mathit{tmp} \gets load(\mathit{addr})$; \\
-\line{H04} \>\> {\bf if} ($\mathit{tmp}$ is of type T $ \cap \mathit{tmp.status} \neq $ COMMITTED) {\bf then} \\
-\line{H05} \>\>\> {\bf if} $\mathit{tmp.status} =$ LIVE $\cap \mathit{item} \not \in \mathit{ws}$
+\line{H04} \>\> {\bf if} ($\mathit{tmp}$ is of type T $ \wedge \mathit{tmp.status} \neq $ COMMITTED) \\
+\line{H05} \>\>\> {\bf then if} ($\mathit{tmp.status} =$ LIVE $\wedge \mathit{item} \not \in \mathit{ws}$)
      {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{H06} \>\>\> $\mathit{new\_value} \gets \mathit{tmp.last}$ \\
-\line{H07} \>\> {\bf else} $\mathit{new\_value} \gets \mathit{tmp.value}$ {\bf end if}; \\
+\line{H06} \>\>\>\> $\mathit{new\_value} \gets \mathit{tmp.last}$; \\
+\line{H07} \>\>\> {\bf else} $\mathit{new\_value} \gets \mathit{tmp.value}$ \\
+\line{H07A} \>\> {\bf end if}; \\
 \line{H08} \>\> {\bf if} $\mathit{new\_value} \neq \mathit{value}$
      {\bf then} ${\sf abort}()$ {\bf end if}; \\
 \line{H09} \> {\bf end for}; \\
@@ -1475,7 +1482,7 @@ to equip them with mechanisms that provide strong isolation.
  Afek Y.,  Avni H.,   Dice D. and  Shavit N.,
 Efficient lock free privatization. 
 {\it Proc.  14th Int'l conference on Principles of Distributed Systems 
-(OPODIS'10)}, Springer-Verlag,  LNCS , pp. 333-347, 2010. 
+(OPODIS'10)}, Springer-Verlag,  LNCS \#6490, pp. 333-347, 2010. 
 
 
 
@@ -1484,7 +1491,7 @@ Crain T., Imb D. and Raynal M.,
 Towards a Universal Construction for Transaction-based Multiprocess Programs.
 {\it Proc. 13th Int'l Conference on Distributed Computing and Networking
 (ICDCN'12)}, 
-Springer Verlag LNCS \#7129, pp. 61-75, Hong-Kong,  2012. 
+Springer Verlag LNCS \#7129, pp. 61-75, 2012. 
 
 
 
@@ -1515,7 +1522,8 @@ Parallel Programming (PPoPP '08)},  ACM Press, pp.  175-184, 2008.
 \bibitem{harris06}
  Harris T.,  Larus J., and  Rajwar R., 
 Transactional Memory, 
-{\it 2nd edition, Synthesis Lectures on Computer Architecture},  2006.
+{\it 2nd edition, Synthesis Lectures on Computer Architecture},
+Morgan \& Claypool Publishers,  2006.
 
 
 
@@ -1567,7 +1575,7 @@ The Serializability of Concurrent Updates.
  Scott M.L.,  Spear, M.F. Dalessandro L.  and  Marathe V.J..
  Delaunay Triangulation with Transactions and Barriers. 
 {\it Proc.  10th IEEE Int'l Symposium on Workload Characterization (IISWC '07)},
- IEEE Computer Society, pp. 107-113, 2007
+ IEEE Computer Society, pp. 107-113, 2007.
 
 
 
@@ -1594,7 +1602,7 @@ Enforcing isolation and ordering in STM.
 Spear M.F.,  Dalessandro L.,  Marathe V.J. and  Scott M.L., 
 Ordering-Based Semantics for Software Transactional Memory. 
 {\it Proc  12th Int'l Conference on Principles of Distributed Systems 
-(OPODIS '08)},  Springer-Verlag LNCS , pp. 275-294. 2008. 
+(OPODIS '08)},  Springer-Verlag LNCS \#5401, pp. 275-294. 2008. 
 
 
 
@@ -1615,11 +1623,11 @@ Privatization techniques for software transactional memory.
 This algorithm also provides wait-free NT read and write operations.
 The difference is that NT-records are not used.
 Instead NT values are read and written directly from memory.
-By doing this memory allocations are not needed in NT writes and NT reads have
+By doing this, memory allocations are not needed in NT writes and NT reads have
 one less level of indirection.
 
 The cost of this is more frequent validations required in transactions when conflicts with NT writes occur.
-This algorithm is shown in figure \ref{fig:ntops2}-\ref{fig:tbc2}
+This algorithm is shown in Figures \ref{fig:ntops2}-\ref{fig:tbc2}.
 
 
 \begin{figure}[htb]
@@ -1635,15 +1643,16 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{MA01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
-\line{MA02} \> {\bf if} $( ~\mathit{tmp}$ is of type T ) {\bf then} \\
-\line{MA03}  \>\>  {\bf if}  $\mathit{tmp.status} = $ LIVE \\
-\line{MA04} \>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) \\
-\line{MA05} \>\> {\bf end if} \\
-\line{MA06} \>\> {\bf if} $tmp.status = $ ABORTED {\bf then} \\
-\line{MA07} \>\>\> $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{MA08} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
-\line{MA09} \>\> {\bf end if} \\
-\line{MA10} \> {\bf else} $\mathit{value} \gets \mathit{tmp}$ {\bf end if} \\
+\line{MA02} \> {\bf if} $( ~\mathit{tmp}$ is of type T )  \\
+\line{MA03}  \>\>  {\bf then if}  ($\mathit{tmp.status} = $ LIVE) \\
+\line{MA04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) \\
+\line{MA05} \>\>\> {\bf end if}; \\
+\line{MA06} \>\>\> {\bf if} ($tmp.status = $ ABORTED) \\
+\line{MA07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
+\line{MA08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{MA09} \>\>\> {\bf end if}; \\
+\line{MA10} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp}$ \\
+\line{MA10A} \> {\bf end if}; \\
 \line{MA11} \> ${\sf return}$ $(\mathit{value})$ \\
 {\bf end operation}. \\
 \\
@@ -1685,17 +1694,18 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{MC01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
 \line{MC02} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\
 \line{MC03} \> {\bf if} 
-   ($\mathit{tmp}$ is of type $T$ ) {\bf then} \\
-\line{MC04} \>\> {\bf if} $\mathit{status} =$ LIVE {\bf then} ${\sf abort}$() {\bf end if} \\
-\line{MC05} \>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}$() {\bf end if}; \\
-\line{MC06} \>\> {\bf if} ($\mathit{status} =$ COMMITTED {\bf then}  \\
-\line{MC07} \>\>\> $\mathit{value} \gets \mathit{tmp.val}$ \\
-\line{MC08} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ {\bf end if} \\
-\line{MC09} \> {\bf else} \\
+   ($\mathit{tmp}$ is of type $T$ ) \\
+\line{MC04} \>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}$() {\bf end if}; \\
+\line{MC05} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}$() {\bf end if}; \\
+\line{MC06} \>\>\> {\bf if} ($\mathit{status} =$ COMMITTED)   \\
+\line{MC07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.val}$ \\
+\line{MC08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ \\
+\line{MC08A} \>\>\> {\bf end if}; \\
+\line{MC09} \>\> {\bf else} \\
 \> \% Do validation to prevent abort due to a non-transactional write \\
-\line{MC10} \>\> $\mathit{rv} \gets {\sf validate\_by\_value}()$ {\bf end if}; \\
-\line{MC11} \>\> $\mathit{value} \gets \mathit{tmp}$ \\
-\line{MC12} \> {\bf end if} \\
+\line{MC10} \>\>\> $\mathit{rv} \gets {\sf validate\_by\_value}()$; \\
+\line{MC11} \>\>\> $\mathit{value} \gets \mathit{tmp}$; \\
+\line{MC12} \> {\bf end if}; \\
 \line{MC13} \> {\bf if} this is an update transaction {\bf then} add $\mathit{value}$ to $\mathit{rs}$ {\bf end if}; \\
 \line{MC14} \> ${\sf return}$ $(\mathit{value})$ \\
 
@@ -1744,22 +1754,24 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
 \line{MDA04} \>\> {\bf if} 
-   $\mathit{tmp}$ is of type $T$ {\bf then} \\
-\line{MDA05} \>\>\> {\bf if} ($\mathit{status} \gets \mathit{tmp.status}$)$ =$ COMMITTED {\bf then} $\mathit{item.last} \gets \mathit{tmp.value}$ \\
-\line{MDA06} \>\>\> {\bf else if} $\mathit{status} =$ ABORTED {\bf then} $\mathit{item.last} \gets \mathit{tmp.last}$ \\
-\line{MDA07} \>\>\> {\bf else} ${\sf abort}()$ {\bf end if} \\
-\line{MDA08} \>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp}$ {\bf end if}; \\
+   ($\mathit{tmp}$ is of type $T$) \\
+\line{MDA05} \>\>\> {\bf then if} (($\mathit{status} \gets \mathit{tmp.status}$) $=$ COMMITTED) \\
+\line{MDA05} \>\>\>\>\> {\bf then} $\mathit{item.last} \gets \mathit{tmp.value}$ \\
+\line{MDA06} \>\>\>\>\> {\bf else if} ($\mathit{status} =$ ABORTED) {\bf then} $\mathit{item.last} \gets \mathit{tmp.last}$ \\
+\line{MDA07} \>\>\>\>\> {\bf else} ${\sf abort}()$ \\
+\line{MDA07A} \>\>\>\> {\bf end if}; \\
+\line{MDA08} \>\>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp}$ \\
+\line{MDA08A} \>\> {\bf end if}; \\
 
-
-\line{MDA09} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{item.addr, tmp, item}))$  \\
-\line{MDA10} \>\>\> {\bf then} ${\sf abort}()$ \\
-\line{MDA11} \>\> {\bf end if} \\
+\line{MDA09} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{item.addr, tmp, item}))$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+%\line{MDA10} \>\>\> {\bf then} ${\sf abort}()$ \\
+%\line{MDA11} \>\> {\bf end if}; \\
 
 \line{MDA12} \> {\bf end for}; \\
 
 \line{MDA13} \> $\mathit{time} \gets {\sf fetch\&increment}(\mathit{GVC})$; \\
 
-\line{MDA14} \> {\bf if} $\neg{\sf validate\_all}$(); \\
+\line{MDA14} \> ${\sf validate\_by\_value}$(); \\
 
 
 \> \% Ensure the writes haven't been overwritten by non-transactional writes \\
@@ -1770,12 +1782,12 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
                  {\bf then} 
                    ${\sf abort}()$ 
                 {\bf end if} \\
-\line{MDA17} \>\> $\mathit{item.time} \gets \mathit{time}$ \\
+\line{MDA17} \>\> $\mathit{item.time} \gets \mathit{time}$; \\
 \line{MDA18} \> {\bf end for}; \\
-\line{MDA19} \> {\bf if} ${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED) \\
+\line{MDA19} \> {\bf if} (${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED)) \\
 \line{MDA20} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
 \line{MDA21} \> \> {\bf else} \= ${\sf abort}()$ \\
-\line{MDA22} \> {\bf end if}  \\
+\line{MDA22} \> {\bf end if};  \\
 {\bf end operation}.
 
 \end{tabbing}
@@ -1803,9 +1815,9 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{N01} \> $\mathit{lock} \gets {\sf load\_lock}(\mathit{addr})$; \\ 
 \line{N02} \> $\mathit{value} \gets {\sf load}(\mathit{addr})$; \\ 
-\line{N03} \> {\bf if} ($~\mathit{lock}$ is locked  $\wedge \mathit{tmp.status} = $ COMMITTED $\wedge \mathit{addr} \in \mathit{lock.ws}$) {\bf then} \\
+\line{N03} \> {\bf if} ($~\mathit{lock}$ is locked  $\wedge \mathit{tmp.status} = $ COMMITTED $\wedge \mathit{addr} \in \mathit{lock.ws}$) \\
 \line{N04} \>\> {\bf then} $\mathit{value} \gets \mathit{item.value}$ from $\mathit{addr}$ in $\mathit{lock.ws}$ \\
-\line{N05} \> {\bf end if} \\
+\line{N05} \> {\bf end if}; \\
 
 \line{N06} \> ${\sf return}$ $(\mathit{value})$ \\
 {\bf end operation}. \\
@@ -1829,7 +1841,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 This algorithm allows wait-free NT read operations.
 The only change that is needed to the base TL2 algorithm is that when an item is locked it points to the write-set of the transaction, and that each
 transaction has a marker that is initialized as $\mathit{LIVE}$ and is set to $\mathit{COMMITTED}$ just before the transaction starts performing write backs during the commit phase.
-The NT-read operation is shown in figure \ref{fig:noblock-readonly}.
+The NT-read operation is shown in Figure \ref{fig:noblock-readonly}.
 
 
 
