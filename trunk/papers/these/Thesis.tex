@@ -24,7 +24,8 @@
 \usepackage{array}
 \usepackage{float}
 \usepackage{subfigure}
-\usepackage{color}
+%  \usepackage{color}
+\usepackage[usenames,dvipsnames]{color}
 \usepackage{rotating}
 \definecolor{gris}{gray}{0.45}
 % Font math
@@ -37,7 +38,8 @@
 %\usepackage{algorithm}
 % \usepackage{vmargin}
 \usepackage{textpos}
-\usepackage{color}
+% \usepackage{color}
+% \usepackage[usenames,dvipsnames]{color}
 \usepackage{letterspace}
 
 \usepackage{macros}
@@ -319,6 +321,7 @@ This methodology can also be applied to data structures used within transactions
 %\markboth{\MakeUppercase{Introduction}}{\MakeUppercase{Introduction}}
 %\addcontentsline{toc}{chapter}{Introduction}
 %\input{./introduction/doc_introduction}
+\input{./STM-intro/STM-intro}
 
 \chapter{Read Invisibility, Virtual World Consistency and Permissiveness are Compatible}
 \label{chap:soc}
@@ -326,6 +329,7 @@ This methodology can also be applied to data structures used within transactions
 \section{Related Work and Definitions}
 \section{Incompatibility Proof with Opacity}
 \section{Compatibility Proof with Virtual World Consistency}
+\input{./VWC-comp/vwcinvisperm}
 \section{A Probabilistic Permissive Virtual World Consistent STM Protocol with Invisible Reads}
 \subsection{Proof of Correctness}
 \subsection{Protocol Optimizations}
