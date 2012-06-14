@@ -1,0 +1,126 @@
+\begin{algorithm*}[!ht]
+  \caption{Tree Specific Maintenance Operations}\label{alg:tree_maint}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+\algtechrep
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+
+   		\Part{$\act{restructure-node}(\ms{node})_s$}{
+			
+			\If{$node.l.del$}
+				\State $\lit{remove}(\ms{node},\lit{false})$
+			\EndIf
+			\If{$node.r.del$}
+				\State $\lit{remove}(\ms{node},\lit{true})$
+			\EndIf
+			\State $\lit{propagate}(\ms{node})$
+			\If{$|\ms{node.left-h} - \ms{node.right-h}| > 1$}
+				\State \Comment{Perform appropriate rotations}
+			\EndIf
+
+   		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{restructure-structure}()_s$}{
+
+			\State \Comment{Do nothing}
+
+   		}\EndPart
+
+		\Statex
+
+		\Part{$\act{propagate}(node)_s$}{
+
+			\If{$\ms{node.l} \neq \bot$}
+				\State $\ms{node.left-h} \gets \ms{node.l.localh}$
+			\Else{}
+				\State $\ms{node.left-h} \gets 0$
+			\EndIf
+			\If{$\ms{node.r} \neq \bot$}
+				\State $\ms{node.right-h} \gets \ms{node.r.localh}$
+			\Else{}
+				\State $\ms{node.right-h} \gets 0$
+			\EndIf
+			\State $\ms{node.localh} \gets$
+			    \State \T $\ms{\lit{max}(node.left-h,node.right-h)+1}$
+
+   		}\EndPart
+
+		\newpage
+
+		\Part{$\act{remove}(\ms{parent}, \ms{left-child})_p$}{
+			\If{$\lit{read}(\ms{parent.rem})$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:rem-par-rem}
+			\If{$\ms{left-child}$} \State $\ms{n} \gets \lit{read}(\ms{parent.\ell})$
+			\Else{} \State $\ms{n} \gets \lit{read}(\ms{parent.r})$ \EndIf
+			\If{$\ms{n = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf
+
+
+			\State $\lit{lock}(\ms{parent})$
+			\State $\lit{lock}(\ms{n})$
+
+			\If{$\neg\lit{read}(\ms{n.deleted})$} 
+			\State \Comment{release locks} \Return $\lit{false}$ \EndReturn \EndIf
+
+				\If{$(\ms{child} \gets \lit{read}(\ms{n.\ell})) \neq \bot$} \label{line:rem-start}
+					\If{$\lit{read}(\ms{n.r}) \neq \bot$}
+						\State \Comment{Release locks}
+						\Return $\lit{false}$ \EndReturn \EndIf
+				\Else{} \State $\ms{child} \gets \lit{read}(\ms{n.r})$
+				\EndIf \label{line:rem-mid}
+			\If{$\ms{left-child}$} \State $\lit{write}(\ms{parent.\ell}, \ms{child})$ \label{line:rem-write}
+			\Else{} \State $\lit{write}(\ms{parent.r}, \ms{child})$ \EndIf \label{line:rem-end}
+			\State $\lit{write}(\ms{n.\ell}, \ms{parent})$ \label{line:child-par-rem1}
+			\State $\lit{write}(\ms{n.r}, \ms{parent})$ \label{line:child-par-rem2}
+			\State $\lit{write}(\ms{n.rem}, \lit{true})$ \label{line:rem-rem}
+
+			\State \Comment{release locks}
+
+			\State $\act{update-node-heights()}$ \label{line:u-b-v3}
+
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+		
+		\newpage
+
+
+		   \Part{$\act{right-rotate}(\ms{parent}, \ms{left-child})_p$}{
+
+			\If{$\lit{read}(\ms{parent.rem})$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:rot-par-rem}
+			\If{$\ms{left-child}$} \State $\ms{n} \gets \lit{read}(\ms{parent.\ell})$
+			\Else{} \State $\ms{n} \gets \lit{read}(\ms{parent.r})$ \EndIf
+			\If{$\ms{n = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf
+			\State $\ms{\ell} \gets \lit{read}(\ms{n.\ell})$
+			\If{$\ms{\ell = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:l-child-rot}
+
+			\State $\lit{lock}(\ms{parent})$
+			\State $\lit{lock}(\ms{n})$
+			\State $\lit{lock}(\ms{\ell})$
+
+			\State $\ms{\ell{}r} \gets \lit{read}(\ms{l.r})$
+			\State $\ms{r} \gets \lit{read}(\ms{n.r})$
+			\State \Comment{allocate a node called $\ms{new}$} \label{line:new-node-ret}
+			\State $\ms{new.k} \gets \ms{n.k}$
+			\State $\ms{new.\ell} \gets \ms{\ell{}r}$ \label{line:rot-path1}
+			\State $\ms{new.r} \gets \ms{r}$ \label{line:rot-path2}
+			\State $\lit{write}(\ms{\ell.r}, \ms{new})$ \label{line:rot-path3}
+			\State $\lit{write}(\ms{n.rem}, \lit{true})$ \label{line:rem-rot}
+			\If{$\ms{left-child}$} \State $\lit{write}(\ms{parent.\ell}, \ms{\ell})$ \label{line:rot-write}
+			\Else{} \State $\lit{write}(\ms{parent.r}, \ms{\ell})$ \EndIf \label{line:rot-end}
+
+			\State \Comment{release locks}
+
+			\State $\act{update-node-heights()}$ \label{line:u-b-v4}
+
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+				
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\algtechrepend
+\end{algorithm*}

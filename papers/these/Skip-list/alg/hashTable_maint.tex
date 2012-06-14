@@ -1,0 +1,86 @@
+\begin{algorithm*}[!ht]
+  \caption{HashTable Specific Maintenance Operations}\label{alg:hashTable_maint}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+\algtechrep
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+
+
+   		\Part{$\act{restructure-node}(\ms{node})_s$}{
+
+			\State \Comment{Do nothing}
+
+   		}\EndPart
+		
+		\Statex
+
+   		\Part{$\act{restructure-structure}()_s$}{
+
+			\If{$\lit{size}() > \ms{threshold}$}
+				\State $\lit{grow}()$
+			\EndIf
+
+   		}\EndPart
+
+		\newpage
+
+		\Part{$\act{size}()_s$}{
+
+			\State $\ms{count} \gets 0$
+			\For{$\ms{i} \gets 0$; $\ms{i < table.length}$; $\ms{i}\mathit{++}$}
+				\State $\ms{next} \gets \ms{table}[\ms{i}]$
+				\While{$\ms{next} \neq \bot$}
+					\State $\ms{count} \gets \ms{count+1}$
+					\State $\ms{next} \gets \ms{next.next}$
+				\EndWhile
+			\EndFor
+			\Return $\ms{count}$ \EndReturn
+   		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{grow}()_s$}{
+
+			\State $\ms{new-table} \gets$ allocate a new table
+			\For{$\ms{i} \gets 0$; $\ms{i < table.length}$; $\ms{i}\mathit{++}$}
+				\State $\lit{grow-level}(\ms{i})$
+			\EndFor
+			\State $\ms{table} \gets \ms{new-table}$
+   		}\EndPart
+
+		\newpage
+
+		\Part{$\act{grow-level}(\ms{i})_s$}{
+			\While{$\lit{true}$}
+				\State $\ms{list1} \gets \bot$
+				\State $\ms{list2} \gets \bot$
+				\State $\ms{next} \gets \ms{table}[\ms{i}]$
+				\State $\ms{first} \gets \ms{next}$
+				\While{$\ms{next} \neq \bot$}
+					\State \Comment{make a copy of next}
+					\If{$\lit{hash}(\ms{next})\&\ms{new-table.mask} = \ms{i}$
+					  \State}
+						\State \Comment {add copy to list1}
+					\Else
+						\State \Comment {add copy to list2}
+					\EndIf
+					\State $\ms{prev} \gets \ms{prev.next}$
+				\EndWhile
+				\State $\ms{new-table}[\ms{i}] \gets \ms{list1}$
+				\State $\ms{new-table}[\ms{i}+\ms{table.length}] \gets \ms{list2}$
+				\If{$\lit{C\&S}[\ms{table}[\ms{i}],\ms{first},\ms{table.dummy}]$}
+					\Return \EndReturn
+				\EndIf
+			\EndWhile
+   		}\EndPart
+
+
+				
+
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\algtechrepend
+\end{algorithm*}

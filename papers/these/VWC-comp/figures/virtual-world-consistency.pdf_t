@@ -1,0 +1,41 @@
+\begin{picture}(0,0)%
+\includegraphics{VWC-comp/figures/virtual-world-consistency.pdf}%
+\end{picture}%
+\setlength{\unitlength}{3947sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(12177,4816)(436,-3355)
+\put(2626,614){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_1^1$}%
+}}}}
+\put(9976,539){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_1^3$}%
+}}}}
+\put(7351,539){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_1'$}%
+}}}}
+\put(1951,-2611){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_2^1$}%
+}}}}
+\put(2776,-3286){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$past(T_1')$}%
+}}}}
+\put(11701,-2611){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_2^3$}%
+}}}}
+\put(10351,-2611){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_2'$}%
+}}}}
+\put(7951,-2611){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_2^2$}%
+}}}}
+\put(10201,-3211){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$past(T_2')$}%
+}}}}
+\put(5101,689){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$T_1^2$}%
+}}}}
+\put(3526,-1111){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$y$}%
+}}}}
+\put(451,-886){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$~$}%
+}}}}
+\put(1051,-2011){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$p_2$}%
+}}}}
+\put(1051,164){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\familydefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$p_1$}%
+}}}}
+\end{picture}%

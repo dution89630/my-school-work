@@ -1,0 +1,101 @@
+\begin{algorithm*}[t]
+   \caption{Lockfree Operations of the Generic CF Algorithm}\label{alg:general_op-2lockfree}  
+\algtechrep
+   \begin{algorithmic}[1]
+ 
+  % \algrestore{general}
+    
+   \begin{multicols}{2}
+   {\size 
+
+  		\Part{State of node $n$}{
+			\State $\ms{node}$ a record with fields: 
+			\State \T $\ms{k} \in  \mathbb{N}$, the node key
+			\State \T $\ms{v}$, the node's value, a value of 
+			\State \T\T $\bot$ indicates the nodes is logically deleted 
+			%\State \T\T logically deleted 
+			\State \T $\ms{marker} \in \{\lit{true},\lit{false}\}$,indicate 
+			\State \T\T if this is a marker node
+			\State \T $\ms{next}$, pointer to the next node in the list
+			%\State \T\T in the list
+			\State \T $\ms{prev}$, pointer to the previous node in the list
+			%\State \T\T node in the list
+			\State \T $\ms{level}$, integer indicating the
+			\State\T\T level of the node, initialized to $0$
+			%\State\T\T initialized to $0$
+   		}\EndPart
+
+		\Statex
+
+
+
+		\Part{$\act{delete}(k)_p$}{
+			\State $\ms{node} \gets \bot$
+			\While{$\lit{true}$}
+				\State $\ms{node} \gets \lit{get\_next}(\ms{node}, \ms{k})$ \label{lfline:del-val}
+				\If{$\ms{node.k = k}$}
+					\State $\ms{v \gets node.v}$
+					\If{$\ms{v \neq \bot} \cap \ms{v \neq node}$} \label{lfline:del-check}
+						\If{$\lit{CAS}(\ms{node.v, v, \bot})$} \label{lfline:del-mod}
+						      \Return $\lit{true}$ \EndReturn
+						\EndIf
+					\Else
+						\Return $\lit{false}$ \EndReturn
+					\EndIf
+				\Else
+					\Return $\lit{false}$ \EndReturn
+				\EndIf
+			\EndWhile
+   		}\EndPart
+
+		\newpage
+
+		\Part{$\act{contains}(k)_p$}{
+			\State $\ms{node} \gets \lit{get\_next}(\bot, \ms{k})$
+			\State $\ms{result} \gets \lit{false}$
+			\If{$\ms{node.k = k}$} \label{lfline:con-eq1}
+				\State $\ms{v \gets node.v}$ \label{lfline:con-readv}
+				\If{$\ms{v \neq \bot} \cap \ms{v \neq node}$} \label{lfline:con-eq2}
+					\State $\ms{result} \gets \lit{true}$
+				\EndIf
+			\EndIf
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+
+		\Statex
+
+		\Part{$\act{insert}(k,v)_p$}{
+
+			\State $\ms{node} \gets \bot$
+			\While{$\lit{true}$}
+				\State $\ms{node} \gets \lit{get\_next}(\ms{node}, \ms{k})$
+				\If{$\ms{node.k = k}$}
+					\If{$\ms{node.v = \bot}$} \label{lfline:ins-check}
+						\If{$\lit{CAS}(\ms{node.v, \bot, v})$} \label{lfline:ins-mod}
+							\Return $\lit{true}$ \EndReturn
+						\EndIf
+					\Else
+						\Return $\lit{false}$ \EndReturn
+					\EndIf
+				\Else{}
+					\State $\ms{new} \gets \lit{setup\_node}(\ms{node}, \ms{k}, \ms{v})$ \label{lfline:ins-addcall}
+					\State $\ms{next \gets new.next}$
+					\If{$\ms{next.val \neq next}$} \label{lfline:ins-rmcheck}
+						\If{$\lit{CAS}(\ms{node.next, next, new})$} \label{lfline:ins-add1}
+							\State $\ms{next.prev} \gets \ms{new}$ \label{lfline:ins-add2}
+							\Return $\ms{result} \gets \lit{true}$ \EndReturn
+						\EndIf
+					\EndIf
+				\EndIf
+			\EndWhile
+   		}\EndPart
+
+
+
+	}
+    \end{multicols}
+    
+    
+  \end{algorithmic}
+\algtechrepend
+\end{algorithm*}

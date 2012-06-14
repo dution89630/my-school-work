@@ -1,0 +1,141 @@
+\begin{algorithm*}[!ht]
+  \caption{HashTable Specific Maintenance Operations}\label{alg:hashTable_maint}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+		\Statex
+
+		\Part{$\act{next-in-trav}(\ms{get-first})_s$}{
+			
+			\State \Comment{TODO: in array, Perform the list data structure traversal}
+
+		}\EndPart
+
+		\Statex
+   	
+		\Part{$\act{remove}(\ms{node}, \ms{next})_s$}{
+
+			\State $\lit{list}(\lit{remove}(\ms{node},\ms{next}))$
+
+		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{restructure-node}(\ms{node})_s$}{
+
+			\State \Comment{Do nothing}
+
+   		}\EndPart
+		
+		\Statex
+
+   		\Part{$\act{restructure-structure}(node)_s$}{
+
+			\State \Comment{TODO: Decide when to preform a grow/shrink}
+
+   		}\EndPart
+
+		\newpage
+
+   		\Part{$\act{grow}()_s$}{
+
+			\State $\ms{new-table} \gets$ allocate a new table
+			\For{$\ms{i} \gets 0$; $\ms{i < table.length}$; $\ms{i}\mathit{++}$}
+				\State $\ms{node} \gets \ms{table}[\ms{i}]$
+				\State $\ms{begin} \gets \lit{lock-begin}(\ms{node})$
+				\State $\ms{middle} \gets \lit{lock-middle}(\ms{node})$
+				\State $\ms{end} \gets \lit{lock-end}(\ms{node})$
+				\State $\ms{new-table}[\ms{i}] \gets \ms{begin}$
+				\State $\ms{new-table}[\ms{i} \mathit{+} \ms{table.length}] \gets$ allocate a new start node
+				\If{$\ms{middle.next} = \ms{table.dummy}$}
+					\State $\ms{new-table}[\ms{i} \mathit{+} \ms{table.length}].\ms{next} \gets \ms{new-table.dummy}$
+				\Else{}
+					\State $\ms{new-table}[\ms{i} \mathit{+} \ms{table.length}].\ms{next} \gets \ms{middle.next}$
+				\EndIf
+				\State $\ms{middle.next} \gets \ms{new-table.dummy}$
+				\State $\ms{end.next} \gets \ms{new-table.dummy}$
+				\State $\ms{table}[\ms{i}] \gets \ms{new-table.dummy}$
+				\State \Comment{Unlock nodes}
+			\EndFor
+			\State $\ms{table} \gets \ms{new-table}$
+   		}\EndPart
+
+		\Statex
+   	
+
+   		\Part{$\act{shrink}()_s$}{
+
+			\State $\ms{new-table} \gets$ allocate a new table
+			\For{$\ms{i} \gets 0$; $\ms{i < table.length}$; $\ms{i}\mathit{++}$}
+				\State $\ms{node} \gets \ms{table}[\ms{i}]$
+				\State $\ms{next} \gets \ms{table}[\ms{i} \mathit{+} \ms{new-table.length}]$
+				\State $\ms{begin} \gets \lit{lock-end}(\ms{node})$
+				\State $\ms{middle} \gets \lit{lock-begin}(\ms{next})$
+				\State $\ms{end} \gets \lit{lock-end}(\ms{next})$
+				\State $\ms{new-table}[\ms{i}] \gets \ms{node}$
+				\If{$\ms{middle.next} = \ms{table.dummy}$}
+					\State $\ms{begin.next} \gets \ms{new-table.dummy}$
+				\Else{}
+					\State $\ms{begin.next} \gets \ms{middle.next}$
+					\State $\ms{end.next} \gets \ms{new-table.dummy}$
+				\EndIf
+				\State $\ms{table}[\ms{i}] \gets \ms{new-table.dummy}$
+				\State $\ms{table}[\ms{i} \mathit{+} \ms{new-table.length}] \gets \ms{new-table.dummy}$
+				\State \Comment{Unlock nodes}
+			\EndFor
+			\State $\ms{table} \gets \ms{new-table}$
+   		}\EndPart
+
+		\newpage
+				
+		\Part{$\act{lock-begin}(\ms{node})_s$}{
+
+			\State $\lit{lock}(\ms{node})$
+
+		}\EndPart
+
+		\Statex
+				
+		\Part{$\act{lock-middle}(\ms{node})_s$}{
+
+			\State $\ms{next} \gets \ms{node.next}$
+			\While{$\lit{true}$}
+				\If{$\lit{hash}(\ms{next.k}) \& \ms{new-table.mask} \geq \ms{table.size} \cup \ms{next = table.dummy}$}
+					\State $\lit{lock}(\ms{node})$
+					\If{$\ms{next} = \ms{node.next}$}
+						\Return \EndReturn
+					\Else{}
+						\State $\lit{unlock}(\ms{node})$
+					\EndIf
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$
+				\State $\ms{next} \gets \ms{node.next}$
+			\EndWhile
+
+		}\EndPart
+
+		\Statex
+				
+		\Part{$\act{lock-end}(\ms{node})_s$}{
+
+			\State $\ms{next} \gets \ms{node.next}$
+			\While{$\lit{true}$}
+				\If{$\ms{next = table.dummy}$}
+					\State $\lit{lock}(\ms{node})$
+					\If{$\ms{next} = \ms{node.next}$}
+						\Return \EndReturn
+					\Else{}
+						\State $\lit{unlock}(\ms{node})$
+					\EndIf
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$
+				\State $\ms{next} \gets \ms{node.next}$
+			\EndWhile
+
+		}\EndPart
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

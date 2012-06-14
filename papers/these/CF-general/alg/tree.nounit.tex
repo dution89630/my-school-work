@@ -1,0 +1,219 @@
+\begin{algorithm*}[!ht]\label{alg:tree}
+  \caption{Transaction-friendly binary search tree}
+  \begin{algorithmic}[1]
+   \begin{multicols}{2}
+   {\size 
+   		\Part{State of node $n$}{
+			\State $\ms{node}$ a record with fields: 
+			\State \T $\ms{key}$, an integer storing the key 
+			\State \T $\ms{lefth}, \ms{righth}$, integers storing the expected local height of the children, 
+			\State \T\T initialized to 0
+			\State \T $\ms{left}, \ms{right}$, pointers to left and right children, initialized to $\bot$
+			\State \T $\ms{localh}$ an integer storing the expected local height, initialized to 1
+			\State \T $\ms{deleted}$ boolean indicating if the node has been logically deleted, initialized 
+			\State \T\T to $\lit{false}$ 	
+			\State \T $\ms{removed}$ boolean indicating if the node has been made unreachable from the 
+			\State \T\T root of the tree, initialized to $\lit{false}$
+   		}\EndPart
+   	
+		\Statex   	
+		
+		\Part{State of shared memory $s$}{
+			\State $\ms{root}$ shared pointer to root 
+   		}\EndPart
+		
+		\Statex
+		
+		\Part{State of process $p$}{
+			\State $\ms{root}$, a pointer to the root of the tree
+			\State $\ms{curr}$, a pointer to a node used while traversing the tree
+			\State $\ms{left-child}, \ms{right-child}$, pointers to nodes 
+			\State $\ms{lefth}, \ms{righth}, \ms{left-localh}, \ms{right-localh}, \ms{localh}, 
+				\ms{bal}$ integers
+		}\EndPart
+		
+		\Statex
+		
+		\Part{$\act{find}(v)_p$}{
+%			\State $\ms{next} \gets \ms{place}$
+%			\State $\ms{rem} \gets \lit{true}$
+%			\While{$\ms{1}$}
+%				\State $\ms{place} \gets \ms{next}$
+%				\State $\ms{val} \gets \ms{place.key}$
+%				\State $\ms{rem} \gets \lit{unit-read}(\ms{place.removed})$
+%				\If{$\ms{val} = \ms{v} \wedge \neg \ms{rem}$} \label{line:eq-find}
+%					\If{$\neg(\ms{rem} \gets \lit{read}(\ms{place.removed}))$} \label{line:eq-find2}
+%						\State $\lit{break}$ \label{line:eq-find3}
+%					\EndIf
+%				\EndIf
+%				\If{$\ms{val} > v$} $\ms{next} \gets \lit{unit-read}(\ms{place.right})$ \label{line:next-find1}
+%				\Else{} $\ms{next} \gets \lit{unit-read}(\ms{place.left})$ \label{line:next-find2}
+%				\EndIf
+%				\If{$\ms{next} = \bot$}
+%					\If{$\neg (\ms{rem} \gets \lit{read}(\ms{place.removed}))$} \label{line:par-rem-find}
+%						\If{$\ms{val} > v$} $\ms{next} \gets \lit{read}(\ms{place.right})$ \label{line:null-par-find1}
+%						\Else{} $\ms{next} \gets \lit{read}(\ms{place.left})$ \label{line:null-par-find2}
+%						\EndIf
+%						\If{$\ms{next} = \bot$} $\lit{break}$ \EndIf \label{line:null-find}
+%					\Else{}
+%						\If{$\ms{val} \leq v$} $\ms{next} \gets \lit{unit-read}(\ms{place.right})$ \label{line:rem-find1}
+%						\Else{} $\ms{next} \gets \lit{unit-read}(\ms{place.left})$ \label{line:rem-find2}
+%						\EndIf
+%					\EndIf
+%				\EndIf
+%			\EndWhile
+%			\Return $\ms{place}$ \EndReturn
+
+			%\State $\ms{next} \gets \ms{place}$
+			\State $\ms{curr} \gets \ms{root}$
+			%\State $\ms{rem} \gets \lit{true}$
+			\While{$\lit{true}$}
+				\State $\ms{val} \gets \ms{curr.key}$ \Comment{the $\ms{key}$ is never modified}
+				\State $\ms{rem} \gets \lit{read}(\ms{curr.removed})$
+				\If{$\ms{val} = \ms{v} \wedge \neg \ms{rem}$} $\lit{break}$ \label{line:eq-find}  \Comment{found}
+					%\If{$\neg\ms{rem}$} \label{line:eq-find2}
+						%\State $\lit{break}$ \label{line:eq-find3}
+					%\EndIf
+				\ElsIf{$\ms{val} > v$} $\ms{next} \gets \lit{read}(\ms{curr.right})$ \label{line:next-find1} 
+				\Else{} $\ms{next} \gets \lit{read}(\ms{curr.left})$ \label{line:next-find2}
+				\EndIf
+				\If{$\ms{next} = \bot$} 
+					\If{$\neg\ms{rem}$} $\lit{break}$
+					\ElsIf{$\ms{val} > v$} $\ms{next} \gets \lit{unit-read}(\ms{curr.left})$
+					\Else $\ms{next} \gets \lit{unit-read}(\ms{right})$ \label{line:rem-find2}
+					\EndIf
+%					\If{$\neg\ms{rem}$} \label{line:par-rem-find}
+%						\If{$\ms{val} > v$} $\ms{next} \gets \lit{read}(\ms{curr.right})$ \label{line:null-par-find1}
+%						\Else{} $\ms{next} \gets \lit{read}(\ms{curr.left})$ \label{line:null-par-find2}
+%						\EndIf
+%						\If{$\ms{next} = \bot$} $\lit{break}$ \EndIf \label{line:null-find}
+%					\Else{}
+%						\If{$\ms{val} \leq v$} $\ms{next} \gets \lit{unit-read}(\ms{curr.right})$ \label{line:rem-find1}
+%						\Else{} $\ms{next} \gets \lit{unit-read}(\ms{curr.left})$ \label{line:rem-find2}
+%						\EndIf
+%					\EndIf
+				\EndIf
+				%\Return $\ms{curr}$ \EndReturn
+				\State $\ms{curr} \gets \ms{next}$
+			\EndWhile
+			\Return $\ms{curr}$ \EndReturn
+
+		}\EndPart
+
+		\Statex
+   	
+		\Part{$\act{contains}(v)_p$}{
+			\Atom
+				\State $\ms{result} \gets \lit{true}$
+				\State $\ms{curr} \gets \lit{find}(v)$ \label{line:cont-find}
+				\If{$\ms{curr.key} \neq v$}
+					\State $\ms{result} \gets \lit{false}$
+				\Else \If{$\lit{read}(\ms{curr.deleted})$} $\ms{result} \gets \lit{false}$ \EndIf \EndIf \label{line:del-cont}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\ms{result}$ \EndReturn
+		}\EndPart
+
+				
+		\Statex
+		
+   		\Part{$\act{insert}(v)_p$}{
+			\Atom
+				\State $\ms{result} \gets \lit{true}$
+				\State $\ms{curr} \gets \lit{find}(v)$  \label{line:find-ins}
+				\If{$\ms{curr.key = v}$}
+					\If{$\lit{read}(\ms{curr.deleted})$} \label{line:del-ins}
+						\State $\lit{write}(\ms{curr.deleted}, \lit{false})$ \label{line:del-false-ins}
+						%\State $\lit{commit()}$ 
+						%\Return $\lit{true}$ \EndReturn
+					\Else 
+						%\State $\lit{commit}()$
+						%\Return $\lit{false}$ \EndReturn
+						\State $\ms{result} \gets \lit{false}$
+					\EndIf
+				\Else
+					\State \Comment{allocate a node called new-node} \label{line:new-node}
+					\State $\ms{new-node.key} \gets \ms{v}$
+					\If{$\ms{curr.key} > \ms{v}$} $\lit{write}(\ms{curr.right},\ms{new-node})$ \label{line:start-ins}
+					\Else{} $\lit{write}(\ms{curr.left}, \ms{new-node})$ \label{line:end-ins}
+					\EndIf
+				\EndIf
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+		
+		\newpage
+		
+		\Part{$\act{delete}(v)_p$}{
+			\Atom
+				\State $\ms{result} \gets \lit{true}$
+				\State $\ms{curr} \gets \lit{find}(v)$ 
+				\If{$\ms{curr.key \neq v}$}
+					%\State $\lit{commit()}$ 
+					%\Return $\lit{false}$ \EndReturn
+					\State $\ms{result} \gets \lit{false}$
+				\Else
+					\If{$\lit{read}(\ms{curr.deleted})$} \label{line:del-del}
+						\State $\ms{result} \gets \lit{false}$
+						%\State $\lit{commit()}$
+						%\Return $\lit{false}$ \EndReturn
+					\Else 
+						\State $\lit{write}(\ms{curr.deleted}, \lit{true})$
+						%\State $\lit{commit()}$
+						%\Return $\lit{true}$ \EndReturn
+					\EndIf
+				\EndIf
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+
+		\Statex
+
+		   \Part{$\act{right\_rotate}(\ms{parent}, \ms{left-child})_p$}{
+			\Atom
+				\If{$\lit{read}(\ms{parent.removed})$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:par-rem}
+				\If{$\ms{left\_child}$} \State $\ms{n} \gets \lit{read}(\ms{parent.left})$
+				\Else{} \State $\ms{n} \gets \lit{read}(\ms{parent.right})$ \EndIf
+				\If{$\ms{n = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf
+				\State $\ms{l} \gets \lit{read}(\ms{n.left})$
+				\If{$\ms{l = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:l-child-rot}
+				\State $\ms{lr} \gets \lit{read}(\ms{l.right})$
+				\State $\ms{r} \gets \lit{read}(\ms{n.right})$
+				\State \Comment{allocate a node called $\ms{n2}$}
+				\State $\ms{n2.key} \gets \ms{n.key}$
+				\State $\ms{n2.left} \gets \ms{lr}$ \label{line:rot-path1}
+				\State $\ms{n2.right} \gets \ms{r}$ \label{line:rot-path2}
+				\State $\lit{write}(\ms{l.right}, \ms{n2})$ \label{line:rot-path3}
+				\State $\lit{write}(\ms{n.removed}, \lit{true})$ \label{line:rem-rot}
+				\If{$\ms{left\_child}$} \State $\lit{write}(\ms{parent.left}, \ms{l})$ \label{line:rot-write}
+				\Else{} \State $\lit{write}(\ms{parent.right}, \ms{l})$ \EndIf \label{line:rot-end}
+				\State \Comment{update balance values}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+		\Statex
+
+			\Part{$\act{remove}(\ms{parent}, \ms{left-child})_p$}{
+			\Atom
+				\If{$\lit{read}(\ms{parent.removed})$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:par-rem}
+				\If{$\ms{left\_child}$} \State $\ms{n} \gets \lit{read}(\ms{parent.left})$
+				\Else{} \State $\ms{n} \gets \lit{read}(\ms{parent.right})$ \EndIf
+				\If{$\ms{n = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf
+				\If{$\neg\lit{read}(\ms{n.deleted})$} \Return $\lit{false}$ \EndReturn \EndIf
+				\If{$(\ms{child} \gets \lit{read}(\ms{n.left})) \neq \bot$} \label{line:rem-start}
+					\If{$(\ms{child} \gets \lit{read}(\ms{n.right})) \neq \bot$} \Return $\lit{false}$ \EndReturn \EndIf
+				\EndIf \label{line:rem-mid}
+				\If{$\ms{left\_child}$} \State $\lit{write}(\ms{parent.left}, \ms{child})$ \label{line:rem-write}
+				\Else{} \State $\lit{write}(\ms{parent.right}, \ms{child})$ \EndIf \label{line:rem-end}
+				\State $\lit{write}(\ms{n.left}, \ms{parent})$ \label{line:child-par-rem1}
+				\State $\lit{write}(\ms{n.right}, \ms{parent})$ \label{line:child-par-rem2}
+				\State $\lit{write}(\ms{n.removed}, \lit{true})$ \label{line:rem-rem}
+				\State \Comment{update balance values}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

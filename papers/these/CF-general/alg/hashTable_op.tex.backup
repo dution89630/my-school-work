@@ -1,0 +1,147 @@
+\begin{algorithm*}[!ht]
+  \caption{HashTable Specific Operations}\label{alg:hashTable_op}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+   		\Part{Additional fields of node $n$}{
+			\State $\ms{node}$ a record additional with fields: 
+			\State \T $\ms{hash}$, hash value for this node
+			\State \T $\ms{reverse}$, binary reverse of the hash
+			\State \T $\ms{next}$, pointer to next node in list
+			\State \T $\ms{prev}$, pointer to previous node in list
+   		}\EndPart
+   	
+%		\Statex   	
+%		
+%		\Part{State of shared memory $s$}{
+%			\State $\ms{root}$ shared pointer to root 
+%   		}\EndPart
+		
+		\Statex
+		
+		\Part{State of structure $s$}{
+			\State $\ms{table}$, pointer to array, each location in
+			\State \T the array contains a list
+			\State $\ms{table.dummy}$, pointer to dummy node
+			\State $\ms{table.mask}$, binary mask
+			\State $\ms{new-table}$, pointer to a table used during
+			\State \T rehash operations
+			\State $\ms{next-trav}$, pointer to a node used for
+			\State \T traversal in the maintenance
+			%\State $\ms{curr}$, a pointer to a node used while traversing the tree
+			%\State $\ms{\ell}, \ms{r}$, pointers to left/right children 
+			%\State $\ms{lefth}, \ms{righth}, \ms{left-localh}, \ms{right-localh}, \ms{localh}  \in \mathbb{N}$
+			%\State $\ms{bal} \in \mathbb{N}$, the imbalance level
+		}\EndPart
+
+		\Part{Process local variables}{
+			\State $\ms{l-table}$ local pointer to table
+		}\EndPart
+		
+		\newpage
+
+   		\Part{$\act{get-first}(\ms{hash})_s$}{
+
+			\State $\ms{node} \gets \ms{l-table}[\ms{hash} \& \ms{l-table.mask}]$
+			\While{$\ms{node} = \ms{table.dummy}$}
+				\State $\lit{check-table}()$
+				\State $\ms{node} \gets \ms{l-table}[\ms{hash} \& \ms{l-table.mask}]$
+			\EndWhile
+			\Return $\ms{node}$ \EndReturn
+   		}\EndPart
+
+
+
+		\Statex
+   	
+		\Part{$\act{contains}(\ms{k})_s$}{
+
+			\State $\ms{node} \gets \lit{get\_first}(\lit{hash}(\ms{k}))$
+			\While{$\ms{node} \neq \bot$}
+				\If{$\ms{k} = \ms{node.k}$}
+					\Return $\lit{true}$ \EndReturn
+				\EndIf
+				\State $\ms{node} \gets \ms{node.next}$
+			\EndWhile
+			\Return $\lit{false}$ \EndReturn
+		}\EndPart
+
+		\newpage
+
+		\Part{$\act{insert}(\ms{k})_s$}{
+
+			\State $\ms{hash} \gets \lit{hash}(\ms{k})$
+			\While{$\lit{true}$}
+				\State $\ms{first} \gets \lit{get\_first}(\ms{hash})$
+				\State $\ms{node} \gets \ms{first}$
+				\State $\ms{index} \gets \ms{l-table}[\ms{hash} \& \ms{l-table.mask}]$
+				\While{$\ms{node} \neq \bot$}
+					\If{$\ms{k} = \ms{node.k}$}
+						\Return $\lit{false}$ \EndReturn
+					\EndIf
+					\State $\ms{node} \gets \ms{node.next}$
+				\EndWhile
+				\State \Comment{allocate a node called new}
+				\State $\ms{new.k} \gets \ms{k}$
+				\State $\ms{new.next} \gets \ms{first}$
+				\If{$\lit{C\&S}(\ms{l-table}[\ms{index}], \ms{first}, \ms{new})$}
+					\Return $\ms{true}$ \EndReturn
+				\EndIf
+			\EndWhile
+		}\EndPart
+
+		\Statex
+
+		\Part{$\act{delete}(\ms{k})_s$}{
+
+			\State $\ms{hash} \gets \lit{hash}(\ms{k})$
+			\While{$\lit{true}$}
+				\State $\ms{first} \gets \lit{get\_first}(\ms{hash})$
+				\State $\ms{node} \gets \ms{first}$
+				\State $\ms{index} \gets \ms{l-table}[\ms{hash} \& \ms{l-table.mask}]$
+				\While{$\ms{node} \neq \bot$}
+					\If{$\ms{k} = \ms{node.k}$}
+						\State $\ms{prev} \gets \ms{first}$
+						\State $\ms{new-first} \gets \ms{node.next}$
+						\While{$\ms{prev} \neq \ms{node}$}
+							\State \Comment{make a copy prev}
+							\If{$\ms{prev} = \ms{first}$}
+								\Comment {set new-first to the copy}
+							\EndIf
+						\EndWhile
+						\If{$\ms{prev} \neq \ms{first}$}
+							\State $\ms{prev.next} \gets \ms{node.next}$
+						\EndIf
+						\If{$\lit{C\&S}(\ms{l-table}[\ms{index}], \ms{first}, \ms{new-first})$}
+							\Return $\ms{true}$ \EndReturn
+						\Else
+							\State $\lit{continue}$
+						\EndIf
+					\EndIf
+					\State $\ms{node} \gets \ms{node.next}$
+				\EndWhile
+				\Return $\ms{true}$ \EndReturn
+			\EndWhile
+		}\EndPart
+
+
+		\Statex
+
+		\Part{$\act{check-table}()$}{
+
+			\State $\ms{t2} \gets \ms{new-table}$
+			\State $\ms{t1} \gets \ms{table}$
+			\If{$\ms{l-table = t1}$}
+				\State $\ms{l-table} \gets \ms{t2}$
+			\Else{}
+				\State $\ms{l-table} \gets \ms{t1}$
+			\EndIf
+
+		}\EndPart
+
+		\Statex
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

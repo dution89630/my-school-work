@@ -1,0 +1,145 @@
+\begin{algorithm*}[!ht]
+  \caption{Skip List Specific Operations}\label{alg:skipList_op}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+\algtechrep
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+
+
+		\Part{State of structure $s$}{
+			\State $\ms{top}$, pointer to the first and
+			\State \T highest level IndexItem
+			\State \T in the SkipList
+			\State $\ms{first}$, array of pointers to the
+			\State \T first item of each level
+			\State \T in the SkipList
+			\State $\ms{bottom-index}$ integer indicating
+			\State \T the level of the
+			\State \T bottom IndexItem
+			%\State $\ms{curr}$, a pointer to a node used while traversing the tree
+			%\State $\ms{\ell}, \ms{r}$, pointers to left/right children 
+			%\State $\ms{lefth}, \ms{righth}, \ms{left-localh}, \ms{right-localh}, \ms{localh}  \in \mathbb{N}$
+			%\State $\ms{bal} \in \mathbb{N}$, the imbalance level
+		}\EndPart
+
+		\Statex
+
+   		\Part{Fields of IndexItem $item$}{
+			\State $\ms{IndexItem}$ a record with fields: 
+			\State \T $\ms{next}$, pointer to the next
+			\State \T\T IndexItem in the SkipList
+			\State \T $\ms{down}$, pointer to the 
+			\State \T\T IndexItem one level below
+			\State \T\T in the SkipList
+			\State \T $\ms{node}$, pointer a node in the list
+			\State \T\T at the bottom of the SkipList
+   		}\EndPart
+
+		\newpage
+
+		\Part{Fields of node $n$}{
+			\State $\ms{node}$ a record with fields: 
+			\State \T $\ms{next}$, pointer to the next node
+			\State \T\T in the list
+			\State \T $\ms{prev}$, pointer to the previous
+			\State \T\T node in the list
+			\State \T $\ms{level}$, integer indicating the
+			\State\T\T level of the node,
+			\State\T\T initialized to $0$
+   		}\EndPart
+%		\Statex   	
+%		
+%		\Part{State of shared memory $s$}{
+%			\State $\ms{root}$ shared pointer to root 
+%   		}\EndPart
+		
+
+
+		
+
+		
+
+		\Statex
+   	
+		\Part{$\act{get-next}(\ms{node}, \ms{k})_s$}{
+
+			\If{$\ms{node} = \bot$}
+				\State $\ms{node} \gets \lit{get-next-index}(\ms{top},\ms{k})$
+			\EndIf
+			\Return $\lit{get-next-node}(\ms{node},\ms{k})$ \EndReturn
+			
+		}\EndPart
+
+		\Statex
+
+		\Part{$\act{get-next-index}(\ms{node}, \ms{k})_s$}{
+
+			\While{$\lit{true}$}
+				\State $\ms{next} \gets \ms{node.next}$
+				\If{$\ms{next.k > k}$} \label{sline:get-index}
+					\State $\ms{next} \gets \ms{node.down}$
+					\If{$\ms{next} = \bot$}
+						\Return $\ms{node.node}$ \EndReturn
+					\EndIf
+				\ElsIf{$\ms{next.k = k}$}
+					\Return $\ms{next.node}$ \EndReturn
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$
+			\EndWhile
+		}\EndPart
+
+
+		\newpage
+
+		\Part{$\act{get-next-node}(\ms{node}, \ms{k})_s$}{
+
+			\While{$\lit{true}$}
+				\While{$\ms{node.rem}$}
+					\State{$\ms{node} \gets \ms{node.prev}$}
+				\EndWhile
+				\State $\ms{next} \gets \ms{node.next}$
+				\If{$\ms{next = \bot} \cup \ms{next.k > k}$} \label{sline:get-node}
+					\Return $\ms{node}$ \EndReturn
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$
+			\EndWhile
+		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{validate}(\ms{node}, \ms{k})_s$}{
+
+			\State $\ms{next} \gets \ms{node.next}$ \label{sline:val-next}
+			\If{$\ms{node.rem}$} \label{sline:val-rem}
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\If{$\ms{next = \bot} \cup \ms{next.key > k}$} \label{sline:val-check}
+				\Return $\lit{true}$ \EndReturn
+			\EndIf
+			\Return $\lit{false}$ \EndReturn
+   		}\EndPart
+		
+		\Statex
+
+   		\Part{$\act{setup\_node}(\ms{node}, \ms{k}, \ms{v})_s$}{
+
+			\State \Comment{allocate a node called new} \label{sline:ins-alc1}
+			\State $\ms{new.k} \gets \ms{k}$
+			\State $\ms{new.v} \gets \ms{v}$
+			\State $\ms{new.prev} \gets \ms{node}$
+			\State $\ms{new.next} \gets \ms{node.next}$ \label{sline:ins-alc2}
+			\Return $\ms{new}$ \EndReturn
+   		}\EndPart
+
+
+		\Statex
+   	
+
+				
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\algtechrepend
+\end{algorithm*}

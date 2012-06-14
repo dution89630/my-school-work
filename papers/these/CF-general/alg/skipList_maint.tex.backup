@@ -1,0 +1,113 @@
+\begin{algorithm*}[!ht]
+  \caption{SkipList Specific Maintenance Operations}\label{alg:skipList_maint}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+
+   		\Part{$\act{restructure-node}(\ms{node})_s$}{
+
+			\If{$\ms{node.level} = 0 \cap \ms{node.del}$}
+				\State $\lit{remove}(\ms{node}, \ms{node.next})$
+			\EndIf
+
+   		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{restructure-structure}()_s$}{
+
+			\State $\ms{size} \gets \lit{raise-node-level}()$
+			\State $\ms{i} \gets 1$
+			\State $\ms{count} \gets \lit{raise-index-level}(\ms{i})$
+			\While{$\ms{count} > 2$}
+				\State $\ms{i} \gets \ms{i} + 1$
+				\State $\ms{count} \gets \lit{raise-index-level}(\ms{i})$
+			\EndWhile
+			\State $\ms{top} \gets \ms{first}[\ms{i}]$
+			\If{$\log(\ms{size}) > \ms{i}$}
+				\State $\lit{lower-index-level}(\ms{bottom-index})$
+				\State $\ms{bottom-index} \gets \ms{bottom-index} - 1$
+			\EndIf
+			
+
+   		}\EndPart
+		
+
+		\Statex
+
+		\Part{$\act{lower-index-level}(i)_s$}{
+
+			\State $\ms{index} \gets \ms{first}[\ms{i}].\ms{next}$
+			\While{$\ms{index} \neq \bot$}
+				\State $\ms{index.down} \gets \bot$
+				\State $\ms{index} \gets \ms{index.next}$
+			\EndWhile
+
+		}\EndPart
+
+		\newpage
+   	
+		\Part{$\act{remove}(\ms{node}, \ms{next})_s$}{
+
+			\If{$\ms{next.level \neq 0}$}
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\State $\lit{lock}(\ms{node})$
+			\If{$\ms{node.rem} \cup \neg \ms{node.del}$}
+				\State $\lit{unlock}(\ms{node})$
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\If{$\ms{node.next \neq next}$}
+				\State $\lit{unlock}(\ms{node})$
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\State $\lit{lock}(\ms{next})$
+			\State $\ms{next.next.prev} \gets \ms{node}$
+			\State $\ms{node.next} \gets \ms{next.next}$
+			\State $\ms{next.rem} \gets \lit{true}$
+			\State $\lit{unlock}(\ms{node})$
+			\State $\lit{unlock}(\ms{next})$
+			\Return $\lit{true}$ \EndReturn
+
+		}\EndPart
+
+
+
+		\newpage
+
+   		\Part{$\act{raise-index-level}(i)_s$}{
+
+			\State $\ms{count} \gets 0$
+			\State $\ms{prev-tall} \gets \ms{first}[\ms{i} + 1]$
+			\State $\ms{index} \gets \ms{first}[\ms{i}].\ms{next}$
+			\While{$\lit{true}$}
+				\State $\ms{next} \gets \ms{index.next}$
+				\If{$\ms{next} = \bot$}
+					\Return $\ms{count}$ \EndReturn
+				\EndIf
+				\State $\ms{prev} \gets \ms{index.prev}$
+				\If{$\ms{prev.node.level} \leq \ms{i} \cap \ms{index.node.level} \leq \ms{i} \cap \ms{next.node.level} \leq{i}$}
+					\State \Comment{Allocate a new IndexItem called new}
+					\State \Comment{Set new as the top IndexItem of index.node}
+					\State $\ms{new.next} \gets \ms{prev-tall.next}$
+					\State $\ms{prev-tall.next} \gets \ms{new}$
+					\State $\ms{index.node.level} \gets \ms{i} + 1$
+					\State $\ms{prev-tall} \gets \ms{new}$
+				\EndIf
+				\State $\ms{count} \gets \ms{count} + 1$
+				\State $\ms{index} \gets \ms{index.next}$
+			\EndWhile
+
+   		}\EndPart
+
+
+		\Statex
+   	
+
+				
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

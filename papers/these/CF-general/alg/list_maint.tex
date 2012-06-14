@@ -1,0 +1,66 @@
+\begin{algorithm*}[!ht]
+  \caption{List Specific Maintenance Operations}\label{alg:list_maint}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+		\Statex
+
+		\Part{$\act{next-in-trav}(\ms{get-first})_s$}{
+			\If{$\ms{get-first}$}
+				\State $\ms{next-trav} \gets \ms{first}$
+			\Else
+				\State $\ms{next-trav} \gets \ms{next-trav.next}$
+			\EndIf
+			\Return $\mathit{<}\ms{next-trav}, \ms{next-trav.next}\mathit{>}$ \EndReturn
+
+		}\EndPart
+
+		\newpage
+   	
+		\Part{$\act{remove}(\ms{node}, \ms{next})_s$}{
+
+			\State $\lit{lock}(\ms{node})$
+			\If{$\ms{node.rem} \cup \neg \ms{node.del}$}
+				\State $\lit{unlock}(\ms{node})$
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\If{$\ms{node.next \neq next}$}
+				\State $\lit{unlock}(\ms{node})$
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\State $\lit{lock}(\ms{next})$
+			\State $\ms{next.next.prev} \gets \ms{node}$
+			\State $\ms{node.next} \gets \ms{next.next}$
+			\State $\ms{next.rem} \gets \lit{true}$
+			\State $\lit{unlock}(\ms{node})$
+			\State $\lit{unlock}(\ms{next})$
+			\Return $\lit{true}$ \EndReturn
+		}\EndPart
+
+		\newpage
+
+   		\Part{$\act{restructure-node}(\ms{node})_s$}{
+
+			\State \Comment{Do nothing}
+
+   		}\EndPart
+		
+		\Statex
+
+   		\Part{$\act{restructure-structure}(node)_s$}{
+
+			\State \Comment{Do nothing}
+
+   		}\EndPart
+
+
+		\Statex
+   	
+
+				
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

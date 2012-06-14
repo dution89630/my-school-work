@@ -1,0 +1,91 @@
+\begin{algorithm*}[!ht]
+  \caption{Lockfree Skip List Specific Operations}\label{alg:skipList_oplockfree}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+\algtechrep
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+
+   		\Part{Fields of IndexItem $item$}{
+			\State $\ms{IndexItem}$ a record with fields: 
+			\State \T $\ms{next}$, pointer to the next
+			\State \T\T IndexItem in the SkipList
+			\State \T $\ms{down}$, pointer to the 
+			\State \T\T IndexItem one level below
+			\State \T\T in the SkipList
+			\State \T $\ms{node}$, pointer a node in the list
+			\State \T\T at the bottom of the SkipList
+   		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{setup\_marker}(\ms{node})_s$}{
+
+			\State $\ms{new} \gets \lit{setup\_node}(\ms{node, \bot, \bot})$
+			\State $\ms{new.v \gets new}$
+			\State $\ms{new.rem} \gets \lit{true}$
+			\Return $\ms{new}$ \EndReturn
+   		}\EndPart
+		
+		\newpage
+   	
+		\Part{$\act{get-next}(\ms{node}, \ms{k})_s$}{
+
+			\If{$\ms{node} = \bot$}
+				\State $\ms{node} \gets \lit{get-next-index}(\ms{top},\ms{k})$
+			\EndIf
+			\Return $\lit{get-next-node}(\ms{node},\ms{k})$ \EndReturn
+			
+		}\EndPart
+
+		\Statex
+
+		\Part{$\act{get-next-index}(\ms{node}, \ms{k})_s$}{
+
+			\While{$\lit{true}$}
+				\State $\ms{next} \gets \ms{node.next}$
+				\If{$\ms{next.k > k}$} \label{sline:get-index}
+					\State $\ms{next} \gets \ms{node.down}$
+					\If{$\ms{next} = \bot$}
+						\Return $\ms{node.node}$ \EndReturn
+					\EndIf
+				\ElsIf{$\ms{next.k = k}$}
+					\Return $\ms{next.node}$ \EndReturn
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$
+			\EndWhile
+		}\EndPart
+
+		\newpage
+
+		\Part{$\act{get-next-node}(\ms{node}, \ms{k})_s$}{
+
+			\While{$\lit{true}$} \label{lfline:get-while2s}
+				\While{$\ms{node.v = node}$} \label{lfline:get-while1s} \label{lfline:val-rem}
+					\State{$\ms{node} \gets \ms{node.prev}$} \label{lfline:get-while1f}
+				\EndWhile 
+				
+				
+				\State $\ms{next} \gets \ms{node.next}$ \label{lfline:val-next}
+				\If{$\ms{next \neq \bot \cap next.v = next}$} \label{lfline:get-helpcheck}
+					\State $\lit{help\_remove}(\ms{node, next})$ \label{lfline:get-help}
+					\State $\ms{next} \gets \ms{node.next}$
+				\EndIf
+				\If{$\ms{next = \bot} \cup \ms{next.k > k}$} \label{lfline:get-node} \label{lfline:val-check}
+					\Return $\ms{node}$ \EndReturn
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$ \label{lfline:get-while2f}
+			\EndWhile
+		}\EndPart
+
+
+
+   	
+
+				
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\algtechrepend
+\end{algorithm*}

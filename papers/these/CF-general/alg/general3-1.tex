@@ -1,0 +1,73 @@
+
+\begin{algorithm}[!ht]
+  \caption{States and Restructuring of the Generic CF Algorithm}\label{alg:state-and-maintenance}
+
+
+\algtechrep
+
+  \begin{algorithmic}[1]
+
+    \begin{multicols}{3}
+   {\size 
+		
+   	
+%		\Statex   	
+%		
+%		\Part{State of shared memory $s$}{
+%			\State $\ms{root}$ shared pointer to root 
+%   		}\EndPart
+		
+
+		\Part{State of process $p$}{
+			\State $\ms{structure}$, shared pointer to the data
+			\State \T structure
+			\State $\lit{frequency}$, the frequency of a structural
+			\State \T adaptation
+			%\State $\ms{curr}$, a pointer to a node used while traversing the tree
+			%\State $\ms{\ell}, \ms{r}$, pointers to left/right children 
+			%\State $\ms{lefth}, \ms{righth}, \ms{left-localh}, \ms{right-localh}, \ms{localh}  \in \mathbb{N}$
+			%\State $\ms{bal} \in \mathbb{N}$, the imbalance level
+		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{background-struct-adaptation}()_p$}{
+			\While{$\lit{true}$} 
+				\State \Comment{continuous background restructuring}
+				\State $\lit{restructuring}()$		
+			\EndWhile
+   		}\EndPart
+
+
+		\newpage
+		
+   		\Part{$\act{distributed-struct-adaptation}()_p$}{
+			\State $\lit{toss}(\ms{coin})$
+			\If{$\ms{coin} > \lit{frequency}$} 
+				\State \Comment{restructure now}
+				\State $\lit{restructuring}()$
+			\EndIf
+			\State \Comment{...or restructure later}
+   		}\EndPart
+				
+		\newpage
+		
+   		\Part{$\act{restructuring}()_p$}{
+				\State $\ms{next} \gets \lit{first-in-trav}(\ms{structure})$
+				\While{$\ms{next \neq \bot}$}
+					\State $\lit{restructure\_node}(\ms{next})$
+					\State $\ms{next} \gets \lit{next-in-trav}(\ms{next})$
+				\EndWhile
+			\State $\lit{restructure-structure}()$
+   		}\EndPart
+		
+	}
+	
+    \algstore{general}
+    \end{multicols}
+    
+  \end{algorithmic}
+
+\algtechrepend
+
+\end{algorithm}

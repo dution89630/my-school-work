@@ -1,0 +1,36 @@
+\begin{algorithm*}[!ht]
+  \caption{General Maintenance Operations}\label{alg:general_maint}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+
+		\Statex
+
+   		\Part{$\act{perform\_maint}()_p$}{
+
+			\While{$\lit{true}$}
+				\State $\mathit{<}\ms{node,next}\mathit{>} \gets \lit{next\_in\_trav}(\lit{true})$
+				\While{$\ms{next \neq \bot}$}
+					\If{$\ms{next.del}$}
+						\State $\lit{remove}(\ms{node}, \ms{next})$
+					\EndIf
+					\State $\lit{restructure\_node}(\ms{next})$
+					\State $\mathit{<}\ms{node,next}\mathit{>} \gets \lit{next\_in\_trav}(\lit{false})$
+				\EndWhile
+			\State $\lit{restructure\_structure}(\ms{structure})$
+			\EndWhile
+   		}\EndPart
+
+		\newpage
+
+		\Part{}\EndPart
+
+		\newpage
+			
+		\Part{}\EndPart
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

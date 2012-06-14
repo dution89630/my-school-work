@@ -1,0 +1,175 @@
+\begin{algorithm*}[!ht]
+  \caption{Contention-friendly non-blocking skip list -- abstract operations by process $p$}\label{alg:skipList_oplockfree}
+%  \algtechrep
+  \begin{algorithmic}[1]
+   \begin{multicols}{2}
+   {\size 
+  		\Part{State of node}{
+			\State $\ms{node}$ a record with fields: 
+			\State \T $\ms{k} \in  \mathbb{N}$, the node key
+			\State \T $\ms{v}$, the node's value, a value of $\bot$ indicates 
+			\State \T\T the node is logically deleted 
+			%\State \T\T logically deleted 
+			\State \T $\ms{marker} \in \{\lit{true},\lit{false}\}$, indicates if this is
+			\State \T\T a marker node
+			\State \T $\ms{next}$, pointer to the next node in the list
+			%\State \T\T in the list
+			\State \T $\ms{prev}$, pointer to the previous node in the list
+			%\State \T\T node in the list
+			\State \T $\ms{level}$, integer indicating the level of the node, 
+			\State\T\T initialized to $0$
+			%\State\T\T initialized to $0$
+   		}\EndPart
+
+		\Statex
+
+		\Part{$\act{delete}(k)_p$}{
+			\State $\ms{node} \gets \lit{traverse-tower}(\ms{top}, \ms{k})$
+			\While{$\lit{true}$}
+				\State $\ms{node} \gets \lit{get-next-node}(\ms{node}, \ms{k})$ \label{lfline:del-val}
+				\If{$\ms{node.k \neq k}$}
+					\State  $\ms{result} \gets \lit{false}$
+					\State $\lit{break}()$
+				\Else
+					\State $\ms{v \gets node.v}$
+					\If{($\ms{v \neq \bot} \wedge \ms{v \neq node}$)} \label{lfline:del-check}
+						\If{$\lit{CAS}(\ms{node.v, v, \bot})$} \Comment{compare-and-swap}\label{lfline:del-mod}
+							\State  $\ms{result} \gets \lit{true}$
+							\State $\lit{break}()$
+						\EndIf
+					\Else
+						\State  $\ms{result} \gets \lit{false}$
+						\State $\lit{break}()$
+					\EndIf
+				\EndIf
+			\EndWhile
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+
+		\Statex
+
+		\Part{$\act{insert}(k,v)_p$}{
+
+			\State $\ms{node} \gets \lit{traverse-tower}(\ms{top}, \ms{k})$
+			\While{$\lit{true}$}
+				\State $\ms{node} \gets \lit{get-next-node}(\ms{node}, \ms{k})$
+				\If{$\ms{node.k = k}$}
+					\If{$\ms{node.v = \bot}$} \Comment{logical insertion} \label{lfline:ins-check} 
+						\If{$\lit{CAS}(\ms{node.v, \bot, v})$} \Comment{compare-and-swap}\label{lfline:ins-mod}
+							\State $\ms{result} \gets \lit{true}$
+							\State $\lit{break}()$
+						\EndIf
+					\Else
+							\State $\ms{result} \gets \lit{false}$
+							\State $\lit{break}()$
+					\EndIf
+				\Else{}
+					\State $\ms{new} \gets \lit{setup\_node}(\ms{node}, \ms{k}, \ms{v})$ \label{lfline:ins-addcall}
+					\State $\ms{next \gets new.next}$
+					\If{$\ms{next.val \neq next}$} \Comment{logical insertion} \label{lfline:ins-rmcheck}
+						\If{$\lit{CAS}(\ms{node.next, next, new})$} \Comment{compare-and-swap}\label{lfline:ins-add1} 
+							\State $\ms{next.prev} \gets \ms{new}$ \label{lfline:ins-add2}
+							\State $\ms{result} \gets \lit{true}$
+							\State $\lit{break}()$
+						\EndIf
+					\EndIf
+				\EndIf
+			\EndWhile
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+		
+
+		\newpage
+
+   		\Part{State of index-item}{
+			\State $\ms{item}$ a record with fields: 
+			\State \T $\ms{right}$, pointer to the next
+			\State \T\T item in the SkipList 
+			\State \T $\ms{down}$, pointer to the IndexItem
+			\State \T\T  one level below in the SkipList
+			\State \T $\ms{node}$, pointer a node in the list
+			\State \T\T at the bottom of the SkipList
+   		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{setup-node}(\ms{node}, \ms{k}, \ms{v})_p$}{
+
+			\State $\ms{new.k} \gets \ms{k}$; $\ms{new.v} \gets \ms{v}$ \Comment{allocate a node called new} \label{lfline:ins-alc1}
+			\State $\ms{new.prev} \gets \ms{node}$
+			\State $\ms{new.next} \gets \ms{node.next}$ \label{lfline:ins-alc2}
+			\Return $\ms{new}$ \EndReturn
+   		}\EndPart
+
+	
+		\Statex
+
+		\Part{$\act{contains}(k)_p$}{
+			\State $\ms{item} \gets \lit{traverse-tower}(\ms{top, k})$ \Comment{find the right tower}
+			\State $\ms{node} \gets \lit{get-next-node}(\ms{item}, \ms{k})$ \Comment{find the right node}
+			\State $\ms{result} \gets \lit{false}$
+			\If{$\ms{node.k = k}$} \label{lfline:con-eq1}
+				\State $\ms{v \gets node.v}$ \label{lfline:con-readv}
+				\If{($\ms{v \neq \bot} \wedge \ms{v \neq node}$)} \label{lfline:con-eq2}
+					\State $\ms{result} \gets \lit{true}$
+				\EndIf
+			\EndIf
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+	
+		\Statex
+
+		\Part{$\act{traverse-tower}(\ms{item}, \ms{k})_p$}{
+
+			\While{$\lit{true}$}
+				\State $\ms{nitem} \gets \ms{item.right}$
+				\If{$\ms{nitem.node.k > k}$} \label{sline:get-index}
+					\State $\ms{nitem} \gets \ms{item.down}$
+					\If{$\ms{nitem} = \bot$}
+						\State $\ms{result} \gets \ms{item.node}$
+						\State $\lit{break}()$
+					\EndIf
+				\ElsIf{$\ms{nitem.node.k = k}$}
+					\State $\ms{result} \gets \ms{item.node}$
+					\State $\lit{break}()$
+				\EndIf
+				\State $\ms{item} \gets \ms{nitem}$
+			\EndWhile
+			\Return $\ms{result}$ \EndReturn
+		}\EndPart
+
+		\Statex
+
+		\Part{$\act{get-next-node}(\ms{node}, \ms{k})_s$}{
+
+			\While{$\lit{true}$} \label{lfline:get-while2s}
+				\While{$\ms{node.v = node}$} $\ms{node} \gets \ms{node.prev}$ \label{lfline:get-while1f}\label{lfline:get-while1s}\label{lfline:val-rem} \Comment{backtack}
+				\EndWhile 
+				\State $\ms{next} \gets \ms{node.next}$ \label{lfline:val-next} 
+				\If{($\ms{next \neq \bot \wedge next.v = next}$)} \label{lfline:get-helpcheck}  
+					\State $\lit{help-remove}(\ms{node, next})$ \Comment{help the removal} \label{lfline:get-help}
+					\State $\ms{next} \gets \ms{node.next}$
+				\EndIf
+				\If{($\ms{next = \bot} \vee \ms{next.k > k}$)} \label{lfline:get-node} \label{lfline:val-check}
+					\State $\ms{result} \gets \ms{node}$
+					\State $\lit{break}()$
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$ \label{lfline:get-while2f}
+			\EndWhile
+			\Return $\ms{result}$ \EndReturn
+		}\EndPart
+
+
+
+   	
+
+				
+
+
+	}
+    \end{multicols}
+    
+  \algstore{second}
+  \end{algorithmic}
+%\algtechrepend
+\end{algorithm*}

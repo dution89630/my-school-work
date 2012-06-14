@@ -1,0 +1,2729 @@
+% 
+% % ============================================================================
+% % ============================================================================
+% \documentclass%[11pt]
+% {elsarticle}
+% \usepackage{epic,eepic,amsmath,latexsym,%fullpage,
+% amssymb,color}
+% \usepackage{ifthen,graphics,epsfig}
+% \usepackage[english]{babel}
+% \usepackage{times}
+% %\usepackage{ulem}
+% 
+% \journal{Theoretical Computer Science}
+% 
+% \bibliographystyle{plain}
+% 
+% \begin{document}
+% %-----------------------for square--------------------------------------------
+% \newlength {\squarewidth}
+% \renewenvironment {square}
+% {
+% \setlength {\squarewidth} {\linewidth}
+% \addtolength {\squarewidth} {-12pt}
+% \renewcommand{\baselinestretch}{0.75} \footnotesize
+% \begin {center}
+% \begin {tabular} {|c|} \hline
+% \begin {minipage} {\squarewidth}
+% \medskip
+% }{
+% \end {minipage}
+% \\ \hline
+% \end{tabular}
+% \end{center}
+% }  
+%  
+% %--------------------------------------------------------------------
+% %--------------------------------------------------------------------
+% %-------- macros for algorithm ---------------------------------------
+% \newtheorem{definition}{Definition}
+% \newtheorem{theorem}{Theorem}
+% \newtheorem{lemma}{Lemma}
+% \newtheorem{corollary}{Corollary}
+% \newcommand{\toto}{xxx}
+% \newenvironment{proofT}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+% \newenvironment{proofL}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+% \newenvironment{proofC}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+% 
+% 
+% \newcounter{linecounter}
+% \newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}
+% {(0\arabic{linecounter})}{(\arabic{linecounter})}}
+% \renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+% \newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+% \renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 
+% 9\else 0\fi \arabic{linecounter}}
+% 
+% 
+% 
+% % ----------------------for appendix --------------------------------------
+% \newenvironment{lemma-repeat}[1]{\begin{trivlist}
+% \item[\hspace{\labelsep}{\bf\noindent Lemma~\ref{#1} }]}%
+% {\end{trivlist}}
+% 
+% \newenvironment{theorem-repeat}[1]{\begin{trivlist}
+% \item[\hspace{\labelsep}{\bf\noindent Theorem~\ref{#1} }]}%
+% {\end{trivlist}}
+% 
+% \newenvironment{corollary-repeat}[1]{\begin{trivlist}
+% \item[\hspace{\labelsep}{\bf\noindent Corollary~\ref{#1} }]}%
+% {\end{trivlist}}
+% 
+% %==================================================================
+% 
+% % =========================================================================
+% \newcommand{\Xomit}[1]{}
+% %==========================================================================
+% 
+% 
+% 
+% \begin{frontmatter}
+% %==========================================================================
+% 
+% %\title{\bf A different  look at software transactional memory systems
+% 
+% \title{Towards a universal construction for %\\
+%            transaction-based multiprocess programs\tnoteref{title}}
+% 
+% %\tnotetext[eu]{This 
+% %research is part  of the  Marie Curie ITN project TRANSFORM
+% %funded by the European Union  FP7 Program (grant 238639).}
+% \tnotetext[title]{A preliminary version of this paper has appeared in the proceedings of the 13th 
+% International Conference on Distributed Computing and Networking (ICDCN 2012) \cite{CIR11}.}
+% 
+% %==========================================================================
+% 
+% %
+% \author[irisa]{Tyler Crain}
+% \author[irisa]{Damien   Imbs}
+% \author[irisa,iuf]{Michel  Raynal\corref{cor1}}
+% %        
+% \address[irisa]{IRISA, Campus de Beaulieu, 35042 Rennes Cedex, France}
+% 
+% \address[iuf]{Institut Universitaire de France\\
+% ${\tt \{tyler.crain|damien.imbs|raynal\}@irisa.fr}$}
+% 
+% \cortext[cor1]{Corresponding author}
+% 
+% 
+% %\date{}
+% %\maketitle
+% %==========================================================================
+% 
+%   
+% \begin{abstract}
+% The aim of a Software Transactional  Memory (STM) system  is to discharge
+% the programmer from the  explicit management of synchronization issues. 
+% The  programmer's job resides in the design of multiprocess programs
+% in which processes  are made up of transactions,  each transaction being an
+% atomic execution unit that accesses  concurrent objects. 
+% The important point is that the  programmer has to focus her/his efforts 
+% only on   the parts of code which  have to be atomic  execution units  without
+% worrying  on the way the corresponding synchronization has  to be realized. 
+% 
+% 
+% 
+% Non-trivial STM systems allow transactions to execute concurrently and 
+% rely on the notion  of commit/abort of  a transaction in order to 
+% solve their conflicts  on the objects they access simultaneously. 
+% In some  cases, the management  of aborted transactions is left to the 
+% programmer.   In other  cases,   
+% the underlying system  scheduler  is  appropriately  modified 
+% or an underlying contention manager is used in order 
+% for each transaction to be  (``practically always'' 
+% or  with high probability) eventually committed.
+% 
+% 
+% This paper presents a deterministic STM system in  which (1) every 
+% invocation of a  transaction is  executed  exactly once  and (2) the notion
+% of commit/abort of a transaction remains  unknown to the programmer. 
+% This system, which imposes restriction neither on the design of 
+% processes  nor or their concurrency pattern, 
+% can be seen as a  step towards  the design of a deterministic
+% universal construction to execute transaction-based multiprocess 
+% programs on top of a multiprocessor.  Interestingly, the proposed  
+% construction  is lock-free (in the sense that it uses no lock). 
+% \end{abstract}
+% 
+% \begin{keyword} 
+% Abort/commit, Asynchronous system, Atomic execution unit, 
+% Compare\&Swap, Concurrency management,  Fetch\&Increment, Lock-freedom,  
+% Shared memory system, STM system, Transaction, Universal construction.
+% \end{keyword} 
+% %==========================================================================
+% 
+% \end{frontmatter}
+% 
+
+
+\section{Introduction}
+
+
+\paragraph{Lock-based concurrent programming}
+A   {\it concurrent  object} is  an   object that can be   concurrently  
+accessed by different processes of a  multiprocess program. 
+%
+It is well known  that the design of a concurrent program is not an easy
+task. To that end, base synchronization objects have been defined to help 
+the programmer solve  concurrency and process cooperation  issues. 
+A  major step in that direction has been 
+(more than forty years  ago!) the concept of {\it mutual exclusion} \cite{D68}
+that has given rise  to  the  notion of  a  {\it  lock} object.    Such an
+object provides the processes with two operations (lock and unlock)
+that  allows a single process at a time to access a concurrent object. 
+Hence, from a  concurrent object point of view,   the  lock associated with
+an object allows transforming  concurrent  accesses on  that object  
+into sequential accesses.  Interestingly, all the books on synchronization 
+and operating systems  have chapters on lock-based
+synchronization. In addition, according to the abstraction level
+supplied to the programmer,  a lock may be encapsulated into a linguistic 
+construct such as a {\it monitor} \cite{H74} or a {\it serializer} \cite{HA79}.
+
+
+
+Unfortunately locks have drawbacks. One is related to the  granularity
+of the object protected by a lock. More precisely, if several data items 
+are encapsulated  in a single  concurrent  object, the
+inherent parallelism  the object can provide 
+can be drastically reduced. This  is for example the case of a queue 
+object for which concurrent executions of enqueue and dequeue operations 
+should be possible as long as they are not on the same item.
+Of  course  a   solution  could  consist of  considering  each item of the
+queue as  a concurrent object, but in that case, the  operations  enqueue  
+and  dequeue  can  become very   difficult  to  design and implement. 
+More severe  drawbacks associated with locks lie in the fact that 
+lock-based operations are deadlock-prone and cannot be easily composed. 
+
+Hence  the question:  how to  ease  the  job of  the programmer  of
+concurrent applications?
+A (partial)  solution consists of providing her/him with an appropriate 
+library where  (s)he  can  find  correct  and  efficient  implementations  of  
+the most popular concurrent data structures (e.g., \cite{HS08,MS96}). 
+Albeit very attractive, this approach does not solve entirely the problem  
+as it does not allow the programmer to define  specific concurrent objects 
+that take into account  her/his particular  synchronization issues. 
+
+
+\paragraph{The Software Transactional Memory approach}
+The concept of {\it Software Transactional  Memory}   (STM)  is  an answer  
+to   the  previous  challenge.   The notion  of   transactional  memory  was
+first   proposed  (nearly twenty years ago!) by Herlihy  and Moss to 
+implement concurrent  data structures  \cite{HM93}.  It  has  then  been 
+implemented in software  by Shavit  and  Touitou   \cite{ST97} and  has
+recently gained great  momentum as  a promising alternative  to locks in
+concurrent programming  \cite{FFGH08,H07,LK08,R08}. Interestingly  enough,  
+it is important to also observe that the recent advent of multicore 
+architectures has  given rise to what is called the {\it multicore  
+revolution} \cite{HL08} that has  rang the revival of concurrent programming. 
+
+
+
+Transactional  memory   abstracts away the  complexity associated with 
+concurrent programming    by  replacing locking  with  atomic
+execution units. In  that way, the programmer has to focus on  where 
+atomicity is required and  not on the  way it must be realized. The aim of
+an STM system is consequently  to  discharge the programmer from the direct 
+management of the synchronization that is entailed by  accesses  to concurrent  objects. 
+
+More generally,  STM  is a middleware approach that provides the 
+programmers  with the {\it transaction} concept (this concept 
+is close but different from the notion of transactions encountered in 
+database systems \cite{FFGH08}). A process is designed as 
+(or decomposed into)  a sequence of transactions, with each transaction 
+being a piece  of code that, while  accessing  concurrent  objects, 
+always  appears as if it was  executed atomically\footnote{Actually,  
+while the word {``\it transaction}'' has historical roots, it seems that 
+{``\it atomic procedure}'' would be more appropriate because 
+``transactions''  of STM systems are  computer science objects 
+that are different  from database transactions.  We nevertheless 
+continue using the word  {``\it transaction}'' for historical reasons.}.
+The job of the programmer is only to state which  units of computation
+have  to be atomic.  He does not have to worry about the fact that the 
+objects accessed by  a transaction can be concurrently accessed. 
+The programmer is not concerned by synchronization
+except when (s)he defines the beginning and the end of a  transaction.
+It  is then the job of the 
+STM system to ensure that transactions are executed as if they were atomic. 
+
+
+
+Let us observe that  the ``spirit/design philosophy'' that has given 
+rise to  STM systems is not new: it is related to the notion of 
+{\it abstraction level}.   
+More precisely,  the  aim  is   to allow  the programmer  to  focus and
+concentrate only  on the problem  (s)he has to
+solve and not on the base machinery needed to solve it. 
+As we can see, this is the approach  that  has   replaced assembly languages  
+by  high level languages and programmer-defined garbage collection 
+by automatic garbage collection.   STM can  be seen as a  new concept
+that takes  up  this challenge when considering synchronization issues. 
+
+
+%\vspace{-0.1cm}
+\paragraph{The state of affairs and  related works}
+%(Due to page limitation, see also appendix \ref{annex:related-work})
+Of course, a solution in which a single transaction is executed at a time 
+trivially implements transaction atomicity, but is inefficient
+on a multiprocessor system (as it allows only non-transactional code 
+ to execute in parallel).   Instead, an STM system has to allow 
+several transactions to execute  concurrently, but then it is possible that
+they access the same concurrent objects in a conflicting manner.
+%(e.g., when  those are  atomic read/write objects).  
+In that case
+some  of  these  transactions might  have  to   be  aborted. Hence,  in  a
+classical  STM system    there    is  an    {\it   abort/commit}    notion
+associated   with transactions. 
+
+Several approaches have been proposed to cope with  aborted transactions.
+In some systems the  management of aborted transactions
+is left to the application programmer (similarly to  exception handling
+encountered  in  some systems). 
+%
+Other systems  offer   ``best effort semantics'' 
+(which  means that there is no provable  strong guarantee),
+an interesting example of this approach is the  technique
+called  {\it steal-on-abort} \cite{ALKJKW09}. 
+ Its  base principle is the  following one.  If  a transaction $T1$
+is  aborted  due to  a  conflict with a transaction  $T2$,  $T1$ is
+assigned to  the processor  that executed  $T2$ in order  to prevent  
+a new conflict between   $T1$ and  $T2$. 
+
+Another approach consists in designing  schedulers that perform 
+particularly well in appropriate workloads, for example the case of
+read-dominated workloads is deeply investigated in \cite{AM09}.
+%
+Yet another approach consists of enriching the system with a 
+contention manager whose aim is to  improve performance and
+ensure (best effort or provable) progress guarantees. 
+An associated theory is described in \cite{GHP05}. 
+Failure detector-based contention managers (and corresponding 
+lower bounds) are described in \cite{GKK08}. 
+A construction to execute  parallel programs made up of {\it atomic blocks} 
+that have to be dispatched to queues accessed by threads (logical processors) 
+is presented in \cite{WF10}. 
+%
+Other related works are presented in Section \ref{sec:related-work}.
+
+%\vspace{-0.1cm}
+\paragraph{Aim  of the paper}
+The previous observations show that, contrarily to the initial hope, 
+STM systems proposed so far either do not entirely free
+the  programmer from  the  management of synchronization-related  
+issues  or  require specific adaptation of both the compiler and 
+the underlying  scheduler.
+(Actually,  the  management of aborted transactions can be seen as the
+transactional  counterpart  of the deadlock management techniques 
+- prevention/resolution - encountered in lock-based systems.) 
+Ideally, an STM system should be  such that, from the programmer point of
+view,  each  transaction invoked by a process  is   executed exactly once.  
+Said differently, this means that, at the programming level,  
+there   should   be  no  notion   of    abort/commit    associated  with  a
+transaction. Hence, the programmer is
+concerned neither by the way synchronization is implemented, nor by the way 
+transactions are executed\footnote{It is nevertheless important to 
+notice that while a transaction can access local variables and 
+concurrent objects, we  assume here that it does not issue inputs/outputs.
+Those are done in the non-transactional code of the corresponding process.
+Hence a transaction is somewhat restricted in what it can do.}.
+
+This paper is a step in that direction.
+From a conceptual point of view,  it  advocates that 
+the abstraction  level  offered to the programmer and  the technicalities   
+needed    at    the    implementation    level    have   to    be   totally
+dissociated\footnote{It 
+is important to notice that such  an approach is adopted
+in some systems where the abort/commit notion is unknown to the programmer
+and  the pair ``compiler +  scheduler'' is  designed  in such a way that 
+every transaction is ``practically always'' eventually executed  
+%% with ``high probability'' 
+\cite{F11}.}: the
+programmer does not need to be aware of  the way the underlying STM system works
+(i.e., similarly to the fact that deadlock management and   parameter 
+passing mechanisms  associated with procedure calls are  hidden to the 
+programmer, abort/commit   is  an  implementation-related notion  that  
+has to remain confined to the transaction implementation level).  
+
+
+
+\paragraph{Content of the paper}
+The paper addresses the previous issue by presenting a construction  
+ (STM system) where, at  the programming level, every  transaction
+invocation is  executed  exactly   once. The   notion  of   abort/commit  
+is  relegated to the implementation and not known to the programmer. 
+Then, as  previously indicated,  the  job  of  a  programmer  is  to   write her/his
+concurrent   program in  terms of  cooperating sequential  processes, 
+each process  being made up of a sequence of transactions (plus possibly some 
+non-transactional  code). At  the  programming level,  any  transaction 
+invoked  by  a  process  is  executed  exactly once  (similarly to a
+procedure invocation 
+in sequential computing). Moreover, from a global point of view, 
+any execution of the concurrent program is linearizable \cite{HW90}, meaning 
+that all the transactions appear as if they have been executed one after
+the other in an order compatible with their real-time occurrence order. 
+Hence, from the programmer point of view, the progress condition associated 
+with an execution is a very classical one, namely, {\it starvation-freedom}.  
+
+The proposed construction can be seen as a 
+{\it universal construction} for transaction-based concurrent programs. 
+%Every  execution  (under the  control  of  this  construction) of  such  a
+%concurrent    program is linearizable.
+%
+%and terminates if the multi-process it simulates is terminating.  
+%
+In addition to providing such a construction, an important aim of the paper  
+is to investigate the design principles this construction relies on
+(efficiency issues are not part of our study). Interestingly, 
+the fact that there is no abort/commit notion at the programming level 
+and the very existence of this construction constitute an interesting feature
+which feeds the debate on the  ``liveness''  of STM systems. Moreover, 
+the proposed construction has a noteworthy feature: it is lock-free 
+(in the sense it uses no lock). 
+%
+It also ensures linearizable X-ability.
+X-ability, or exactly-once ability, was originally defined 
+by Fr{\o}lund and Guerraoui in \cite{FG01}
+as a correctness condition for replicated services such as
+primary-backup.  In this model there are actions, such as
+transactions, that cause some side effect.  For a service to satisfy
+X-ability every invoked action and its side effect must be observed as
+if it had happened exactly once.  In order to ensure this, actions
+might be executed multiple times by the underlying system.  Given this
+requirement, x-ability concerns both correctness and liveness, and can
+compliment concurrency correctness conditions. \\
+
+
+In order to build such a construction, the paper assumes an underlying 
+multiprocessor where the processors  communicate through 
+a shared memory that provides them with atomic read/write registers, 
+compare\&swap registers and fetch\&increment registers. 
+
+
+
+
+As we will see, the underlying multiprocessor system  consists of 
+$m$  processors where each processor  in charge  of a  subset of  processes.
+The multiprocess program, defined by the programmer, is made up of $n$ processes
+where each process is a separate thread of execution.
+  We say that a processor {\it owns}
+the corresponding processes in the sense that  it has the responsibility 
+of their individual   progress.  Given that at  the implementation level
+a  transaction may abort, the processor $P_x$ owning the corresponding 
+process $p_i$ can  require the help of  the other  processors  
+in order for the transaction to be eventually committed. 
+The  implementation of this  helping mechanism  is at the core of the 
+construction  (similarly to the helping mechanism used  to implement 
+wait-free operations despite any number of process crashes \cite{H91}). 
+As we  will  see, the  main technical difficulties  lie  in   ensuring that 
+(1) the helping  mechanism  allows   a transaction to be committed  exactly
+once and (2) each processor $P_x$ ensures the individual progress  of  each 
+process $p_i$ that it owns. As we can see, from a global point of view,
+the  $m$ processors have to    cooperate in order to ensure a correct
+execution/simulation of the $n$  processes. 
+  
+
+\paragraph{Roadmap}
+The paper is made up of \ref{sec:conclusion} sections. 
+Section \ref{sec:related-work} presents related works.
+Section \ref{sec:models}  presents the model offered to  the programmer and
+the underlying multiprocessor model on which the STM system is built. 
+Section \ref{sec:construction} presents the universal construction 
+(STM system) for transaction-based concurrent programs.   
+Section  \ref{sec:proof} addresses  correctness.  
+%Section \ref{sec:discussion} discusses additional features 
+%of the proposed construction (those are mainly related to the net 
+%effect of  asynchrony and failures, etc.).
+Section \ref{sec:bounded-tries}
+shows that the number of times a transaction can be executed before being committed is bounded.
+Finally, Section \ref{sec:conclusion} concludes the paper
+by discussing  additional features of the proposed construction.
+%(those are mainly related to the net effect of asynchrony and failures, etc.).
+
+
+%----------------------------------------------------------
+
+\section{Related work}
+\label{sec:related-work}
+
+As mentioned previously, the paper  presents a  new STM construction  that ensures that every 
+transaction issued by a process is necessarily committed and  each process 
+makes progress. To  our knowledge,  this  is the  first STM  system 
+we  know of  to combine  these
+concepts, but much work has been done previously on these two 
+``liveness''-related concepts when 
+implemented separately. This  section gives  a short  overview of that work.
+The presentation is not entirely fair as  the major part of the papers 
+that are cited here are efficiency-oriented while our construction is
+more theory-oriented.  
+
+
+
+\paragraph{Contention Management} The idea is here to keep
+track of conflicts between transactions and have a separate entity, usually
+called {\it contention manager}, decide what action to take (if any). 
+Some  of these  actions include  aborting one  or both  of  the conflicting
+transactions, stalling one of the transactions, or doing nothing. 
+The idea  was  first (as far as we know) proposed  in  the dynamic 
+STM system (called DSTM) \cite{HLMS03} and much research has been done on the
+topic since then. 
+
+An overview  of different contention managers and their performance is
+presented  in \cite{GHP05}. Interestingly the authors find that there is no 
+"best" contention manager and that the performance depends on the application. 
+The notion of a {\it greedy contention manager} they propose
+ensures that every issued transaction  eventually commits. 
+This  is done  by giving  each transaction  a time-stamp  when it  is first
+issued and,  once the  time-stamp reaches a  certain age, the  system ensures
+that no  other transaction can commit  that will cause  this transaction to
+abort.  Similarly to  the ``Wait/Die''  or ``Wound/Wait''
+strategies used to solve deadlocks in some database systems  \cite{RSL78}, 
+preventing  transactions from committing is  achieved by either
+aborting them or directing them to wait. 
+By  doing  this   it  is  obvious  that  processes  with  conflicting
+transactions  make progress. Their progress  depends on the  process that
+issued the transaction  with the oldest time-stamp to commit. 
+
+As discussed  in this paper,  committing every issued transaction  should be
+ensured by an STM. 
+Unfortunately,  in order to  ensure these  properties, the  greedy contention
+manager is considered  by many to be too expensive to  always use and still
+provide good performance. 
+To  get around  this  some modern  STM's (e.g., for example  
+TinySTM  \cite{FFR08}   or  SwissSTM   \cite{DGK09})  use   less  expensive
+contention  management  until  a transaction  has been   aborted a  certain
+number  of times  at  which point greedy contention management is used. 
+
+\paragraph{Transactional Scheduling}  
+As we have seen, in order to help a transaction commit,  
+the proposed construction allows a transaction to be executed and committed
+by a processor different  the one it originated from. 
+The idea  to execute  a transaction on   a different processor  has already
+been proposed  in \cite{ALKJKW09} and  \cite{AM09} where this idea is used
+to   provide processes with  a   type  of
+contention management refereed to as {\it transactional scheduling}. 
+A very short description of these papers has been given in  the introduction.
+Like  contention  managers, these  schedulers  can  provide
+progress,  but  none of  them  ensure  the progress  of  a  process with  a
+transaction that conflicts with some  other transaction which has reached a
+point at which it  must not be aborted. This means that  the  progress of a
+process still  depends on the progress  of another process. 
+
+
+\paragraph{Obstruction-Freedom, Lock-Freedom} 
+Many STM systems have been proposed that do not use locks.
+Some of them  are obstruction-free  (e.g., \cite{HLMS03,ST97})
+or lock-free  (in the sense there is no deadlock) \cite{GHS08}.
+Unfortunately, none of them  provides the property that every issued 
+transaction is committed. At most, the transactions that are helped 
+in these papers are the ones in the process of committing.
+It can easily be seen that, with only this type of help,  some transaction 
+can be aborted indefinitely.
+
+In an obstruction-free STM system a transaction that is executed alone 
+must eventually commit. So consider some transaction that is always 
+stalled (before its commit operation) and, while it is stalled, 
+some conflicting transaction commits. It is easy to build an execution 
+in which this stalled transaction never commits.
+
+In a lock-free STM system, infinitely many transaction invocations must 
+commit   in  an infinite  execution.  Again it  is  possible  to build   an
+execution in which a transaction is always stalled  
+(before its commit operation) and is aborted by a concurrent transaction  
+(transactions cannot wait for this stalled transaction because they do not 
+know if it is making progress).
+
+An interesting discussion on the possible/impossible liveness properties 
+of a STM system is presented in \cite{GK10} where is 
+also described  a general  lock-free STM system. This  system is 
+based on a mechanism similar to the Compare\&Swap used in this paper.
+
+\paragraph{Irrevocable Transactions} 
+The  aim  of  the  concept   of  {\it  irrevocable}  (or  {\it  inevitable})
+transaction  is  to   provide  the   programmer  with  a  special 
+transaction type (or tag) related to its liveness or progress. 
+%
+Ensuring  that  a  transaction  does  not abort  is  usually  required  for
+transactions  
+that perform some operations that cannot be rolled back or aborted such as I/O.
+In order to solve this issue, certain STM systems provide irrevocable 
+transactions which will never be aborted once they are typed  irrevocable.
+This is done by preventing concurrent conflicting transactions from 
+committing when an irrevocable transaction is being executed.
+
+It is interesting to note that (a) an irrevocable transaction must be run 
+exactly  once and (b) only one irrevocable transaction can be executed at 
+a time in the system (unless the shared memory accesses of the transaction 
+are known ahead of time).
+Possible solutions are proposed and discussed  in 
+\cite{SSDMS08}  and   \cite{WSA08}.  Irrevocable  transactions   suited  to
+deadline-aware scheduling are presented  in \cite{MMFLMR11}. 
+
+The STM system proposed in this paper does not support 
+irrevocable transactions.
+Since  an irrevocable   transaction cannot  be executed  more than  once,
+it is obvious that irrevocable  transactions cannot  benefit from  the  
+helping  mechanism  proposed in  the paper. 
+Our STM construction  could nevertheless be extended to provide this 
+functionality  by having  a process  that  wants to  execute an  irrevocable
+transaction issue a Compare\&Swap on an irrevocability flag to the end  
+of the list in order to  prevent any other concurrent  transaction from
+committing until  it commits itself. Unfortunately,  this  would violate the
+liveness and progress properties previously guaranteed. That is why in our
+model,  ``irrevocable transactions'' appear as non-transactional code. 
+
+
+
+\paragraph{Robust STMs} 
+Ensuring progress even when bad behavior (such as process crash) can occur 
+has been investigated in several papers. As an example,  \cite{WRFF10} 
+presents a robust STM system where a transaction that is not committed 
+for a too long period eventually gets  priority using locks. It is assumed 
+that  the system   provides a   crash detection  mechanism that  allows 
+locks to be stolen once a  crash  is detected. This paper also presents a
+technique to deal with  non-terminating transactions. 
+%Global  progress is also ensured when a transaction 
+%executes an infinite loop. This is done  by aborting a suspected looping 
+%transaction and then  executing it in isolation.  If the transaction  
+%completes while in isolation it is then  retried in the normal mode.  
+
+
+
+\paragraph{Universal construction for concurrent objects}
+The notion of a universal construction for concurrent objects (or 
+concurrent data  structures) has been introduced by Herlihy \cite{H91}.
+Since then, several  universal constructions have been proposed. 
+(e.g., \cite{ADT95,AM99,FK09}).  
+The concurrent objects suited to such   constructions are 
+the objects that are  defined by a sequential specification
+on total operations (i.e., operations that, when executed alone, 
+always return a result). 
+
+
+
+There an important and fundamental difference
+ between an operation on a concurrent 
+object (e.g., a shared queue) and a transaction. 
+Albeit the operations on a queue can have many different implementations, 
+their semantics is  defined once for all. 
+Differently, each transaction is a specific  atomic procedure whose 
+code can be  seen as being any dynamically  defined code.
+
+
+
+
+
+
+A universal construction for wait-free {\it transaction friendly} 
+concurrent objects is presented in \cite{CER10}. The words 
+``transaction friendly'' means here that a process that has invoked an
+operation on an object can abort it during its execution. Hence, 
+a `transaction friendly'' concurrent object is a kind of  
+abortable object.  It is important to notice  that  this  abortion 
+notion is different from  the notion of  transaction abortion. 
+In the first case, the abort of an operation is a programming level notion
+that  the construction has to implement. 
+Differently, in the second case,  a transaction abort is  due 
+the implementation itself. More precisely, 
+transaction abortion is then a system level mechanism used to  prevent  
+global inconsistency when  the system allows concurrent transactions 
+to be  executed
+optimistically (differently, albeit very inefficient,  using a single 
+global lock for  all transactions would allow any  transaction to executed
+without being aborted).  (A main issue solved in  \cite{CER10}
+lies in ensuring that, without violating wait-freedom,  an  operation $op$ 
+issued by a process $p_i$  is not committed in the back of $p_i$ by another  
+process $p_j$  which is  helping it to execute that  operation.) 
+ 
+
+
+
+
+
+
+%=========================================================================
+\section{Computation models}
+\label{sec:models}
+
+This section presents the programming model offered to the programmers
+and  the underlying  multiprocessor model on top of which  the universal STM 
+system is built. 
+
+
+
+%------------------------------------------------------------------
+\subsection{The  user programming model}
+
+The program written by the user is made up of $n$ sequential processes
+denoted $p_1$, ..., $p_n$. Each process is a sequence of transactions 
+in which two consecutive transactions can be separated by non-transactional 
+code. Both transactions and  non-transactional code can access concurrent 
+objects.
+
+%\vspace{-0.15cm}
+\paragraph{Transactions}
+A transaction is an atomic unit of computation (atomic procedure)
+that can access concurrent objects called $t$-objects. 
+``Atomic'' means that (from the
+programmer's point of view) a transaction appears as being executed 
+instantaneously at a single point of  the time line (between its start event
+and its end event) and no two transactions are executed at the same point 
+of the time line.  It is  assumed that, when executed alone, a transaction
+always terminates.  
+
+%\vspace{-0.15cm}
+\paragraph{Non-transactional code}
+Non-transactional code is made up of statements for which the user does not
+require  them to appear  as being  executed  as  a single  atomic computation
+unit. This code usually contains input/output statements (if any). 
+Non-transactional code can also access concurrent objects.  
+These objects are called $nt$-objects.  
+
+%\vspace{-0.15cm}
+\paragraph{Concurrent objects}
+Concurrent objects shared by processes (user level) are denoted with
+small capital letters. It is assumed that  a concurrent object is either 
+an  $nt$-object  or a  $t$-object (not both). Moreover, each 
+concurrent object is assumed to be linearizable. 
+
+The atomicity property associated with a transaction guarantees 
+that all its accesses to $t$-objects appear as being executed atomically. 
+As each concurrent object is linearizable (i.e., atomic), 
+the atomicity power of a transaction is useless if the transaction only 
+accesses  a single  $t$-object once. Hence encapsulating accesses to
+concurrent objects in a single transaction is ``meaningful'' only 
+if that transaction   accesses several objects or accesses the same object
+several times (as in a Read/Modify/Write operation).  
+
+As an example let us consider a concurrent queue (there are very 
+efficient implementation of such an object, e.g., \cite{MS96}). 
+If the queue is always  accessed independently of the other concurrent 
+objects,  its accesses can be part of non-transactional code and 
+this queue instance is  then an $nt$-object. 
+Differently,  if the queue is used with other objects
+(for example, when  moving an item from a queue to another queue) the 
+corresponding accesses  have to  be encapsulated in  a transaction  and the
+corresponding queue instances are then  $t$-objects. 
+
+%\vspace{-0.15cm}
+\paragraph{Semantics}
+As already indicated the properties offered to the user are
+(1)  linearizability  (safety) and 
+(2) the fact that each transaction invocation entails  exactly one
+execution of that transaction (liveness). 
+
+
+
+%-------------------------------------------------------------------------
+\subsection{The underlying system model}
+The underlying system is made up of $m$ processors (simulators) 
+denoted $P_1$, ..., $P_m$.  We assume $n \geq m$.
+The processors communicate through  shared memory that consists  of 
+single-writer/multi-reader (1WMR) atomic registers, 
+compare\&swap registers and fetch\&increment registers. 
+
+%\vspace{-0.1cm}
+\paragraph{Notation} 
+The  objects shared by the processors are denoted with capital italic letters.
+The local  variables of a processor are denoted with small italic letters.
+
+%\vspace{-0.1cm}
+\paragraph{Compare\&swap register}
+A compare\&swap register  $X$ is an atomic object that provides 
+processors with  a single  operation
+denoted  $X.{\sf Compare\&Swap}()$. This operation is a conditional 
+write that returns a boolean value. Its behavior can be described by
+ the following statement:
+\\
+{\bf operation}  $X.{\sf Compare\&Swap}(old,new)$:\\
+\hspace*{1cm} $atomic\{$
+{\bf if}  $X=old$ 
+{\bf then} $X\leftarrow new;$  ${\sf return} (\mathit{true})$
+{\bf else} ${\sf return} (\mathit{false})$ 
+{\bf end if}. 
+$\}$
+
+%%\vspace{-0.6cm}
+%\begin{tabbing}
+%aaaaaaaaa\=aaaaaaaaa\=\kill ~\\
+%\> {\bf operation}  $X.{\sf Compare\&Swap}(old,new)$:\\
+%\> \> 
+%$atomic\{$
+%{\bf if}  $X=old$ 
+%{\bf then} $X\leftarrow new;$  ${\sf return} (\mathit{true})$
+%{\bf else} ${\sf return} (\mathit{false})$ 
+%{\bf end if}. 
+%$\}$
+%\end{tabbing}
+
+
+\paragraph{Fetch\&increment register}
+A fetch\&increment register  $X$ is an atomic object that provides 
+processors with a  single  operation,
+denoted  $X.{\sf Fetch\&Increment}()$, that  adds $1$ to $X$ and 
+returns its new value. 
+
+
+%=========================================================================
+\section{A universal  construction for STM systems}
+\label{sec:construction} 
+
+This section describes the proposed universal construction. 
+It first introduces  the control variables shared by the $m$ processors
+and then describes the  construction. As already indicated, its 
+design is based on simple principles: 
+(1) each processor is assigned a subset of processes for which 
+it is in charge  of  their individual progress; 
+(2) when  a  processor does not succeed in executing and committing  
+a transaction issued by a process it owns,  it requires help from the other
+processors;  
+(3) the state of the $t$-objects accessed by transactions is represented 
+by a list that is shared by the processors (similarly to \cite{H91}). 
+
+
+
+Without loss of generality, the proposed construction considers that 
+the  concurrent objects  shared  by transactions ($t$-objects) are  atomic
+read/write objects. Extending to more sophisticated linearizable 
+concurrent objects is possible. We limit our presentation to atomic
+read/write objects to keep it  simpler. 
+
+
+In our universal construction, the STM controls entirely the transactions; this is different from 
+what is usually assumed in STMs \cite{GK10}.
+
+
+
+%=========================================================================
+\subsection{Control variables shared  by the  processors}
+
+This section  presents  the shared  variables used by  
+the processors to execute the multiprocess program. 
+Each processor also has local variables which will be described when presenting 
+the  construction.   
+
+\paragraph{Pointer notation} 
+Some  variables  manipulated  by  processors are  pointers.  The  following
+notation is associated with pointers. Let  $PT$   be a pointer variable.  
+$\downarrow PT$ denotes the object pointed to by $PT$. let 
+$OB$ be an object. $\uparrow OB$ denotes a  pointer to $OB$. 
+Hence, $\uparrow (\downarrow PT) =PT$ and  $ \downarrow (\uparrow OB) = OB$.  
+
+
+
+
+
+\paragraph{Process ownership}
+Each processor $P_x$  is assigned a set of processes for which it has the
+responsibility of ensuring individual progress. A process $p_i$ is 
+assigned to a single processor.  We assume here a static  assignment. 
+(It is possible to consider a dynamic process assignment. This would 
+require an appropriate underlying scheduler. We do not consider  
+such a possibility  here in order to keep the presentation simple.)
+
+The process assignment is defined by   an array 
+$\mathit{OWNED\_BY}[1..m]$  such that the entry $\mathit{OWNED\_BY}[x]$ 
+contains the set of identities of the processes ``owned'' by  processor $P_x$. 
+As we will  see below the owner $P_x$ of process $p_i$ can ask other 
+processors to help it execute the last transaction issued by $p_i$. 
+
+\paragraph{Representing the state of the $t$-objects}
+As previously indicated, at the processor (simulation) level, the state of the
+ $t$-objects of the program is represented  by a list  of descriptors such 
+that each descriptor is associated with a transaction that has been committed.
+
+$\mathit{FIRST}$ is a compare\&swap register containing  a pointer to the
+first descriptor of the list. Initially $\mathit{FIRST}$ points to a  list 
+containing a single descriptor associated with a fictitious transaction that
+gives an  initial value to  each $t$-object. 
+Let $\mathit{DESCR}$ be the descriptor of a (committed) transaction
+$T$. It has  the following four fields.
+\begin{itemize}
+%\vspace{-0.2cm}
+\item 
+$\mathit{DESCR}.next$ and $\mathit{DESCR}.prev$ are pointers to the next 
+and previous items of the list.
+%
+%\vspace{-0.2cm}
+\item 
+$\mathit{DESCR}.tid$ is the identity of $T$. It is a pair 
+$\langle i,t\_sn \rangle $ where $i$ is the identity of the process 
+that issued the transaction and  $t\_sn$ is its sequence number (among all
+transactions issued by $p_i$). 
+%
+%\vspace{-0.2cm}
+\item 
+$\mathit{DESCR}.ws$ is a set of pairs $\langle${\sc x},$v \rangle$ 
+stating that $T$  has written $v$ into the concurrent  object~{\sc x}. 
+%
+%\vspace{-0.2cm}
+\item $\mathit{DESCR}.local\_state$ is the local state of the process $p_i$ 
+just before the  execution of  the transaction or the non-transactional code that follows $T$ in the code of $p_i$.
+\end{itemize}
+
+
+
+%\paragraph{Helping mechanism: the array $\mathit{\it LAST\_CMT}[1..m,1..n]$}
+\noindent
+{\it Helping mechanism: the array $\mathit{LAST\_CMT}[1..m,1..n]$}~~
+This array  is  such that $\mathit{LAST\_CMT}[x,i]$ contains the sequence   
+number of process $p_i$'s  last committed transaction as known by processor $P_x$. 
+$\mathit{LAST\_CMT}[x,i]$ is written only  by $P_x$. Is initial value is $0$.   
+
+
+\paragraph{Helping mechanism: logical time}
+$\mathit{CLOCK}$ is an atomic fetch\&increment register initialized 
+to $0$.  It is used by the  helping mechanism to associate a logical date
+with a  transaction that has to be  helped. Dates define a total  order 
+on these transactions. They are used to ensure 
+that any helped  transaction is  eventually  committed. 
+
+
+%\paragraph{Helping mechanism: the array $\mathit{STATE}[1..n]$}
+\noindent
+{\it Helping mechanism: the array $\mathit{STATE}[1..n]$}~~
+This array  is  such that $\mathit{STATE}[i]$ describes the current state 
+of the execution (simulation)  of process $p_i$. It has four fields.  
+\begin{itemize}
+%\vspace{-0.2cm}
+\item  
+$\mathit{STATE}[i].tr\_sn$ is the sequence number of 
+the next  transaction to be issued by $p_i$. 
+%
+%\vspace{-0.2cm}
+\item  $\mathit{STATE}[i].local\_state$ contains the local state of $p_i$
+immediately before the execution of its next transaction (whose sequence 
+number is currently  kept  in $\mathit{STATE}[i].tr\_sn$). 
+%
+%\vspace{-0.2cm}
+\item 
+$\mathit{STATE}[i].help\_date$ is an integer (date) initialized to $+\infty$. 
+The processor $P_x$ (owner of process $p_i$) sets 
+$\mathit{STATE}[i].help\_date$ to  the next value  of $\mathit{CLOCK}$ when
+it requires help from  the other processors  in order for the last transaction 
+issued by $p_i$ to be eventually committed. 
+%
+%\vspace{-0.2cm}
+\item  $\mathit{STATE}[i].last\_ptr$ contains a pointer to a
+descriptor of the transaction list (its initial value is  $\mathit{FIRST}$). 
+$\mathit{STATE}[i].last\_ptr=pt$  means that, if 
+the transaction identified by  $\langle i,\mathit{STATE}[i].tr\_sn\rangle$ 
+belongs  to  the  list  of  committed  transactions,  it appears in the transaction list after  the
+transaction pointed to by $pt$.  
+\end{itemize}
+
+%--------------------------------------------------------------------------
+\subsection{How  the $t$-objects and $nt$-objects are represented}
+Let us remember that the $t$-objects  and  $nt$-objects are the objects 
+accessed by  the processes of the application program.  
+The $nt$-objects are directly implemented in the  memory shared by the 
+processors and consequently their operations access directly that memory.  
+
+Differently, the  values of the $t$-objects are kept in the $ws$ field 
+of the  descriptors associated with committed transactions
+(these descriptors define the list pointed to by $\mathit{FIRST}$). 
+More precisely,  we have the following.
+\begin{itemize}
+%\vspace{-0.2cm}
+\item
+A  write of a value $v$ into a $t$-object {\sc X}  by a transaction 
+appears as the  pair  $\langle${\sc X}$,v \rangle$ contained in the 
+field $ws$ of the descriptor  that is added to the list when the
+corresponding transaction is committed. 
+%\vspace{-0.2cm}
+\item
+A read of a $t$-object {\sc X} by a transaction is implemented by 
+scanning  downwards (from a fixed local pointer variable $current$ towards $\mathit{FIRST}$)
+the  descriptor list until encountering 
+the first pair $\langle${\sc X}$,v \rangle$, the value $v$ being then 
+returned by the read operation. It is easy to see that the values read by a 
+transaction are always mutually consistent (if the values $v$ and $v'$ are 
+returned by the reads of {\sc X} and {\sc Y} issued by the same transaction, 
+then the first  value read  was not overwritten when the second one was read). 
+\end{itemize}
+
+
+%--------------------------------------------------------------------------
+\subsection{Behavior of a processor: initialization}
+Initially a  processor $P_x$ executes the non-transactional code (if any) of each process $p_i$ it owns 
+until $p_i$'s first transaction and then 
+initializes accordingly the  atomic register
+$\mathit{STATE}[i]$. Next  $P_x$ invokes  ${\sf select}(\mathit{OWNED\_BY}[x])$
+that returns the identity of a process it owns, this value is then assigned to $P_x$'s local 
+variable  $my\_next\_proc$. $P_x$ also initializes local variables
+whose role  will be explained later.
+This is described in Figure~\ref{fig:initialization}. 
+
+
+The function ${\sf select}(set)$ is {\it fair} in the following sense:
+if it is invoked infinitely often with $i\in set$,  then $i$ is returned
+infinitely often (this can be easily implemented).
+Moreover, ${\sf select}(\emptyset)=\bot$.  
+
+
+
+%==================================================================
+\begin{figure}[h!]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+\resetline
+\begin{tabbing}
+aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
+
+
+{\bf for each} $i \in \mathit{OWNED\_BY}[x]$ {\bf do}\\
+%~~\%  --- Initialization  ---------------------------------------------------
+
+\> execute $p_i$ until the beginning of  its first transaction; \\
+
+\>   $\mathit{STATE}[i] \leftarrow 
+       \langle 1, p_i\mbox{'s~current local~state},   
+                            +\infty, \mathit{FIRST} \rangle$  \\
+
+{\bf end for};\\
+
+$my\_next\_proc \leftarrow  {\sf select}(\mathit{OWNED\_BY}[x])$;\\
+$k1\_counter  \leftarrow 0$; 
+$my\_last\_cmt$ is a pointer initialized to  $\mathit{FIRST}$. %\\
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Initialization  for processor $P_x$ ($1 \leq x \leq m$)}
+\label{fig:initialization}
+}
+\end{figure}
+
+%=================================================================
+
+%----------------------------------------------------------------------
+\subsection{Behavior of a processor: main body}
+The behavior of a processor $P_x$ is described in 
+Figure~\ref{fig:main-construction}. This  consists of a while loop
+that   terminates   when all transactions  issued by the processes owned by
+$P_x$ have  been successfully   executed. This  behavior can  be decomposed
+into 4 parts. 
+
+
+
+\paragraph{Select the next transaction to execute} 
+(Lines \ref{BA01}-\ref{BA11}) 
+Processor $P_x$  first reads (asynchronously) the current  progress of each
+process  and  selects accordingly   a process (lines  \ref{BA01}-\ref{BA02}). 
+The procedure ${\sf select\_next\_process}()$  (whose details will be explained
+later) returns it the identity $i$ of the process for which $P_x$ has to 
+execute the next transaction. This process  $p_i$ can be a process owned by
+$P_x$ or a process whose owner $P_y$ requires the other processors to help it
+execute its next transaction.
+
+
+Next, $P_x$  initializes local  variables in order  to execute  $p_i$'s next
+transaction in the appropriate correct context (lines \ref{BA03}-\ref{BA05}).
+Before entering a speculative  execution of the transaction, 
+$P_x$ first looks to see
+if it has not yet been committed (lines  \ref{BA07}-\ref{BA11}). To that
+end,  $P_x$  scans  the list   of  committed transactions.   Thanks to  the
+pointer value kept in  $\mathit{STATE}[i].last\_ptr$, it is useless to
+scan the list from the beginning:  
+instead the scan may start from the transaction 
+descriptor pointed to by $current = state[i].last\_ptr$. 
+If $P_x$  discovers that the  transaction has been previously  committed it
+sets the boolean $committed$ to $\mathit{true}$. 
+
+It is  possible that, while the  transaction is not  committed, $P_x$ loops
+forever in the list because the predicate $(\downarrow current).next=\bot$ 
+is  never true. This  happens  when  new committed  transactions (different
+from $P_x$'s transactions) are repeatedly and infinitely 
+added to the list. The procedure  ${\sf prevent\_endless\_looping}()$
+(line \ref{BA07}) is used to prevent such an infinite looping. 
+Its details will be  explained  later. 
+
+
+
+%==================================================================
+\begin{figure}[h!]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+\resetline
+\begin{tabbing}
+aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
+
+
+
+{\bf while} ($my\_next\_proc \neq \bot$)  {\bf do}\\
+
+
+\> \%  --- Selection phase  ---------------------------------------------------------------------------------\\
+
+
+
+\line{BA01} \> $state[1..n] \leftarrow 
+           [\mathit{STATE}[1],\cdots,\mathit{STATE}[n]]$;\\
+
+\line{BA02} \>  $i \leftarrow {\sf select\_next\_process}()$;\\
+
+
+\line{BA03} \> $i\_local\_state \leftarrow state[i].local\_state;$ 
+               $i\_tr\_sn \leftarrow state[i].tr\_sn;$\\
+
+
+\line{BA04} \> $current  \leftarrow state[i].last\_ptr$;
+               $committed \leftarrow \mathit{false}$;\\ 
+
+
+\line{BA05} \>  $k2\_counter \leftarrow 0$; 
+               $\mathit{after\_my\_last\_cmt} \leftarrow \mathit{false}$;\\
+
+
+\line{BA06} \> 
+      {\bf while} \= $\big(~((\downarrow current).next  \neq \bot)
+                      ~\wedge~ (\neg committed)~\big)$   {\bf do}\\
+
+
+\line{BA07} \> \>   ${\sf prevent\_endless\_looping}(i)$;\\ 
+
+
+\line{BA08} \> \>  
+    {\bf if} \= $((\downarrow current).tid  =\langle i,i\_tr\_sn \rangle )$\\
+
+
+\line{BA09} \> \> \>  
+    {\bf then}  $committed \leftarrow \mathit{true}$;
+    $i\_local\_state \leftarrow (\downarrow current).local\_state$ 
+ {\bf end if}; \\
+
+
+\line{BA10} \> \> $current \leftarrow (\downarrow current).next$\\
+
+\line{BA11} \>     {\bf end while}; \\
+
+
+\line{BA12} \> {\bf if} \= $(\neg committed)$  {\bf then}\\
+
+\>\> \% --- Simulation phase  ----------------------------------------------------------------------------\\
+
+
+\line{BA13} \>  \>
+   execute the $i\_tr\_sn$-th transaction of $p_i$:  the value of
+   {\sc x}.${\sf read}()$  is obtained \\
+                
+\line{BA14} \>  \>
+       by scanning downwards the transaction list 
+       (starting from   $current$);  \\ %%%$state\_ptr$);  \\
+
+\line{BA15} \> \> $p_i$'s local variables are read from (written into) 
+             $P_x$'s local memory (namely,   $i\_local\_state$);\\  
+
+
+\line{BA16}\>\> The set of shared objects read by the current 
+              transaction  are saved in  the set $\mathit{lrs}$;\\ 
+
+
+\line{BA17}\>\>  The  pairs $\langle${\sc y},$v\rangle$ 
+               such that the transaction issued  {\sc y}.${\sf write}(v)$
+               are saved in the set $ws$; \\
+
+
+
+\>\> \% --- Try to  commit phase  ------------------------------------------------------------------------ \\
+
+
+\line{BA18} \>\> $overwritten \leftarrow \mathit{false}$; \\ 
+
+
+\line{BA19} \> \>
+      {\bf while} \= $\big(~(\downarrow current).next \neq \bot)
+      ~\wedge~ (\neg committed)~\big)$   %~\wedge~ (\neg overwritten)~\big)$  
+        {\bf do}\\
+
+
+\line{BA20} \> \>\>   ${\sf prevent\_endless\_looping}(i)$;\\ 
+ 
+\line{BA21} \> \>\>  $current \leftarrow (\downarrow current).next$;\\
+
+\line{BA22} \> \>\> same as lines \ref{BA08} and  \ref{BA09};\\
+
+
+\line{BA23} \> \> \> {\bf if} 
+    $(\exists$ {\sc x} $\in \mathit{lrs}:
+               ~ \langle${\sc x}$,-\rangle \in (\downarrow current).ws)$
+    {\bf then}  $overwritten  \leftarrow \mathit{true}$  {\bf end if} \\
+
+
+\line{BA24} \>\>  {\bf end while};\\
+
+
+\line{BA25} \>\>  {\bf if} \= $(\neg committed \wedge
+                    ( \neg overwritten \vee ws=\emptyset))$\\
+
+
+\line{BA26} \>  \>\> {\bf then} \=
+   allocate a new transaction descriptor $\mathit{DESCR}$;\\
+
+
+\line{BA27} \> \> \>\> $\mathit{DESCR} \leftarrow   
+\langle  \bot, current,$ $\langle i, i\_tr\_sn \rangle,$ 
+                       $ws,i\_local\_state \rangle$;\\
+ 
+
+\line{BA28} \> \> \>\> $committed \leftarrow 
+ {\sf Compare\&Swap}((\downarrow current).next, 
+                     \bot,\uparrow \mathit{DESCR})$;\\
+
+
+\line{BA29} \> \> \>\> {\bf if} ($\neg committed$) 
+   {\bf then} disallocate  $\mathit{DESCR}$ {\bf end if}\\
+
+
+
+\line{BA30} \> \> {\bf end if}\\
+
+\line{BA31} \> {\bf end if};\\
+
+\line{BA32} \> {\bf if} $(committed)$  {\bf then}
+            $\mathit{LAST\_CMT}[x,i] \leftarrow i\_tr\_sn$  {\bf end if};\\
+
+\>\> \% --- End of transaction --------------------------------------------------------------------------- \\
+
+
+\line{BA33} \> {\bf if} \= $(i\in \mathit{OWNED\_BY}[x])$  {\bf then} \\
+
+
+\line{BA34} \> \>  {\bf if} \= $(\neg committed)$ \\
+
+\line{BA35} \> \> \> 
+     {\bf then} \= {\bf if} \= $(state[i].help\_date =+\infty)$ {\bf then} \\
+
+\line{BA36}  \> \> \> \> \> 
+    $helpdate \leftarrow   {\sf Fetch\&Incr}(\mathit{CLOCK})$;\\ 
+
+\line{BA37}  \> \> \> \> \> 
+$\mathit{STATE}[i]\leftarrow 
+    \langle   state[i].tr\_sn, state[i].local\_state, helpdate,
+                         state[i].last\_ptr \rangle$\\
+
+\line{BA38} \> \> \> \> {\bf end if} \\
+
+\line{BA39} \> \> \>  
+{\bf else} \>  execute non-transactional code of $p_i$ (if any) 
+   in the local context  $i\_local\_state$;\\
+
+\line{BA40} \> \> \> \>  
+{\bf if} \= (end of $p_i$'s code)     \\
+
+
+\line{BA41} \> \> \>\> \>{\bf then} \= 
+  $\mathit{OWNED\_BY}[x]\leftarrow    
+           \mathit{OWNED\_BY}[x] \setminus \{i\}$\\
+
+
+\line{BA42} \>\>\>\>\> {\bf else} \> 
+
+   $\mathit{STATE}[i] \leftarrow 
+      \langle i\_tr\_sn +1, i\_local\_state, +\infty, current \rangle$\\
+
+\line{BA43} \>\>\>\>  {\bf end if};\\ 
+
+\line{BA44} \>\>\>\> 
+ $my\_last\_cmt \leftarrow   ~\uparrow \mathit{DESCR}$;
+
+ $my\_next\_proc \leftarrow  {\sf select}(\mathit{OWNED\_BY}[x])$\\
+
+
+\line{BA45} \> \>  {\bf end  if}\\
+
+\line{BA46} \>   {\bf end if}\\ 
+
+
+{\bf end while}.  %\\
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Algorithm for processor $P_x$ ($1 \leq x \leq m$)}
+\label{fig:main-construction}
+}
+\end{figure}
+
+%=================================================================
+
+
+\paragraph{Speculative execution of the selected  transaction} 
+(Lines \ref{BA12}-\ref{BA17}) 
+The identity of the transaction selected by $P_x$ is 
+$\langle i,  i\_tr\_sn \rangle$. 
+If,  from $P_x$'s point of view, this transaction  is not committed, $P_x$ 
+simulates locally its execution (lines \ref{BA13}-\ref{BA17}).
+The set of concurrent $t$-objects read by $p_i$ is  saved in $P_x$'s local
+set $\mathit{lrs}$, and the  pairs $\langle${\sc y},$v\rangle$ 
+such that the transaction issued {\sc y}.${\sf write}(v)$ are saved in 
+the local set $ws$. This is a transaction's speculative execution by $P_x$. 
+
+\paragraph{Try to commit the transaction}
+ (Lines \ref{BA18}-\ref{BA32}) Once $P_x$ has performed a speculative
+ execution of $p_i$'s  last transaction, it tries to commit  it by adding it
+to the descriptor list, but only if certain conditions are satisfied.
+To that end, $P_x$  enters a loop (lines \ref{BA19}-\ref{BA24}). 
+There are two reasons not to try to commit the transaction.
+%
+\begin{itemize}
+%\vspace{-0.2cm}
+\item
+The first is when  the transaction has already  been committed. 
+If this is the case, the transaction  appears in the list of committed 
+transactions (scanned by the pointer $current$, lines \ref{BA21}-\ref{BA22}).
+%
+%\vspace{-0.2cm}
+\item
+The second is when the transaction is an update transaction and it
+has read a $t$-object that  has then been overwritten (by a committed 
+transaction). This is  captured by the predicate at line \ref{BA23}.
+\end{itemize}
+
+Then, if (a) the  transaction has not yet been  committed 
+(as far as $P_x$ knows) and (b1) no $t$-object read has been overwritten  or 
+(b2) the transaction is read-only, then $P_x$ tries to
+commit its speculative execution of this transaction (line \ref{BA25}).
+To do this it first creates a new descriptor $\mathit{DESCR}$,
+updates its fields  with the data obtained from its speculative execution
+ (line \ref{BA27}) and then tries to add it to the list. 
+%
+To perform  the commit, $P_x$ issues ${\sf Compare\&Swap}
+((\downarrow current).next,\bot,\uparrow \mathit{DESCR})$.
+It is easy to see that this invocation succeeds if and only if $current$ 
+points to the last  descriptor of the list of committed transactions 
+(line \ref{BA28}).
+
+Finally, if the transaction has been committed
+$P_x$ updates  $\mathit{LAST\_CMT}[x,i]$  (line \ref{BA32}).
+
+
+\paragraph{Use the ownership notion to ensure the progress of each process} 
+(Lines \ref{BA33}-\ref{BA46}) 
+The last part of the description of $P_x$'s behavior  concerns the 
+case where  $P_x$ is the owner of the process $p_i$ that issued the 
+current transaction selected by $P_x$ (determined at line \ref{BA03}). 
+This means that $P_x$ is responsible for guaranteeing the individual 
+progress of $p_i$.  There are two cases. 
+%
+\begin{itemize}
+%\vspace{-0.2cm}
+\item
+If $committed$ is  equal to $\mathit{false}$, $P_x$ requires help 
+from the other processors in order for $p_i$'s transaction to be eventually 
+committed. To that end, it assigns (if not yet done) the next date value 
+to $\mathit{STATE}[i].help\_date$  (lines \ref{BA35}-\ref{BA38}). 
+Then, $P_x$ proceeds to  the next loop iteration.
+(Let us observe that, in that case, $my\_next\_proc$ is not  modified.)
+%
+%\vspace{-0.2cm}
+\item
+Given that $P_x$ is responsible for  $p_i$'s progress, 
+if $committed$ is  equal to $\mathit{true}$ then $P_x$ executes the  non-transactional code
+(if any) that appears after the transaction (line \ref{BA39}).
+Next, if  $p_i$ has terminated (finished its execution), $i$ is suppressed from $\mathit{OWNED\_BY}[x]$
+(line \ref{BA41}). Otherwise, $P_x$ updates $\mathit{STATE}[i]$ in order for it 
+to contain the information required to execute the next transaction of $p_i$ 
+(line \ref{BA42}). 
+%
+Finally, before re-entering the main loop, $P_x$ 
+updates the pointer  $my\_last\_cmt$ (see below) and 
+$my\_next\_proc$ in order to ensure the progress of the next 
+process it owns (line \ref{BA44}). 
+\end{itemize}
+
+%----------------------------------------------------------------------
+\subsection{Behavior of a processor:  starvation prevention}
+\label{sec:starvation-prevention}
+
+Any transaction issued by a process has to be eventually executed 
+by  a processor and  committed. 
+To that end, the helping mechanism introduced previously has 
+ to be enriched so that  no processor either (a) permanently helps  only
+ processes owned by other processors or (b) loops forever in an internal 
+while loop (lines \ref{BA06}-\ref{BA11} or \ref{BA19}-\ref{BA24}).
+The first issue is solved by  procedure ${\sf select\_next\_process}()$
+while the second issue is solved by the procedure 
+${\sf prevent\_endless\_looping}()$.  
+
+Each of these  procedures  uses an  integer value (resp., $K1$ and $K2$) 
+as  a threshold  on the length of execution periods. These periods 
+are measured with counters (resp., $k1\_counter$ and $k2\_counter$). 
+When one of these periods attains its threshold, the corresponding 
+processor requires help for its pending  transaction. 
+%
+The values $K1$ and $K2$ can be arbitrary. They could be tuned 
+or even defined dynamically in order to make the construction more efficient. 
+
+\paragraph{The procedure  ${\sf select\_next\_process}()$}
+This operation is described in Figure~\ref{fig:select-next-proc}.
+It is invoked at line \ref{BA02} of the main loop and 
+returns a process identity.  Its aim is to allow the invoking processor 
+$P_x$  to  eventually make  progress for each of the processes it owns. 
+
+The problem that can  occur is that a processor  $P_x$ 
+can permanently help other processors execute and commit
+transactions of the processes they own, while none of the processes 
+owned by $P_x$ is  making progress.  To prevent this bad scenario  
+from occurring, a  processor $P_x$ that does not  succeed in having  
+its current transaction executed and committed for  a ``too long''
+period,  requires help from the other processors. 
+
+
+
+
+
+
+%==========================================================================
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\setcounter{linecounter}{100}
+\begin{tabbing}
+aaaaaaa\=aaaaaaa\=aaaaa\=aa\=\kill %~\\
+
+{\bf procedure} 
+${\sf select\_next\_process}()$ ${\sf returns}$ (process id) =\\
+
+\line{CA01} \> 
+{\bf let} $set~=~ \{~ i~|~   
+      (state[i].help\_date \neq +\infty) ~\wedge$\\
+
+\> ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       $~\big(~(\forall y:~ \mathit{LAST\_CMT}[y,i] < state[i].tr\_sn)~
+         \vee~ (i\in \mathit{OWNED\_BY}[x])~\big)\}$; \\ 
+
+
+
+
+\line{CA02} \> {\bf if} \= $(set = \emptyset)$  \\
+
+\line{CA03} \> \> {\bf then} \= 
+  $i  \leftarrow my\_next\_proc$;  $k1\_counter \leftarrow 0$\\
+
+
+\line{CA04} \> \> {\bf else} \>
+ $i \leftarrow \min(set)$  computed with respect to transaction help dates;\\
+
+
+\line{CA05} \>\>\>  {\bf if} \=  $(i \in \mathit{OWNED\_BY}[x])$\\
+
+
+\line{CA06} \>\>\>\> {\bf then} \=  $k1\_counter \leftarrow 0$\\
+
+
+\line{CA07} \>\>\>\> {\bf else} \> $k1\_counter \leftarrow k1\_counter+1$;\\
+
+ 
+\line{CA08} \>\>\>\>\>  {\bf if} \= ($k1\_counter \geq  K1$) {\bf then} \\
+
+
+\line{CA09} \>\>\>\>\>\>  {\bf let} $j~=~my\_next\_proc$;\\ 
+
+
+\line{CA10} \>\>\>\>\>\> {\bf if} \= 
+       $(state[j].help\_date = + \infty)$ {\bf then}\\
+
+
+\line{CA11} \>\>\>\>\>\> \> 
+        $helpdate \leftarrow {\sf Fetch\&Incr}(\mathit{CLOCK})$; \\
+
+\line{CA12} \>\>\>\>\>\> \>
+
+$\mathit{STATE}[j]\leftarrow 
+    \langle state[j].tr\_sn, state[j].local\_state, helpdate, 
+                                          state[j].last\_ptr \rangle$ \\
+
+\line{CA13} \>\>\>\>\>\> {\bf end if}; \\
+
+\line{CA14} \>\>\>\>\>\> $k1\_counter \leftarrow 0$\\
+
+
+\line{CA15} \>\>\>\>\>  {\bf end if}\\
+
+\line{CA16} \>\>\> {\bf end if}\\
+
+\line{CA17}  \>   {\bf end if};\\ 
+
+\line{CA18} \>   ${\sf return}(i)$.  %\\ 
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{The procedure ${\sf select\_next\_process}()$}
+\label{fig:select-next-proc}
+}
+\end{figure}
+%========================================================================
+
+This is realized as follows. $P_x$ first computes the set $set$ of 
+processes $p_i$ for which help has been required (those are the processes
+ whose help date is $\neq +\infty$) and, (as witnessed by the array 
+$\mathit{LAST\_CMT}$) either no processor has yet publicized the fact that
+their last transactions have been committed  or $p_i$ is owned by $P_x$
+(line  \ref{CA01}). 
+If $set$ is empty (no help is required),  ${\sf select\_next\_process}()$
+returns the identity of the next process owned by $P_x$ (line \ref{CA03}). 
+If $set\neq \emptyset$, there are processes to help and $P_x$ selects the
+identity $i$ of the process with the oldest help date  (line \ref{CA04}).  
+But before returning the identity $i$ (line \ref{CA18}), $P_x$ 
+checks if it has been  waiting for a too long period before having its next 
+transaction executed.  There are then two cases. 
+%
+\begin{itemize}
+%\vspace{-0.2cm}
+\item 
+If $i \in \mathit{OWNED\_BY}[x]$,  $P_x$ has already required 
+help for the process $p_i$ for which it strives to make progress. 
+It then resets the counter $k1\_counter$ to $0$
+and returns the identity $i$  (line \ref{CA06}). 
+%
+%\vspace{-0.2cm}
+\item 
+If $i \notin \mathit{OWNED\_BY}[x]$, $P_x$ first increases  $k1\_counter$ 
+(line \ref{CA07}) and  checks if it  attains its threshold $K1$. If this is 
+the case, the logical period of time is too long  (line \ref{CA09}) and  
+consequently (if not yet done) $P_x$ requires help for the last 
+transaction of the process $p_j$ (such that $my\_next\_proc=j$).
+As we have seen, ''require help'' is done by 
+assigning the next clock value to $\mathit{STATE}[j].help\_date$  
+(lines \ref{CA09}-\ref{CA13}). In that case,  $P_x$  also  resets  
+$k1\_counter$ to $0$  (line \ref{CA14}). 
+\end{itemize}
+
+
+
+
+%==================================================================
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=\kill %~\\
+
+{\bf procedure}  ${\sf prevent\_endless\_looping}(i)$;\\ 
+
+
+%\line{DA01} \> {\bf if} \=  ($current = \mathit{my\_last\_cmt}$)
+%{\bf then} 
+%$\mathit{after\_my\_last\_cmt} \leftarrow \mathit{true}$ {\bf end if}; \\
+
+
+\line{DA01} \> {\bf if} \= $(i\in \mathit{OWNED\_BY}[x])$ {\bf then}\\
+
+\line{DA02} \> \> {\bf if}  
+($\mathit{current}$ has bypassed $my\_last\_cmt$) 
+     {\bf then} $ k2\_counter \leftarrow k2\_counter + 1$ {\bf end if};  \\
+
+\line{DA03} \>\> {\bf if} \= 
+     \big($( k2\_counter > K2)~\wedge~ (state[i].help\_date=+\infty)$\big) \\
+
+\line{DA04} \>\>\>  {\bf then} \=
+ $helpdate \leftarrow   {\sf Fetch\&Incr}(\mathit{CLOCK})$;\\
+
+\line{DA05} \>\>\>\>
+$\mathit{STATE}[i]\leftarrow 
+ \langle   state[i].tr\_sn, state[i].local\_state, helpdate, 
+                                          state[i].last\_ptr \rangle$\\
+
+\line{DA06} \>\> {\bf end if} \\
+
+
+\line{DA07} \> {\bf end if}.  %\\
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Procedure  ${\sf prevent\_endless\_looping}()$}
+\label{fig-prevent-looping}
+}
+\end{figure}
+%=================================================================
+
+\paragraph{The procedure ${\sf prevent\_endless\_looping}()$}
+As indicated, the aim of this procedure, described in 
+Figure~\ref{fig-prevent-looping}, is to prevent a processor $P_x$ from 
+endless looping in an internal  while loop (lines \ref{BA05}-\ref{BA09} 
+or \ref{BA17}-\ref{BA21}).
+%
+
+The time period considered starts at the last committed transaction 
+issued  by a  process owned  by $P_x$. It  is  measured by  the  number of
+transactions committed since then.  The beginning of this time period is
+determined by  $P_x$'s local pointer $my\_last\_cmt$
+% and $P_x$'s boolean   variable  $\mathit{after\_my\_last\_cmt}$.  
+(which   is initialized to $\mathit{FIRST}$
+and updated at  line~\ref{BA44} of the main loop after the last transaction
+of a process  owned by $P_x$  has been committed.) 
+
+
+The relevant time period is measured by processor $P_x$ with  its local 
+variable  $k2\_counter$.  If the process $p_i$ currently selected by 
+${\sf select\_next\_process}()$ is owned by $P_x$ (line \ref{DA01}),
+then $P_x$ will require help for $p_i$ once this period attains $K2$
+(lines \ref{DA03}-\ref{DA06}). In that way, the transaction 
+issued by that process will be executed and committed by other processors
+and (if not yet done) this will  allow $P_x$ to exit the while loop because
+its  local  boolean   variable  $committed$  will then  become  true  (line
+\ref{BA09} of  the main loop).  
+
+
+%========================================================================
+\section{Proof of the STM  construction}
+\label{sec:proof}
+
+Let $\mathit{PROG}$ be a transaction-based $n$-process concurrent program. 
+The proof of the universal construction consists in showing that a  
+simulation of $\mathit{PROG}$ by $m$ processors that execute the algorithms 
+described in Figures \ref{fig:initialization}-\ref{fig-prevent-looping}
+generates an execution of  $\mathit{PROG}$. 
+%Due to page limitation, the proof is given in Appendix \ref{appendix:proof}. 
+
+
+
+
+\Xomit{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Definitions}
+
+A processor $P_y$ commits a transaction $T$ issued by process $p_i$ 
+(owned by processor  $P_x$)  when, after it has  simulated the execution of
+$T$ at lines  \ref{BA13}-\ref{BA17}, it executes successfully 
+the Compare\&Swap statement at  line \ref{BA28} of 
+Figure~\ref{fig:main-construction}. The execution context in which $P_y$
+has executed  $T$, denoted $context(T)$ is defined by the  pair 
+$\langle i\_local\_state_T, current_T \rangle$ where 
+$i\_local\_state_T$ is the value previously read by $P_y$ from  
+$\mathit{STATE}[i].localstate$ at line \ref{BA03} 
+and  $current_T$ is the last value of $current$ read by $P_y$ 
+before exiting the while loop of lines \ref{BA06}-\ref{BA11}. 
+As we have seen, the values  of the $t$-objects read by $T$ are 
+obtained by scanning downwards the descriptor list from  $current_T$
+
+
+
+
+%-------------------------------------------------------------------------
+\subsection{Base lemmas}
+
+Let  us consider  a  processor  $P_y$ that   simulates the  execution  of a
+transaction $T$ issued by a process $p_i$ (lines   \ref{BA13}-\ref{BA17}). 
+The execution context in which $P_y$
+executes  $T$, denoted $context(T)$ is defined by the  pair 
+$\langle i\_local\_state_T, current_T \rangle$ where 
+$i\_local\_state_T$ is the value previously read by $P_y$ from  
+$\mathit{STATE}[i].localstate$ (line \ref{BA03}) 
+and  $current_T$ is the last value of the pointer $current$ read by $P_y$ 
+before exiting the while loop of lines \ref{BA06}-\ref{BA11}. 
+As we have seen, the values  of the $t$-objects read by $T$ are 
+obtained by scanning downwards the descriptor list from  $current_T$
+
+
+$context(T)$ is  {\it valid} if $i\_local\_state_T$ and the values 
+of the $t$-objects  read by $T$ could have obtained in a sequential 
+execution of 
+
+
+
+%---------------------------
+\begin{lemma}
+\label{lemma:valid-context}
+Any transaction $T$ issued by a process is executed in a valid context.
+\end{lemma}
+
+\begin{proofL}
+
+\renewcommand{\toto}{lemma:valid-context}
+\end{proofL}
+%---------------------------
+} %%%%%%%%%%% end of \Xomit{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{lemma}
+\label{lemma:help-commit-1}
+
+Let $T$ be the  transaction invocation  with  the smallest help date
+(among all the transaction invocations not yet committed
+for which help has been required). Let $p_i$ be the process that issued $T$
+and $P_y$ a processor.
+If $T$ is never committed, there is a time after which $P_y$ issues an 
+infinite number invocations of ${\sf select\_next\_process}()$ 
+and they all return $i$. 
+\end{lemma}
+
+\begin{proofL}
+Let us assume by contradiction that there is a time after which
+either $P_y$ is blocked within an internal while loop 
+(Figure~\ref{fig:main-construction})  or its
+invocations of ${\sf select\_next\_process}()$   never  return $i$. 
+It follows from line \ref{CA04} of ${\sf  select\_next\_process}()$  that
+the process identity  of the transaction from $set$  with the smallest help
+date is returned. 
+This means  that for $i$  to never be  returned, there must always  be some 
+transaction(s) in $set$ with a smaller help date than $T$. 
+By  definition we know  that $T$  is the  uncommitted transaction  with the
+smallest help date, so any transaction(s) in $set$ with a smaller help date
+must be  already committed. 
+Let us call  this subset of committed  transactions  $T_{set}$. 
+Since $set$ is finite, $T_{set}$ also is  finite.  
+Moreover,   $T_{set}$ cannot grow because any  transaction $T'$ added to
+the array $\mathit{STATE}[1..n]$ has  a larger help date than $T$
+(such a transaction $T'$ has  asked for help after $T$
+and  due to the  ${\sf Fetcch\&Increment}()$  operation the  help  dates 
+are  monotonically increasing).  
+So  to complete  the contradiction  we  need to  show that 
+(a) $P_y$  is never blocked forever in an internal while loop 
+(Figure~\ref{fig:main-construction})
+and (b) eventually $T_{set} = \emptyset$. 
+
+If $T_{set}$  is not empty, ${\sf  select\_next\_process}()$  returns
+the process identity $j$ for some committed transaction $T'\in T_{set}$. 
+On line  \ref{BA09}, the processor 
+$P_y$ will see $T'$  in the list and perform $committed \gets true$. 
+Hence, $P_y$ cannot block forever in an internal while loop. 
+Then, on line \ref{BA32}, $P_y$  updates  $\mathit{LAST\_CMT}[y,j]$.
+Let  us   observe  that,  during  the   next   iteration   of  
+${\sf select\_next\_process}()$ by $P_x$,  $T'$ is not be added to  $set$ 
+(line  \ref{CA01}) and, consequently, 
+there is then  one less  transaction in $T_{set}$. And this
+continues until $T_{set}$ is empty.  After this occurs,   
+each time processor $P_y$ invokes ${\sf  select\_next\_process}()$,  it
+obtains the process identity $i$, which invalidates the contradiction 
+assumption and proves the lemma. 
+\renewcommand{\toto}{lemma:help-commit-1}
+\end{proofL}
+%---------------------------
+
+
+\begin{lemma}
+\label{lemma:helped-transaction}
+Any invocation of a transaction $T$ that requests help 
+(hence it has $helpdate \neq \infty$) is eventually committed.
+\end{lemma}
+
+\begin{proofL}
+Let us first observe that all transactions that require help 
+have bounded and different help dates  (lines \ref{BA36}-\ref{BA37}, 
+ \ref{CA11}-\ref{CA12}  or \ref{DA05}-\ref{DA06}).  
+Moreover,  once defined, the helping date for a transaction is not modified. 
+
+Among all the transactions that  have not been committed and require help,
+let  $T$  be the transaction with the smallest help date. 
+Assume that  $T$ has been issued  by  process  $p_i$ owned  by processor
+$P_x$  (hence,  $P_x$ has required  help for  $T$).  
+Let us assume that $T$ is never committed. The proof  is by  contradiction. 
+
+
+As $T$ has the smallest help date, it follows from 
+Lemma~\ref{lemma:help-commit-1}  
+that there is a time after  which all the processors that call 
+${\sf select\_next\_process}()$  obtains the process identity $i$.
+%(lines \ref{CA01}, \ref{CA02}, \ref{CA04} and \ref{CA18}). 
+Let $\cal P$ be this non-empty set of processors. 
+(The other processors are looping  in  a while loop or are slow.) 
+Consequently, given that all transactions that are not slow are trying 
+to commit  $T$ (by performing  a ${\sf compare\&swap}()$  to add it  to the
+list), that the list is not modified anywhere else, and that we assume 
+that $T$ never commits, there is a  finite time after which the descriptor 
+list does no longer  increase. Hence, as  the  predicate  $(\downarrow
+current).next=\bot$ becomes eventually true,  we conclude that at least one  
+processor $P_y \in \cal P$ cannot 
+be  blocked  forever in a  while  loop. Because the list is no
+longer  changing, the predicate of line  \ref{BA25} then becomes 
+satisfied at $P_y$.
+It follows that,  when  the processors  of  $\cal P$ execute line \ref{BA28}, 
+eventually one of them successfully executes the compare\&swap that commits 
+the transaction $T$ which contradicts the initial assumption. 
+
+As the helping dates are monotonically increasing, it follows that
+any  transaction $T$ that requires help is eventually committed. 
+\renewcommand{\toto}{lemma:helped-transaction}
+\end{proofL}
+%---------------------------
+
+
+%---------------------------
+\begin{lemma}
+\label{lemma:no-infinite-loop}
+No processor $P_x$ loops forever in an internal while loop
+(lines \ref{BA06}-\ref{BA11} or  \ref{BA19}-\ref{BA24}). 
+\end{lemma}
+
+\begin{proofL} 
+The proof is by contradiction.
+Let $P_y$ be a processor that loops  forever in an internal while loop. 
+Let $i$ be the process identity it has obtained from its last call to 
+${\sf select\_next\_process}()$ (line  \ref{BA02}) and $P_x$  be
+the processor owner of $p_i$. 
+
+Let us first show that  processor $P_x$ cannot loop forever in an internal
+ while loop. Let us assume the contrary. 
+Because processor $P_x$ loops forever we never have $((\downarrow current).next=\bot)~\vee~
+\mathit{committed}$, but each time it executes the loop body, 
+$P_x$ invokes ${\sf prevent\_endless\_looping}(i)$ (at line \ref{BA07} 
+or \ref{BA20}). The code of this procedure is described in 
+Figure~\ref{fig-prevent-looping}.  
+As $i \in \mathit{OWNED\_BY}[i]$ and $P_x$ invokes infinitely often 
+${\sf prevent\_endless\_looping}(i)$, it follows from lines 
+\ref{DA01}-\ref{DA03}  and the current value of  $my\_last\_cmt$ (that 
+points  to the last committed transaction issued by a process owned by 
+$P_x$, see line~\ref{BA44}) that 
+$P_x$'s local variable $k2\_counter$ is increased infinitely often.
+Hence, eventually this number of invocations attains $K2$. 
+When this  occurs, if not yet done, $P_x$ requires help  for the 
+transaction issued by $p_i$ (lines \ref{DA03}-\ref{DA06}). 
+It then follows from  Lemma \ref{lemma:helped-transaction},  
+that $p_i$'s  transaction $T$  is  eventually  committed. As the  pointer
+$current$ of $P_x$ never skips a descriptor of the list
+and the list contains all and only committed transactions, 
+we eventually have $(\downarrow current).tid = \langle i,i\_tr\_sn \rangle$
+(where $i\_tr\_sn$  is $T$'s sequence number among the transactions issued
+by $p_i$). When this occurs,  $P_x$'s local variable  $\mathit{committed}$ 
+is set to $\mathit{true}$ and $P_x$ stops looping in an internal while loop. 
+
+
+Let us now consider the case of a processor  $P_y \neq P_x$. 
+Let us first notice that the only way for $P_y$ to execute $T$ is when 
+$T$ has requested help (line \ref{CA01} of operation ${\sf select\_next\_process}()$).
+The proof follows from the fact that, due to
+ Lemma~\ref{lemma:helped-transaction}, $T$ is eventually committed. 
+As previously (but now  $current$ is  $P_y$'s local variable),
+the predicate  $(\downarrow current).tid = \langle i,i\_tr\_sn \rangle$ 
+eventually becomes true and processor $P_y$ sets  $\mathit{committed}$ 
+ to $\mathit{true}$. $P_y$ then stops looping inside an internal while 
+loop (line \ref{BA08} or \ref{BA22})  which concludes the proof of the lemma.
+\renewcommand{\toto}{lemma:no-infinite-loop}
+\end{proofL}
+
+%---------------------------
+\begin{lemma}
+\label{lemma:transactions-are-committed}
+Any invocation of a transaction $T$ by a process  is eventually committed.
+\end{lemma}
+
+\begin{proofL} 
+Considering  a processor $P_x$,   let $i\in \mathit{OWNED\_BY}[x]$ be 
+the current value of its local control variable $my\_next\_proc$.  
+Let $T$ be the current transaction issued by $p_i$. 
+We first show that $T$ is eventually committed.
+
+Let us first observe that, as $p_i$ has issued $T$, $P_x$ has 
+executed line \ref{BA42} 
+where it has updated $\mathit{STATE}[i]$ that now refers to that transaction. 
+If  $P_x$  requires help for $T$, the result  follows  from 
+Lemma~\ref{lemma:helped-transaction}. 
+ Hence,  to show that $T$ is eventually committed, we show that, if  $P_x$
+does not  succeed in committing  $T$ without help, it necessarily  requires
+help for it.  This  follows from the code of the procedure 
+${\sf select\_next\_proc}()$. There are two cases. 
+\begin{itemize}
+%\vspace{-0.2cm}
+\item
+${\sf select\_next\_process}()$ returns $i$. 
+In that  case, as $P_x$ does not loop forever in a while loop
+(Lemma~\ref{lemma:no-infinite-loop}), it eventually executes lines 
+\ref{BA33}-\ref{BA38} and consequently either commits $T$ or
+ requires help for $T$ 
+at line~\ref{BA37}. 
+%
+%\vspace{-0.2cm}
+\item ${\sf select\_next\_process}()$ never returns $i$. 
+In that case, as $P_x$ never loops forever in a  while loop 
+(Lemma~\ref{lemma:no-infinite-loop}), it follows that 
+it repeatedly invokes ${\sf select\_next\_process}()$ and, 
+as these invocations do not return $i$, the counter $k1\_counter$ 
+repeatedly increases and eventually attains the value $K1$. When 
+this occurs $P_x$ requires help for $T$ (lines \ref{CA07}-\ref{CA15}) 
+and, due to Lemma \ref{lemma:helped-transaction}, $T$ is eventually committed. 
+\end{itemize}
+
+
+Let  us  now  observe that  that, after  $T$  has been committed  (by  some
+processor), $P_x$ executes lines~\ref{BA39}-\ref{BA44}  where  it
+proceeds to the  simulation of its next process  (as defined by 
+${\sf select}(\mathit{OWNED\_BY}[x])$).  It then  follows 
+from the previous reasoning  that  the next transaction of the  process 
+that is selected (whose identity is kept in $my\_next\_proc$) 
+is eventually committed. 
+
+Finally, as the function ${\sf select}()$ is  fair,  it follows that 
+no  process  is  missed  forever and, consequently, any transaction 
+invocation  issued by a process is eventually committed. 
+%\vspace{-0.5cm}
+\renewcommand{\toto}{lemma:transactions-are-committed}
+\end{proofL}
+%---------------------------
+
+
+
+%---------------------------
+\begin{lemma}
+\label{lemma:committed-once}
+Any invocation of a transaction $T$ by a process is  committed at most once.
+\end{lemma}
+
+\begin{proofL}
+Let $T$ be a transaction committed by a processor $P_y$ (i.e., 
+the corresponding ${\sf Compare\&Swap}()$ at line \ref{BA28} is successful). 
+$T$ is identified $\langle  i, \mathit{STATE}[i].ts\_sn \rangle$.
+As  $P_y$ commits  $T$,  we conclude that $P_y$ has previously 
+executed lines \ref{BA06}-\ref{BA28}. 
+\begin{itemize}
+%\vspace{-0.2cm}
+\item 
+We conclude from  the last update of $\mathit{STATE}[i].last\_ptr=pt$ by $P_y$
+(line \ref{BA42}) and  the fact that $P_y$'s $current$ local variable is 
+initialized  to   $\mathit{STATE}[i].last\_ptr$,  that  $T$ is not in the 
+descriptor list before the transaction pointed to by $pt$. 
+%\vspace{-0.2cm}
+\item 
+Let us consider the other part of the list. 
+As $T$ is committed by $P_y$, its pointer  $current$  progresses from 
+ $\mathit{STATE}[i].last\_ptr=pt$ until its last value that is  such that
+$(\downarrow current).next=\bot$.  It then follows from 
+lines \ref{BA08} and  \ref{BA22} that  $P_y$ has never 
+encountered a  transaction identified  
+$\langle  i, \mathit{STATE}[i].ts\_sn \rangle$ (i.e., $T$) 
+while traversing the descriptor list. 
+\end{itemize}
+It follows from the two previous observations  that, 
+when it  is committed (added to  the list), transaction $T$ was not already
+in the list, which concludes the proof of  the lemma. 
+\renewcommand{\toto}{lemma:committed-once}
+\end{proofL}
+%---------------------------
+
+%---------------------------
+\begin{lemma}
+\label{lemma:trans-code}
+Each invocation of a transaction $T$ by a process  is committed exactly once.
+\end{lemma}
+
+\begin{proofL}
+The proof follows directly from Lemma \ref{lemma:transactions-are-committed}
+and Lemma \ref{lemma:committed-once}.
+\renewcommand{\toto}{lemma:trans-code}
+\end{proofL}
+
+
+
+
+%---------------------------
+\begin{lemma}
+\label{lemma:non-trans-code}
+Each invocation of non-transactional code issued by a process is
+executed exactly once.
+\end{lemma}
+
+\begin{proofL}
+This lemma  follows directly  from lines \ref{BA39}-\ref{BA44}:  once the
+non-transactional  code separating two  transaction invocations  has been
+executed, the processor $P_x$ that owns the corresponding process $p_i$ 
+makes it progress to the beginning of its  next transaction (if any). 
+\renewcommand{\toto}{lemma:non-trans-code}
+\end{proofL}
+%---------------------------
+
+
+
+%---------------------------
+\begin{lemma}
+\label{lemma:process-progress}
+The simulation is starvation-free (no process is blocked forever
+by the processors).
+\end{lemma}
+
+\begin{proofL}
+This follows directly from Lemma \ref{lemma:no-infinite-loop},
+Lemma \ref{lemma:trans-code}, Lemma \ref{lemma:non-trans-code}
+and the definition of the function ${\sf select}()$. 
+\renewcommand{\toto}{lemma:process-progress}
+\end{proofL}
+%---------------------------
+
+
+
+
+%---------------------------
+\begin{lemma}
+\label{lemma:trans-linearizability}
+The transaction invocations issued by the processes are linearizable. 
+%
+%\textcolor{red}{I  feel like this  might be  more clear  if we  broke this
+%lemma into 3 lemmas and we each proved them separately: 
+%1. The transaction invocations issued by the processes are linearizable. 
+%2. Each transaction  invocation executes in a consistent  global and local
+%state. 
+%3. Each block of NT-code executes in a valid local state.}
+%
+\end{lemma}
+
+\begin{proofL}
+To prove the lemma we have (a) to associate a linearization point  with 
+each  transaction  invocation and (b) show that the corresponding sequence
+of linearization points is consistent, i.e., the values read from  
+$t$-objects by a transaction  invocation $T$ are uptodate  
+(there have not been overwritten in  that sequence). 
+As far as  item (a) is concerned, the  linearization  point of 
+a transaction invocation is defined as follows\footnote{The 
+fact  that a  transaction invocation is {\it read-only} or {\it  update} 
+cannot always be statically determined. It can depend on the 
+code of transaction (this occurs for example when a transaction  
+behavior depends on  a predicate on values read from $t$-objects).
+In our case, a read-only transaction   is a transaction with an empty write
+set (which cannot be always statically determined   by a compiler).}.
+\begin{itemize}
+%\vspace{-0.2cm}
+\item Update transactions 
+(these are the transactions that write at least one $t$-object). 
+The linearization point of the invocation of an update transaction is the time 
+instant of the (successful) compare\&swap statement that entails its commit.  
+%\vspace{-0.2cm}
+\item Read-only transactions. 
+Let $W$  be the set of update  transactions that have written  a value that
+has been read 
+by the considered read-only transaction. Let $\tau_1$ be the time just after
+the maximum linearization point of the invocations of the transactions in $W$ 
+and $\tau_2$ be the time at which the first execution 
+of the considered transaction has started.
+The linearization point of the transaction is then $\max(\tau_1,\tau_2)$.
+%The linearization point  of the invocation of a read-only transaction is 
+%the time instant of its last read of a $t$-object (by the processor $P_y$ 
+%that commits it).
+%
+\end{itemize}
+
+To prove item (b) let us consider the order in which  the transaction 
+invocations are added to the descriptor list (pointed to by $\mathit{FIRST}$). 
+As we are about to see, this  list and the linearization order are not
+necessarily the same for read-only transaction invocations.  
+Let us observe that, due  to the atomicity of the compare\&swap statement, 
+a single transaction  invocation at a time is added to the list.
+
+Initially, the  list  contains a single fictitious  transaction  that gives
+an initial value to every  $t$-object. 
+Let us assume that the linearization order of all the transaction invocations 
+that have been committed  so far (hence they define the descriptor list) is 
+consistent  (let us observe that this is initially true). 
+Let us consider  the next transaction $T$ that is committed (i.e., added to
+the list). 
+As previously, we consider two cases.  Let $p_i$ be the process that issued
+$T$,  $P_x$ the  processor that  owns $p_i$  and $P_y$  the  processor that
+commits $T$.    
+%
+\begin{itemize}
+%\vspace{-0.2cm}
+\item 
+The transaction is an update transaction (hence, $ws\neq \emptyset$). 
+In that case, $P_y$ has found $(\downarrow current).next$ $=\bot$
+(because  the compare\&sap  succeeds) and  at line~\ref{BA25}, just before
+committing,  the predicate  $\neg committed \wedge \neg overwritten$ 
+is satisfied.  
+
+As  $overwritten$ is false, it follows that none of the values read by $T$ 
+has been overwritten. Hence,  the reads and writes on 
+$t$-objects issued by $T$ can appear as having been executed atomically at 
+the time of the compare\&swap. Moreover,  the values of the $t$-objects 
+modified by $T$  are saved in the  descriptor attached to the list
+by the compare\&swap and the global state of the $t$-objects is 
+consistent (i.e., if not overwritten  before, any future read of any of these 
+$t$-objects obtains the value  written by $T$). 
+
+Let us now consider the local state of $p_i$ (the process that issued $T$). 
+There are  two cases. 
+\begin{itemize}
+%\vspace{-0.2cm}
+\item $P_x=P_y$ (the transaction is committed by the owner of $p_i$). 
+In that case, the local state of $p_i$ after the execution of $T$ 
+is kept in $P_x$'s local variable $i\_local\_state$ (line \ref{BA15}). 
+After processor $P_x$ has executed the 
+non-transactional code that follows the invocation of $T$ (if any, line
+\ref{BA39}), it  updates $\mathit{STATE}[i].local\_state$ with 
+the current value of  $i\_local\_state$ (if $p_i$ had not yet terminated,
+line~\ref{BA42}). 
+%
+%\vspace{-0.2cm}
+\item $P_x \neq P_y$ (the processor that commits $T$ and the owner of $p_i$ 
+are different processors). 
+In that case, $P_y$ has saved the new local state of $p_i$ in 
+$\mathit{DESCR}.local\_state$ (line \ref{BA27}) just before 
+appending $\mathit{DESCR}$ at the end of the descriptor list. 
+
+Next, thanks to the the predicate $i \in \mathit{OWNED\_BY}[x]$
+in the definition of $set$ at line \ref{CA01}, 
+there is an invocation of  ${\sf select\_next\_process}()$ by  $P_x$ 
+that returns $i$. When this occurs,  $P_x$  discovers at line~\ref{BA09} 
+or \ref{BA22} that the transaction $T$ has been  committed by another 
+processor. It then retrieves the local state of $p_i$ (after 
+execution of  $T$) in $(\downarrow current).local\_state$, 
+saves it in $i\_local\_state$ and (as in the previous item)  eventually 
+writes it  in  $\mathit{STATE}[i].local\_state$ (line \ref{BA42}).
+\end{itemize}
+It follows that, in both cases,  the value saved in 
+$\mathit{STATE}[i].local\_state$  is the local state of $p_i$ after the 
+execution of $T$ and the non-transactional code that follows $T$ (if any). 
+%
+%\vspace{-0.2cm}
+\item 
+The transaction is a read-only transaction (hence, $ws=\emptyset$).
+%
+In that case, $T$ has not modified the state of the $t$-objects. 
+Hence,  we only have    to prove   that the  new  local state  of $p_i$  is
+appropriately updated and saved in  $\mathit{STATE}[i].local\_state$.
+
+The proof is the same as for the case of an update transaction. 
+The only difference lies in the fact that now it is possible to have 
+$overwritten \wedge ws = 0$.  If  $overwritten$ is true,  $T$ can no 
+longer be linearized  at the commit point. That is why it is 
+linearization point has been defined 
+just after the maximum linearization point of the transactions it reads 
+from (or the start of $T$ if it happens later),
+%at its least read of a $t$-object,
+which makes it linearizable.  
+\end{itemize}
+%\vspace{-0.4cm}
+\renewcommand{\toto}{lemma:trans-linearizability}
+\end{proofL}
+%---------------------------
+
+\begin{lemma}
+\label{lemma:all-linearizability}
+The   simulation  of  a  transaction-based $n$-process  program   
+by  $m$  processors (executing the algorithms 
+described in Figures \ref{fig:initialization}-\ref{fig-prevent-looping})
+is linearizable. 
+\end{lemma}
+
+\begin{proofL}
+Let us first observe that, due to Lemma \ref{lemma:trans-linearizability},
+The transaction invocations issued  by the processes are linearizable, from
+which we conclude that the set of $t$-objects (considered as a single 
+concurrent object $TO$) is linearizable. 
+Moreover, by  definition, every $nt$-object is linearizable. 
+
+
+As (a)linearizability is a {\it local} consistency property 
+\cite{HW90}\footnote{A  property $P$  is  local if  the  set of  concurrent
+objects (considered as a single object)
+satisfies $P$  whenever each object taken alone  satisfies $P$. It is
+proved in \cite{HW90}  that linearizability is a local  property.} and (b) 
+ $TO$  is linearizable and  every $nt$-object  is linearizable,  it  follows
+that the  execution of the multiprocess program is linearizable.  
+\renewcommand{\toto}{lemma:all-linearizability}
+\end{proofL}
+%---------------------------
+
+
+
+
+\begin{theorem}
+\label{theorem:main}
+Let $\mathit{PROG}$ be a transaction-based $n$-process program. 
+Any simulation of $\mathit{PROG}$ by $m$ processors executing the algorithms 
+described in Figures \ref{fig:initialization}-\ref{fig-prevent-looping}
+is an execution of  $\mathit{PROG}$. 
+\end{theorem}
+
+\begin{proofT}
+A formal statement of this proof  requires an heavy  formalism. Hence we 
+only give a sketch of it. Basically, the  proof follows from 
+Lemma~\ref{lemma:process-progress} and Lemma~\ref{lemma:all-linearizability}. 
+The execution of $\mathit{PROG}$ is obtained by projecting  the execution 
+of each  processor on the simulation of the transactions it commits and 
+the execution of the non-transactional code of each process it owns. 
+\renewcommand{\toto}{theorem:main}
+\end{proofT}
+%---------------------------
+
+
+
+%====================================================================
+\section{The number of tries is bounded}
+\label{sec:bounded-tries}
+This section presents a bound  for the maximum number of times a transaction
+can  be unsuccessfully executed by a  processor before  being  committed,
+namely, $O(m^2)$. A  workload that has this bound is then given. 
+
+
+\begin{lemma}
+\label{lemma:1max} 
+At any time and  for any processor $P_x$, there is at most one atomic register 
+$\mathit{STATE}[i]$ with  $i\in \mathit{OWNED\_BY}[x]$ such that
+the corresponding transaction 
+(the identity of which is $\langle i, \mathit{STATE}[i].tr\_sn\rangle$)
+ is not committed and $\mathit{STATE}[i].help\_date\neq +\infty$. 
+\end{lemma}
+%\vspace{-0.2cm}
+
+\begin{proofL}
+Let us first notice  that the  help date of a transaction invoked by a 
+process $p_i$ can be set to  a finite value  only by the  processor $P_x$ 
+that owns $p_i$.  There are two places where $P_x$  can request help. 
+\begin{itemize}
+%\vspace{-0.2cm}
+\item 
+This first location is in  the ${\sf prevent\_endless\_looping}()$ procedure.
+In that  case, the  transaction  for which  help  is required is  the last
+transaction invoked by  process $p_{my\_next\_proc}$. 
+%\vspace{-0.2cm}
+\item 
+The second  location is on line  \ref{BA37} after the  transaction 
+invocation  $T$ aborts. 
+It follows from line \ref{CA03} of  the operation ${\sf  select\_next\_process}()$   
+that  this invocation is also from  the last
+transaction invoked by  process $p_{my\_next\_proc}$. 
+\end{itemize}
+So  we  only  need  to  show  that $my\_next\_proc$  only  changes  when  a
+transaction is committed, which  follows directly from the predicates at lines 
+ \ref{BA34} and  \ref{BA35} and the statements of line  \ref{BA44}. 
+\renewcommand{\toto}{lemma:1max}
+\end{proofL}   
+
+\begin{theorem}
+\label{proof:try-bounds}
+A transaction $T$  invoked by a process $p_i$ owned by processor  $P_x$ 
+is tried unsuccessfully  at most $O(m^2)$  times  before being  committed.
+\end{theorem}
+
+
+\begin{proofT}
+Let  us first   observe  that a  transaction  $T$  (invoked by  a process
+$p_i$)  is executed once before its  help date is  set  to a finite value
+(if it is not committed after that execution).
+This is  because only the owner $P_x$ of $p_i$ can  select $T$
+(line \ref{CA03}) when its help date is  $+\infty$.
+Then, after it has  executed $T$ unsuccessfully once, $P_x$  requests
+help for $T$ by setting its  help date to a finite value (line \ref{BA37}).
+
+Let us now compute   how many  times $T$  can  be  executed unsuccessfully
+(i.e.,  without being committed) after its help date has been  set to a
+finite value.
+As there  are  $m$   processors and all  are equal (as far as  helping is
+concerned),   some  processor must execute $T$  more  than $O(m)$ times
+in  order for  $T$  to be  executed more  than $O(m^2)$ times.
+We show that this is impossible. More precisely,
+assuming  a processor $P$ executes  $T$, there are $3$ cases that can cause
+this execution to be unsuccessful  and as shown below
+each case can cause at most $O(m)$ aborts of $T$ at $P$.
+%
+\begin{itemize}
+%\vspace{-0.2cm}
+\item
+Case 1. The first case  is that some other transaction $T1$ that does
+not  request help  (its help date is $+\infty$)  is committed  by some  other
+processor $P2$ causing $P$'s execution of $T$ to abort.
+Now by lines  \ref{CA02} and \ref{CA03} after $P2$  commits $T1$, $P2$ will
+only  be executing  uncommitted transactions  from the  $\mathit{STATE}$
+ array with
+finite help dates at least until  $T$ is committed, so any subsequent abort
+of $T$ caused  by $P2$ cannot be caused by  $P2$ committing a transaction
+with $+\infty$ help date.
+So the maximum  number of times this  type of abort can happen  from $P$ is
+$O(1)$.
+%Also notice that  the committal of $T1$ makes no changes  to the number of
+%uncommitted transactions in the $STATE$ array with their help flags set to
+%$true$.
+%\vspace{-0.2cm}
+\item
+Case  2. The second case  is when  some  other uncommitted transaction
+$T1$ in  the $\mathit{STATE}$  array with a  finite help  date is committed
+by some other processor $P2$ causing $T$ to abort.
+%Then eventually line  \ref{30} will be executed and  the $LAST_COMT$ array
+%will be  updated so $T1$  will no longer  be selected to execute  in lines
+%\ref{BA02} and \ref{BA03} effect
+First by  lemma \ref{lemma:1max} we know  that there is a  maximum of $m-1$
+transactions that are not $T$ that  can be requesting help at this time and
+in order for them  to commit before $T$ they must have  a help date smaller
+than $T$'s.
+Also  by lemma  \ref{lemma:committed-once} we  know that  a  transaction is
+committed exactly once  so this conflict between $T1$  and $T$ cannot occur
+again at $P2$.
+Now after committing  $T1$, the next transaction (that asks  for help) of a
+process that  is owned by  the same processor  that owned $T1$ will  have a
+larger help  date than $T$  so now there  are only $m-1$  transactions that
+need help that could conflict with $T$.
+Repeating this we have at most $O(m)$ conflicts of this type for $P$.
+%\vspace{-0.2cm}
+\item
+Case  3. The  third case is  that $P$'s  execution of $T$  is aborted
+because some other process has already committed $T$.
+Then on  line \ref{BA08} $P$ will see  that $T$ has been  committed and not
+execute it again, so we have at most $O(1)$ conflicts of this type.
+\end{itemize}
+%\vspace{-0.6cm}
+\renewcommand{\toto}{proof:try-bounds}
+\end{proofT}
+
+
+
+
+\paragraph{The bound is tight}
+The  execution that is described below shows that a  transaction $T$ 
+can be tried  $O(m^2)$ times before being committed. 
+
+Let  $T$ be a transaction owned by processor $P(1)$ such that 
+$P(1)$ executes $T$ unsuccessfully once and requires help 
+by setting its help date to a finite value. 
+Now, let us assume that each of the  $m-1$ other processors  is 
+executing a transaction it owns,  all  these  transactions
+conflict with  $T$ and  there are no  other uncommitted  transactions with
+their help date set to a finite value.
+ 
+Now $P(1)$ starts executing $T$  again, but meanwhile processor $P(2)$ 
+commits its own transaction which causes $T$ to abort. 
+Next $P(1)$  and $P(2)$  each try to execute $T$, but meanwhile processor $P(3)$  
+commits its own transaction causing $P(1)$ and $P(2)$ to abort $T$. 
+Next $P(1)$, $P(2)$, and $P(3)$ each try execute $T$, but meanwhile processor 
+$P(4)$ commits its owns transaction causing $P(1)$, $P(2)$, and $P(3)$ 
+to abort  $T$. Etc.  until  processor  $P(m-1)$  aborts all  the  
+execution of $T$ by  other processors, resulting in all $m$ processor 
+executing $T$. The transaction $T$ is then  necessarily committed by one of 
+these final executions. 
+So we have $1+1+2+3+\ldots+(m-1)+m$ trials of $T$ which is  $O(m^2)$.
+
+
+%=============================================================================
+
+\section{A short discussion  to conclude}
+\label{sec:discussion} 
+\label{sec:conclusion}
+
+The aim of the universal construction that has been presented 
+was to demonstrate and investigate this type of construction for
+transaction-based multiprocess programs. (Efficiency issues 
+would deserve  a separate investigation.) To  conclude, we list  here a few
+additional noteworthy properties of the proposed  construction. 
+
+\begin{itemize}
+%\vspace{-0.2cm}
+\item  The construction is for the family of transaction-based concurrent
+programs  that are time-free (i.e., the semantics of which does not depend 
+on real-time constraints). 
+%\vspace{-0.2cm}
+\item 
+The construction  is lock-free and  works whatever the concurrency pattern
+(i.e., it does not require concurrency-related  assumption such as 
+obstruction-freedom). It  works for  both finite  and  infinite
+computations and does not require  specific scheduling assumptions.  
+%
+Moreover,  it is  independent of the fact that 
+processes  are  transaction-free (they then share  only
+$nt$-objects),  do not have  non-transactional code (they then  share 
+only $t$-objects  accessed by transactions)  or have both  transactions and
+non-transactional code.  
+%
+%\vspace{-0.2cm}
+%\item  Interestingly, read-only transactions are never aborted 
+%and, consequently, do not require help.
+%
+%\vspace{-0.2cm}
+\item  
+The helping mechanism can be improved by allowing a processor to 
+require help for a transaction only when  some condition is satisfied. 
+These  conditions could be general or application-dependent. They could 
+be static or dynamic and  be  defined in relation with an underlying
+scheduler or a contention manager. 
+%
+%\vspace{-0.2cm}
+%\item 
+The construction can also be  adapted  to benefit from an underlying 
+scheduling allowing the owner of a process to be  dynamically defined.  
+
+It could also be adapted to  take into account {\it irrevocable} transactions
+\cite{SSDMS08,WSA08}. 
+Irrevocability is an implementation property which can be 
+demanded by the user for  some of its transactions. It states that 
+the corresponding transaction cannot be aborted (this can be useful when 
+one wants to include inputs/outputs inside a transaction; notice that, 
+in our model, inputs/outputs appear in non-transactional code). 
+%
+%\vspace{-0.2cm}
+\item  
+We have considered a failure-free system. It is easy to see that, in a
+ crash-prone system, the crash of a processor entails only the
+crash of the processes it owns.  The processes owned by the processors that
+do not crash are not prevented from executing.  
+%
+%\vspace{-0.2cm}
+%\item Think to the cost (according to number of transactions, 
+%number of tries, number of processors, etc.)?
+%
+\end{itemize}
+
+In addition to the previous properties, 
+the proposed  construction helps better understand the atomicity feature  
+offered  by STM systems to users in order to cope with concurrency issues. 
+Interestingly this construction has some ``similarities'' with 
+general constructions proposed to cope with the net effect of 
+asynchrony, concurrency and failures, such as 
+the BG simulation \cite{BG93}  (where there are simulators that execute 
+processes) and   Herlihy's universal construction to  build  wait-free 
+objects \cite{H91} (where an underlying list of consensus objects 
+used to represent the state of the constructed object lies at the 
+core of the construction). The study of these  similarities would 
+deserve a  deeper investigation. 
+
+
+
+%========================================================================
+%\section{Conclusion}
+%\label{sec:conclusion}
+%
+
+
+
+% %==========================================================================
+% \section*{Acknowledgments}
+% The authors want to thank Vincent Gramoli and Pascal Felber 
+% for interesting discussions on STM systems. 
+% %
+% This 
+% research is part  of the  Marie Curie ITN project TRANSFORM
+% funded by the European Union  FP7 Program (grant 238639).
+% %==========================================================================
+% 
+
+
+% %===========================================================================
+% \begin{thebibliography}{99}
+% \small{
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{ADT95}
+% Afek Y., Dauber D. and Touitou D.,
+% Wai-free made Fast. 
+% {\it Proc. 7th  Int'l  ACM Symposium on Parallelism in Algorithms 
+% and Architectures   (SPAA'10)},  ACM Press, pp. 538-547,  1995. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{AM99}
+% Anderson J. and Moir M., 
+% Universal Constructions for Large Objects. 
+% {\it  IEEE Transactions on Parallel and Distributed  Systems},
+% 10(12):1317-1332,  1999.
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{ALKJKW09}
+% Ansar M.,  Luj\'an M.,  Kotselidis Ch., Jarvis K.,  Kirkham Ch. 
+% and  Watson Y., 
+% Steal-on-abort: Dynamic Transaction Reordering to
+% Reduce Conflicts in Transactional Memory. 
+% {\it 4th  Int'l ACM Sigplan Conference on  High Performance Embedded  
+% Architectures and Compilers (HiPEAC'09)}, ACM Press,   pp. 4-18, 2009.
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{AM09}
+% Attiya H. and Milani A., 
+% Transactional Scheduling for Read-Dominated Workloads. 
+% {\it 13th Int'l Conference on  Principles of Distributed Systems
+% (OPODIS'09)},  Springer Verlag  LNCS \#5923, pp. 3-17, 2009. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{BG93}
+% Borowsky E. and Gafni E., 
+% Generalized FLP Impossibility Results for $t$-Resilient Asynchronous
+% Computations.
+% {\it Proc. 25th ACM  Symposium on Theory of Computing (STOC'93)}, 
+% ACM Press, pp. 91-100, 1993.
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{CER10}
+% Chuong Ph., Ellen F. and Ramachandran V.,
+% A Universal Construction for Wait-free Transaction Friendly Data Structures.
+% {\it Proc. 22th  Int'l  ACM Symposium on Parallelism in Algorithms 
+% and Architectures   (SPAA'10)},  ACM Press, pp. 335-344,  2010. 
+% 
+% \bibitem{CIR11}
+% Crain T., Imbs D. and Raynal M.,
+% Towards a universal construction for transaction-based multiprocess programs.
+% {\it Proceedings of the 13th International Conference on Distributed Computing and Networking (ICDCN 2012)}, 
+% Springer-Verlag LNCS, 2012.
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{D68}
+% Dijkstra E.W.D., 
+% Solution of a Problem in Concurrent Programming Control.
+% {\it  Communications of the  ACM}, 8(9):69, 1968.
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{DGK09}
+% Dragojevi\'{c} A., Guerraoui R. and  Kapa\l{}ka M., 
+% Stretching Transactional Memory. 
+% {\it  Proc. Int'l  2009 ACM SIGPLAN conference on Programming
+%  language design and implementation (PLDI '09)},  
+% ACM Press, pp. 155-165,  2009. 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{FK09}
+% Fatourou P. and Kallimanis N., 
+% The Red-blue Adaptive Universal Construction. 
+% {\it  Proc. 22nd  Int'l  Symposium on Distributed Computing
+% (DISC '09)},  Springer-Verlag, LNCS\#5805, pp. 127-141,  2009. 
+% 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{F11}
+% Felber P., 
+% Compiler Support for STM Systems. 
+% Lecture given at the  {\it TRANSFORM  Initial Training School},  University
+% of Rennes  1 (France), 7-11 February 2011. 
+% 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{FFR08}
+% Felber P.,  Fetzer Ch. and  Riegel T., 
+% Dynamic Performance Tuning of Word-Based Software Transactional Memory. 
+% {\it  Proc. 13th  Int'l  ACM SIGPLAN Symposium on Principles and
+%  Practice of Parallel Programming (PPoPP'08) },  ACM Press,pp. 237-246,  2008. 
+% 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{FFGH08}
+% Felber P., Fetzer Ch., Guerraoui R. and Harris T., 
+% Transactions are Coming Back, but Are They The Same?
+% {\it ACM Sigact News, Distributed  Computing Column}, 39(1):48-58, 2008.
+% 
+% \bibitem{FG01}
+% Fr{\o}lund S. and Guerraoui R.,
+% X-Ability: a Theory of Replication.
+% {\it Distributed Computing}, 14(4):231-249, 2001. 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{GHS08}
+% Guerraoui R.,  Henzinger Th. A. and Singh V., 
+% Permissiveness in Transactional Memories. 
+% {\it  Proc. 22nd  Int'l  Symposium on Distributed Computing
+% (DISC '08) },  Springer-Verlag, LNCS\#5218, pp. 305-319,  2008. 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{GHP05}
+% Guerraoui R.,  Herlihy M. and  Pochon B., 
+%  Towards a Theory of Transactional Contention Managers. 
+% {\it  Proc. 24th  Int'l  ACM Symposium on Principles of  Distributed 
+% Computing (PODC'05)},  ACM Press, pp. 258-264,  2005. 
+% 
+% 
+% %%\vspace{-0.2cm}
+% %\bibitem{GHKP05}
+% %Guerraoui R.,  Herlihy M., Kapa\l{}ka M. and  Pochon B., 
+% %Robust Contention Management in Software Transactional Memory. 
+% %{\it  Proc.  OOPSLA 2005 Workshop on Synchronization and Concurrency 
+% %in Object-Oriented Languages (SCOOL'05)},  2005. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{GKK08}
+% Guerraoui R., Kapa\l{}ka M. and  Kouznetsov P., 
+% The Weakest Failure Detectors to Boost Obstruction-freedom. 
+% {\it Distributed Computing}, 20(6):415-433, 2008. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{GK10}
+% Guerraoui R. and  Kapa\l{}ka M.,
+% Principles of Transactional Memory. 
+% {\it Synthesis Lectures on Distributed Computing Theory},
+%  Morgan \& Claypool Publishers, 180 pages, 2010. 
+% 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{H07}
+% Harris T., Cristal  A., Unsal O.S., Ayguade E., Gagliardi  F., Smith B. and
+% Valero M., 
+% Transactional Memory: an Overview. 
+% {\it IEEE Micro}, 27(3):8-29, 2007. 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{H91}
+% Herlihy M.P., 
+% Wait-Free Synchronization. 
+% {\it ACM Transactions on Programming Languages and Systems}, 
+% 13(1):124-149, 1991. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{HL08}
+% Herlihy M.P.  and Luchangco V.,
+% Distributed Computing and the Multicore Revolution.
+% {\it ACM SIGACT News}, 39(1): 62-72, 2008.
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{HLMS03}
+% Herlihy M.,  Luchangco V.,  Moir M. and  Scherer III W.M., 
+%  Software Transactional Memory for Dynamic-Sized Data Structures. 
+% {\it  Proc. 22nd  Int'l  ACM Symposium on Principles of  Distributed 
+% Computing (PODC'03)},  ACM Press, pp. 92-101,  2003. 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{HM93}
+% Herlihy M.P.  and Moss J.E.B., 
+% Transactional Memory: Architectural Support for Lock-free Data Structures. 
+% {\it Proc. 20th ACM Int'l Symposium  on Computer Architecture  (ISCA'93)}, 
+% ACM Press, pp. 289-300, 1993. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{HS08}
+% Herlihy M.P.  and Shavit N.,
+% The Art of Multiprocessor Programming. 
+% {\it Morgan Kaufmann Pub.}, San Francisco (CA), 508 pages, 2008. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{HW90}
+% Herlihy M.P.  and Wing J.M.,
+% Linearizability: a Correctness Condition for Concurrent Objects. 
+% {\it ACM Transactions on Programming Languages and Systems}, 
+% 12(3):463-492, 1990. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{HA79}
+% Hewitt C.E. and Atkinson R.R., 
+% Specification and Proof Techniques for Serializers. 
+% {\it IEEE Transactions on Software Engineering}, SE5(1):1-21, 1979. 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{H74}
+% Hoare C.A.R., 
+% Monitors: an Operating System Structuring Concept. 
+% {\it Communications of the  ACM}, 17(10):549-557, 1974. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{LK08}
+% Larus J. and Kozyrakis Ch., 
+% Transactional Memory: Is TM the Answer for Improving Parallel Programming?
+% {\it Communications of the ACM}, 51(7):80-89, 2008. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{MMFLMR11}
+% Maldonado W.,  Marlier P., Felber P.,  Lawall J., Muller G. and Revi\`ere E., 
+% Deadline-Aware Scheduling for Software Transactional Memory. 
+% {\it 41th  IEEE/IFIP Int'l  Conference on  Dependable  Systems and Networks
+% 'DSN'11)}, IEEE CPS Press, June 2011. 
+% 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{MS96}
+% Michael M.M.  and Scott M.L., 
+% Simple, Fast and Practical Blocking and Non-Blocking Concurrent
+% Queue Algorithms.
+% {\it  Proc. 15th  Int'l  ACM Symposium on Principles of  Distributed 
+% Computing (PODC'96)},  ACM Press, pp. 267-275,  1996. 
+% 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{R08}
+% Raynal  M.,
+% Synchronization is Coming Back, But Is It the Same?
+% Keynote Speech. {\it  IEEE 22nd Int'l Conference on Advanced 
+% Information  Networking and Applications (AINA'08)},  pp. 1-10, 2008. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{RSL78}
+% Rosenkrantz D.J.,  Stearns R.E. and Lewis Ph.M., 
+% System Level Concurrency Control for Distributed Database Systems.
+% {\it  ACM Transactions on  Database Systems},  3(2): 178-198, 1978.
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{SSDMS08}
+% Spear M.F., Silverman M., Dalessandro L., Michael M.M.  and Scott M.L., 
+% Implementing and Exploiting Inevitability in Software Transactional Memory.
+% {\it Proc. 37th Int'l Conference on Parallel Processing (ICPP'08)}, 
+% IEEE Press, 2008. 
+% 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{ST97}
+% Shavit N. and Touitou D., 
+% Software Transactional Memory. 
+% {\it Distributed  Computing}, 10(2):99-116, 1997. 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{WF10}
+% Wamhoff J.-T. and   Fetzer Ch., 
+% The Universal Transactional Memory Construction. 
+% {\it Tech Report}, 12 pages, University of Dresden (Germany), 2010. 
+%  
+% 
+% %\vspace{-0.2cm}
+% \bibitem{WRFF10}
+% Wamhoff J.-T.,   Riegel T.,  Fetzer Ch. and  Felber F., 
+% RobuSTM: A Robust Software Transactional Memory.
+% {\it Proc. 12th Int'l Symposium on  Stabilization, Safety, and Security 
+% of Distributed Systems (SSS'10)}, 
+% Springer Verlag LNCS \#6366, pp.  388-404,  2010. 
+% 
+% %\vspace{-0.2cm}
+% \bibitem{WSA08}
+% Welc A., Saha B. and Adl-Tabatabai A.-R., 
+% Irrevocable Transactions and their Applications. 
+% {\it  Proc. 20th  Int'l  ACM Symposium on Parallelism in Algorithms 
+% and Architectures   (SPAA'08)},  ACM Press, pp. 285-296,  2008. 
+% 
+% 
+% 
+% 
+% }
+% \end{thebibliography}
+% 
+% %========================================================================
+% 
+% 
+% %=========================================================================
+% %========================================================================
+% \end{document}
+% %========================================================================
+% %========================================================================
+

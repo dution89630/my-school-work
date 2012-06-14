@@ -1,0 +1,120 @@
+\begin{algorithm*}[!ht]
+  \caption{Contention-friendly non-blocking skip list -- structural adaptation by process $p$}\label{alg:skipList_maintlockfree}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+%\algtechrep
+  \begin{algorithmic}[1]
+  
+  \algrestore{second}
+  
+   \begin{multicols}{2}
+   {\size 
+   	
+		\Part{$\act{remove}(\ms{pred}, \ms{node})_p$}{
+%			\State $\ms{result} \gets \lit{false}$
+%			\If{$\ms{node.level \neq 0}$} {\bf return} $\lit{false}$
+%			\EndIf
+%			\State $\lit{CAS}(\ms{node.v}, \bot, \ms{node})$ \Comment{compare-and-swap}\label{lfline:rm-cas}
+%			\If{$\ms{node.v = node}$} \label{lfline:rm-rmCheck}
+%				\State $\lit{help\_remove}(\ms{p}, \ms{node})$
+%				\Return $\lit{true}$ \EndReturn
+%			\EndIf
+%			\Return $\lit{false}$ \EndReturn
+%			\Return $\ms{result}$ \EndReturn
+			\State $\ms{result} \gets \lit{false}$
+			\If{$\ms{node.level = 0}$} 
+				\State $\lit{CAS}(\ms{node.v}, \bot, \ms{node})$ \Comment{compare-and-swap}\label{lfline:rm-cas}
+				\If{$\ms{node.v = node}$} \label{lfline:rm-rmCheck}
+					\State $\lit{help\_remove}(\ms{pred}, \ms{node})$
+					\State $\ms{result} \gets \lit{true}$
+				\EndIf
+			\EndIf
+			\Return $\ms{result}$ \EndReturn
+		}\EndPart
+
+
+
+		\Statex
+
+
+		\Part{$\act{help-remove}(\ms{pred}, \ms{node})_p$}{
+
+			\If{$(\ms{node.val \neq node} \vee \ms{node.marker}$)} \label{lfline:rm-rmhelpcheck}
+				\Return \EndReturn
+			\EndIf
+			\State $\ms{n \gets node.next}$ \label{lfline:rm-next1}
+			\While{$\neg \ms{n.marker}$} \label{lfline:rm-markcheck}
+				\State $\ms{new} \gets \lit{setup\_node}(\ms{node, \bot, \bot})$
+				\State $\ms{new.v \gets new}$
+				\State $\ms{new.marker} \gets \lit{true}$ \label{lfline:rm-marksetup1}
+				\State $\lit{CAS}(\ms{node.next, n, new})$ \Comment{compare-and-swap}\label{lfline:rm-marksetupcas}
+				\State $\ms{n \gets node.next}$ \label{lfline:rm-next2}
+			\EndWhile
+
+			%\While{($\ms{p.next \neq node} \vee \ms{p.k > node.k}$)} \label{lfline:rm-findpred1}
+			%	$\ms{p \gets p.next}$ \label{lfline:rm-findpredloop}
+			%\EndWhile
+			\If{($\ms{pred.next \neq node} \vee \ms{pred.marker}$)} \label{lfline:rm-findpred2}
+				\Return \EndReturn
+			\EndIf
+			\State $\lit{CAS}(\ms{pred.next, node, n.next})$ \Comment{compare-and-swap} \label{lfline:rm-finalcas}
+
+
+
+		\newpage
+
+
+		\Part{$\act{lower-index-level}()_p$}{
+
+			\State $\ms{index} \gets \ms{first}[2].\ms{next}$
+			\While{$\ms{index} \neq \bot$}
+				\State $\ms{index.down} \gets \bot$
+				\State $\ms{index.node.height \gets index.node.height} - 1$ \label{lfline:ll-cas}
+				\State $\ms{index} \gets \ms{index.next}$
+			\EndWhile
+			\State \Comment{Update the index of the first array}
+		}\EndPart
+
+
+		\Statex
+
+   		\Part{$\act{raise-index-level}(i)_p$}{
+
+			\State $\ms{prev-tall} \gets \ms{first}[\ms{i} + 1]$
+			\State $\ms{index} \gets \ms{first}[\ms{i}]$
+			\While{$\lit{true}$}
+				\State $\ms{next} \gets \ms{index.right}$
+				\If{$\ms{next} = \bot$}
+					\State {$\lit{break}()$}
+				\EndIf
+				\State $\ms{prev} \gets \ms{index.prev}$
+				 \If{$(\ms{prev.node.level} \leq \ms{i}$ \label{lfline:rl-check1}
+				 \State $\wedge~\ms{index.node.level} \leq \ms{i}$ 
+				  \State \T $\wedge~\ms{next.node.level} \leq{i})$} \label{lfline:rl-check2}
+					\State \Comment{Allocate a new index-item called new}
+					\State $\ms{new.down} \gets \ms{index}$
+					\State $\ms{new.node} \gets \ms{index.node}$
+					\State $\ms{new.right} \gets \ms{prev-tall.right}$ 
+					\State $\ms{prev-tall.right} \gets \ms{new}$
+					\State $\ms{index.node.level} \gets \ms{i} + 1$ \label{lfline:rl-raise2}
+					\State $\ms{prev-tall} \gets \ms{new}$
+				\EndIf
+				\State $\ms{index} \gets \ms{index.right}$
+			\EndWhile
+
+   		}\EndPart
+
+
+
+		}\EndPart
+
+
+
+   	
+
+				
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+%\algtechrepend
+\end{algorithm*}
