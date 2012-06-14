@@ -689,7 +689,7 @@ version field  while clearing the lock bit.
 \section{Implementing terminating strong  isolation}
 \label{sec:protocol}
 
-A traditional  solution to  the problem of  ensuring isolation   in the
+A possible  solution to  the problem of  ensuring isolation   in the
 presence of  non-transactional code consists in using  locks: Each shared
 variable would then  
 be associated with a lock and both transactions as well as non-transactional 
@@ -705,7 +705,7 @@ it can be argued that  these characteristics are acceptable, given that the
 programmer  accepts the fact that a  transaction has a duration and that it
 may  even  fail: The  fact  that   there is  always  a  possibility that  a
 transaction will abort means that the eventuality of  
-failure to complete is an integral part of the transaction concept.  
+failure to complete can be considered a part of the transaction concept.  
 
 On  the contrary,  when it  comes to  read or  write accesses  to  a shared
 variable, a  non-transactional operation is  understood  as an
@@ -725,9 +725,8 @@ acquisition, write-back and validation of the  read set),
 the proposed algorithm 
 specifies specific non-transactional read and  write operations 
 that are to be used 
-by the programmer, substituting conventional read and write operations. 
-In the following sections, the memory setup, special data structures 
-and operations will be explained.
+by the programmer, substituting conventional
+shared memory read and write operations. 
 
 
 %===================================================================
@@ -746,7 +745,7 @@ ${\sf C\&S}(x,a,b)$ writes $b$ into $x$ iff $x=a$. In that case it
 returns $\mathit{true}$. Otherwise it returns  $\mathit{false}$. 
 
 
-The proposed TL2 extension assumes that the
+The proposed algorithm assumes that the
 variables  are  of  types and  values  that  can  be   stored in  a  memory
 word. This assumption aids in the clarity of the algorithm description  
 but it  is also  justified by the  fact that  the algorithm extends  TL2, an
@@ -766,33 +765,22 @@ the linearization of operations is not violated.
 Each  process's  $\mathit{time}$   variable is   
 therefore incremented
 both during transactional and non-transactional operations.
-Like TL2, update  transactions are assigned a logical time by
-performing an increment-and-fetch
-on  $\mathit{GVC}$, in this algorithm this value is also used to set the
-value of the $\mathit{time}$ variable.  As  will  be explained  in  detail  later  on,
-non-transactional operations update  
-their process's $\mathit{time}$ variable either by  assigning it the value of 
-the $\mathit{GVC}$, or by assigning it the  
-logical date of a shared variable that they are accessing.
 
 In TL2 a  shared array of locks is maintained and each
 shared memory word  
-is associated with a lock in this array. Given this, a memory
+is associated with a lock in this array usually by some hash fuction. Given this, a memory
 word directly contains  
 the value of the variable that  is stored in it.
 Instead, the algorithm presented here, uses
-a  different memory setup that does not require a lock array, but does requires
+a  different memory setup is used that does not require a lock array, but does requires
 an extra level of indirection when loading and storing values in memory.
-Instead of storing a value of a variable directly to a memory word,
-each  write  operation  on   variable  $\mathit{var}$,   transactional  or
-non-transactional, creates an algorithm-specific data  
-structure where  it stores  the value to  be written to  $\mathit{var}$, as
+Instead of storing the value of a variable directly to a memory word,
+each  write  operation  on  variable  $\mathit{var}$,   transactional  or
+non-transactional, creates an algorithm-specific   
+structure that contains the new value of  $\mathit{var}$, as
 well as necessary meta-data.
 
-Instead of locking each location in the write set during the commit operation like TL2, this algorithm
-performs a compare and swap to each location setting the value of the word to point
-a structure from the transaction's write set, effectively locking the location.
-This process is described in detail later in this document.
+
 
 \paragraph{T-record  and NT-record}
 The  algorithm-specific  data structures  are shared  and  can be  of 
@@ -841,11 +829,6 @@ state can either be LIVE, COMMITTED or ABORTED.
 The state is initially set to LIVE and is not set to COMMITTED until during the commit operation when 
 all locations of the transaction's write set have been set to point to the transaction's T-records
 and the transaction has validated its read set.
-What is important to recognize is that during the commit operation, after a transaction has set some location to point to a T-record
-of this transaction, and before the transactions status has been set to COMMITTED or ABORTED, the transaction has effectively
-taken the lock on this location.
-Like in TL2, any concurrent transaction that reads the location and sees that it is locked ($\mathit{status} = $ LIVE) will
-abort itself.
 
 Since a transaction can write to multiple locations, the $\mathit{status}$ field
 does not directly store the state, instead it contains a
@@ -864,13 +847,15 @@ This field contains the value that is meant to be written to the chosen
 memory location.
 \vspace{-0.2cm}
 \item[$\mathit{last}$]
-As previously mentioned, during the commit operation, locations are updated to point
-to the committing transaction's T-records, effectively locking the location, but also overwriting the previous value
+During the commit operation, locations are updated to point
+to the committing transaction's T-records, overwriting the previous value
 that was stored in this location.
-Like in TL2, validation is performed after locking the write locations, which might cause the transaction to abort.
-In the case of the abort, the previous value of the location needs to be available for future reads.
-In order to account for this, the $\mathit{last}$ field of a T-record
-stores the previous value of this location before this T-record was pointed to.
+Validation or a concurrent non-transactional operations may cause this transaction to abort 
+after it update some memory locations, but before
+it fully commits.
+Due to this, the previous value of the location needs to be available for future reads.
+Instead of rolling back old memory values, the $\mathit{last}$ field of a T-record is used,
+storing the previous value of this location.
 
 \end{itemize}
 
@@ -891,8 +876,18 @@ used to avoid inconsistencies such as the ones illustrated by Figure
 \ref{fig:timent}. 
 \end{itemize}
 
-Using these control data, the most  recent valid value  of a variable  can be
-determined.  Should the item be of type NT-record,
+Due to this different memory structure a shared lock array is no longer needed,
+instead of locking each location in the write set during the commit operation, this algorithm
+performs a compare and swap directly on each memory location changing the address to point to one of its T-records.
+After a successful compare and swap
+ and before the transactions status has been set to COMMITTED or ABORTED, the transaction effectively
+owns the lock on this location.
+Like in TL2, any concurrent transaction that reads the location and sees that it is locked ($\mathit{status} = $ LIVE) will
+abort itself.
+
+During read operations (transactional or non-transactional) the additional data in these structures is used 
+to determine the most  recent valid value  of a variable.
+Should the item be of type NT-record,
 then it's $\mathit{value}$ field contains the most  
 recent valid value  of the variable. On the other hand,  should the item
  be a  T-record, then if the $\mathit{status}$ field of
@@ -907,7 +902,9 @@ where $\mathit{addr}$ is the address of the location read and $\mathit{value}$ i
 read from the location.
 The write set is also made up of tuples for each location written by the transaction,
 $\tuple{\mathit{addr, item}}$ where $\mathit{addr}$ is the location to be written
-and $\mathit{item}$ is a T-record that will be pointed to during the commit operation.
+and $\mathit{item}$ is a T-record that will be pointed to
+by $\mathit{addr}$ during the commit operation.
+
 
 \subsubsection{Discussion}
 One advantage of the TL2 algorithm is in its memory layout.
@@ -917,12 +914,9 @@ Unfortunately this algorithm breaks that and requires an additional level of ind
 as well as additional memory per location.
 These additional requirements can be an acceptable trade-off given that they are only
 needed for memory that will shared between transactions.
-Still, in the appendix we present two variations of the algorithm that trade
-off different memory schemes for different costs to the transactional and
+Still, in the technial report \ref{} we present two variations of the algorithm that trade
+off different memory schemes for different additional costs to the transactional and
 non-transactional operations.
-
-***Note: In order to save more memory, the time variable of the T-record can be combined
-with the status variable.
 
 %====================================================================
 
@@ -939,55 +933,20 @@ do it in a way that ensures safe
 concurrency - and to abort if this  is not possible.  As a
 result, this algorithm gives high  priority   to non-transactional code. 
 
-Given the particular memory arrangement  that the algorithm uses, two helper
-procedures are used  to perform load  or store. They are
-presented  in  Figure  \ref{fig:aux}.\footnote{The following  notation  is
+Given the particular memory arrangement  that the algorithm uses,
+pointers are used in order to load and store items from memory.
+\footnote{The following  notation  is
 used. If $pt$ is a pointer, $pt\downarrow$ is the object pointed to by $pt$. 
 if $aa$ is an object, $\uparrow aa$ is a pointer to $aa$. Hence 
 $((\uparrow aa)\downarrow =aa$ and $ \uparrow(pt \downarrow)=pt$.}
-
-
-\begin{figure}[htb]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-%\setcounter{linecounter}{200}
-\begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
-
-
-{\bf operation} ${\sf load}(addr)$ {\bf is}  
-%\line{help1} \> 
-${\sf return} (addr \downarrow)$ {\bf end operation}.  \\
-\\
-{\bf operation} ${\sf store}(addr, value)$ {\bf is} 
-%\line{help2} \> 
-$(addr \downarrow) \gets value$ {\bf end operation}.
-
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Helper operations for load and store operations.}
-\label{fig:aux}
-}
-\end{figure}
-
-
-In the following operation descriptions, we assume that the shared variable
-that  is   accessed  by  transactional or  non-transactional operations  is
-denoted $\mathit{var}$, and   
-it is allocated the memory word at address $\mathit{addr}$.
 
 
 
 %=====================================================================
 \subsection{Non-transactional operations}
 In  order  to  comply  with  the  algorithm a  programmer  has  to  use  the
-algorithm-specific   read  and write  operations when a  variable has  to be
-accessed outside of a transaction.  This can also be applied by a complier.
+algorithm-specific   read  and write  operations when a shared variable has  to be
+accessed outside of a transaction.  This be done by hand or applied by a complier.
 Algorithms for these operations is presented in Figure \ref{fig:ntops}. 
 
 \begin{figure}[htb]
@@ -1003,7 +962,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
-\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \cap \mathit{tmp.status} \neq$ COMMITTED ) \\
+\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge \mathit{tmp.status} \neq$ COMMITTED ) \\
 \line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
 \line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
 %\line{A05} \>\> {\bf end if} \\
@@ -1043,27 +1002,27 @@ The  operation first  dereferences  the pointer  stored at  $\mathit{addr}$
 (line \ref{A01}).
 If the item is a T-record that was created by a 
 transaction which  has not yet  committed then the $\mathit{value}$ field
-cannot be immediately be read as the transaction might abort.
+cannot be immediately be read as the transaction might still abort.
 If the current process has read a value that is more recent then the transaction
 (meaning the process's $\mathit{time}$ field is greater or equal to the T-records
 $\mathit{time}$, line \ref{A03}) then the transaction must be directed to abort (line \ref{A04})
-in order to insure containment? is not violated.
+in order to insure linearizability (containment specifically) is not violated.
 
 From a T-record with a transaction that is not committed, the value from the $\mathit{last}$
 field is stored to a local variable (line \ref{A07}) and will be returned on operation completion.
 Otherwise the $\mathit{value}$ field of the T or NT-record is used (line \ref{A08}).
 
-Once  the correct value  has been  found  and stored  in local  variable 
-$\mathit{value}$, the local $\mathit{time}$   
-variable  is updated  (lines \ref{A10}-\ref{A11}).  The updated  $\mathit{time}$
-value is used by non-transactional operations and is necessary in order to allow 
-the detection of consistency 
-violations such as the one illustrated by Figure \ref{fig:timent}. 
-By advancing the value of $\mathit{time}$ 
-through a non-transactional read operation, 
-the serialization order of this read operation with 
-respect to transactional or non-transactional operations 
-that it read from is reflected.
+% Once  the correct value  has been  found  and stored  in local  variable 
+% $\mathit{value}$, the local $\mathit{time}$   
+% variable  is updated  (lines \ref{A10}-\ref{A11}).  The updated  $\mathit{time}$
+% value is used by non-transactional operations and is necessary in order to allow 
+% the detection of consistency 
+% violations such as the one illustrated by Figure \ref{fig:timent}. 
+% By advancing the value of $\mathit{time}$ 
+% through a non-transactional read operation, 
+% the serialization order of this read operation with 
+% respect to transactional or non-transactional operations 
+% that it read from is reflected.
 
 The process local variable $\mathit{time}$ is advanced to 
 the maximal 
@@ -1071,6 +1030,10 @@ value among its current
 value and the logical date of the T or NT-record whose value was read.
 Finally if $\mathit{time}$ was set to $\infty$ on line \ref{A10}, then it is updated
 to the $\mathit{GCV}$ on line \ref{A11}.
+The updated  $\mathit{time}$
+value is used by non-transactional operations and is necessary in order to allow 
+the detection of consistency 
+violations such as the one illustrated by Figure \ref{fig:timent}. 
 Once these book-keeping 
 operations are finished, the local variable $\mathit{value}$
 is returned (line \ref{A12}).
@@ -1108,36 +1071,35 @@ presented in Figure \ref{fig:tops}.
 
 \paragraph{Transactional read}
 
-The operation ${\sf  transactional\_read()}$ receives $\mathit{addr}$ as an
+The operation ${\sf  transactional\_read()}$ takes $\mathit{addr}$ as an
 input argument. It starts by checking  
 whether the  desired variable already  exists in the  transaction{}'s write
 set, in which  
-case  the   value  stored  in  the   write  set  will   be  returned  (line
+case  the   value  stored there  will   be  returned  (line
 \ref{C01}). If the variable is not contained  
 in  the write  set, the  pointer in  $\mathit{addr}$ is  dereferenced (line
-\ref{C02}) and set to $\mathit{tmp}$. Once the structure pointed to is detected to be a T or NT-record
+\ref{C02}) and set to $\mathit{tmp}$. Once this is detected to be a T or NT-record
 some checks are then performed in order to ensure correctness.
 
 In the case that $\mathit{tmp}$ is a T-record the operation must check to see
 if the status of the transaction for this record is still LIVE and if it is
 the current transaction is aborted (line \ref{C10}).
-This is similar to TL2 aborting the transaction when a locked location is found.
-Next, the T-record's $\mathit{time}$ field is checked, and (similar to TL2) if it 
+This is similar to a transaction in TL2 aborting itself when a locked location is found.
+Next the T-record's $\mathit{time}$ field is checked, and (similar to TL2) if it 
 greater then the process's local $\mathit{rv}$ value the transaction must abort 
-(line \ref{C12}).
+(line \ref{C12}) in order to prevent consistency violations.
 If this succeeds without aborting then the local variable $\mathit{value}$
 is set depending on the stats of the transaction that created the T-record (line \ref{C10}-\ref{C11}).
-
 
 In case $\mathit{tmp}$ is an 
 NT-record (line \ref{C03}), the operation
 checks whether the value of the $\mathit{time}$ field is
 greater or equal to the process local $\mathit{rv}$ value.
-If it is, then this write has possibly occured after the start of this
+If it is, then this write has possibly occurred after the start of this
 transaction and there are several possibilities.
 In the case of a read only transaction, the transaction
-is aborted and restarted as an update transaction (line \ref{C06}),
-while an update transaction must perform validation, ensuring
+is aborted and restarted as an update transaction (line \ref{C06}).
+In the case of an update transaction validation must be preformed, ensuring
 that none of the values it has read have been updated (line \ref{C05}).
 Finally local variable $\mathit{value}$ is set to be the value
 of the $\mathit{value}$ field of the $\mathit{tmp}$ (line \ref{C07}).
@@ -1149,7 +1111,6 @@ This means that the checks must be more conservative in order to ensure correctn
 If performing per value validation or restarting the transaction as an update transaction
 is found to be too expensive, a third possibility would be to just increment the global
 clock, then restart the transaction as normal.
-
 
 Finally to finish the read operation, the $\tuple{\mathit{addr, value}}$
 is added to the read set if the transaction is an update transaction (line \ref{C14}),
@@ -1210,9 +1171,8 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \end{figure}
 
 \paragraph{Transactional write}
-The transactional write operations in this algorithm are performed by 
-operation ${\sf transactional\_write()}$. 
-It receives $\mathit{addr}$ as input value, as well as the value 
+The ${\sf transactional\_write()}$ operation
+takes $\mathit{addr}$ as input value, as well as the value 
 to be written to $\mathit{var}$. As  TL2, the algorithm 
 performs commit-time updates of the variables it writes to. 
 For this reason, the transactional write  
@@ -1226,14 +1186,14 @@ T-record is simply updated (line \ref{D04}).
 
 
 \paragraph{Begin and end of a transaction} 
-Book-ending a transaction are operation ${\sf begin\_transaction()}$ 
-and operation ${\sf try\_to\_commit()}$, which are 
+Book-ending a transaction are operations ${\sf begin\_transaction()}$ 
+and ${\sf try\_to\_commit()}$, which are 
 presented in Figure \ref{fig:tbc}. ${\sf begin\_transaction()}$ 
 initializes local variables that will be necessary 
 for the execution of the transaction.
 This includes $\mathit{rv}$
-which is set to $\mathit{GCV}$ and like in TL2 is used during transactional
-read to ensure correctness, 
+which is set to $\mathit{GCV}$ and, like in TL2, is used during transactional
+reads to ensure correctness, 
 as well as $\mathit{status}$ which is set to LIVE and the read and write sets
 which are initialized as empty sets.
 (lines \ref{START1}-\ref{START3}). 
@@ -1326,17 +1286,10 @@ a non-transactional operation that writes to one of those items
 causing the transaction to be required to abort in order to ensure correctness. 
 Therefore while TL2 locks items in its write set using a
 lock array, this algorithm compare and swaps pointers directly to the T-records
-in its write set (lines \ref{DA02}-\ref{DA11}).
-By following these pointers concurrent operations can access directly the
-$\mathit{status}$ variable of the transaction and abort the transaction
-if necessary.
-Given that the compare and swap operations overwrite the previous values
-and that the transaction can still be aborted,
-the previous value for a given location must be stored in the T-record
-before the compare and swap is performed (lines \ref{DA05}-\ref{DA06}).
-Like how transactions in TL2 abort themselves when they encounter a locked
-location from its write set,
-if while performing these compare and swaps if the transaction notices
+in its write set (lines \ref{DA02}-\ref{DA11}) while keeping a reference to the previous value.
+The previous value is stored in the T-record before the compare and swap is performed (lines \ref{DA05}-\ref{DA06})
+with a failed compare and swap resulting in the abort of the transaction.
+If while performing these compare and swaps the transaction notices
 that another LIVE transaction is updating this memory, it aborts itself
 (line \ref{DA05}).
 
@@ -1347,13 +1300,13 @@ correctness (line \ref{DA13}).
 Once validation has been performed the operation must
 ensure that non of its writes have been concurrently
 overwritten by non-transactional operations (lines \ref{DA14}-\ref{DA17})
-if so then the transaction aborts (line \ref{DA16}).
-While performing this check the transaction updates the $\mathit{time}$
-value of its T-records to the transactions logical time (line \ref{DA15}).
+if so then the transaction must abort in order to (line \ref{DA16}) to ensure consistency.
+During this check the transaction updates the $\mathit{time}$
+value of its T-records to the transactions logical time (line \ref{DA15})
+similar to the way TL2 stores counter values in the lock array
+so that future operations will know the linearization of this transaction's updates.
 
-After having added all its write set items to the respective 
-record lists for the corresponding variables 
-and after having verified that its read sets are valid, the 
+Finally the
 transaction can mark its updates as valid by 
 changing its 
 $\mathit{status}$ variable from LIVE to COMMITTED (line \ref{DA18}).
@@ -1414,14 +1367,15 @@ is given in Figure \ref{fig:helpers}.
 Operation ${\sf validate\_by\_value()}$ is an operation that performs 
 validation of the $\mathit{rs}$ of a transaction. 
 Validation fails 
-will happen if any location in $\mathit{rs}$ is 
+if any location in $\mathit{rs}$ is 
 currently being updated by another transaction (line \ref{H05})
 or has had its changed since it was first read by the transaction (line \ref{H08})
 otherwise it succeeds.
 The transaction is immediately aborted if validation fails (lines \ref{H05}, \ref{H08}).
 Before the validation is performed the read version ($\mathit{rv}$) is updated
 to be the current value of the global clock (line \ref{H01}).
-This is done because the transaction is still valid at this time and a larger
+This is done because the transaction will be valid at this time
+if validation succeeds and a larger
 clock value could prevent future validations and aborts.
 
 When a transaction is aborted in the present algorithm, 
@@ -1445,9 +1399,8 @@ this is not the case for conventional read or write operations.
 Due to this priority mechanism, 
 the proposed algorithm is   particularly appropriate  for environments 
 in which processes do not rely heavily
-on the use of transactions and where non-transactional memory 
-accesses are dominant. In 
-such environments, strong isolation is  provided for transactions, 
+on the use of especially large transactions.
+In such environments, strong isolation is  provided for transactions, 
 while conventional read and write operations execute with a small overhead.
 
 
@@ -1628,6 +1581,10 @@ one less level of indirection.
 
 The cost of this is more frequent validations required in transactions when conflicts with NT writes occur.
 This algorithm is shown in Figures \ref{fig:ntops2}-\ref{fig:tbc2}.
+
+
+***Note: In order to save more memory, the time variable of the T-record can be combined
+with the status variable.
 
 
 \begin{figure}[htb]
