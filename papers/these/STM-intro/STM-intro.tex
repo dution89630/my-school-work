@@ -1,0 +1,1004 @@
+% \documentclass[10pt,a4paper,onecolumn]{article}
+% \usepackage[latin1]{inputenc}
+% \usepackage{amsmath}
+% \usepackage{amsfonts}
+% \usepackage{amssymb}
+% \usepackage[usenames,dvipsnames]{color}
+% \usepackage{algorithmic}
+% \author{Tyler Crain}
+% \title{Survey of Software Transactional Memory}
+% 
+% \newtheorem{theorem}{Theorem}[section]
+% \newtheorem{lemma}[theorem]{Lemma}
+% \newtheorem{proposition}[theorem]{Proposition}
+% \newtheorem{corollary}[theorem]{Corollary}
+% 
+% \newenvironment{proof}[1][Proof]{\begin{trivlist}
+% \item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+% \newenvironment{definition}[1][Definition]{\begin{trivlist}
+% \item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+% \newenvironment{example}[1][Example]{\begin{trivlist}
+% \item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+% \newenvironment{remark}[1][Remark]{\begin{trivlist}
+% \item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+% 
+% \newcommand{\qed}{\nobreak \ifvmode \relax \else
+%       \ifdim\lastskip<1.5em \hskip-\lastskip
+%       \hskip1.5em plus0em minus0.5em \fi \nobreak
+%       \vrule height0.75em width0.5em depth0.25em\fi}
+% 
+% 
+% \begin{document}
+% \maketitle{}
+% \newpage
+% \tableofcontents
+% \newpage
+
+
+\section{Transactional Memory}
+\emph{Transactional Memory} was first introduced in 1993 \cite{165164} as a promising alternative to locks for concurrent programming.
+Since then it has been studied extensively and implemented in many different ways.
+One of the main reasons for its success as a research topic is that it abstracts away much of the difficulties that occur for programmers writing concurrent programs when using locks, while still promising the performance of fine grained locks.
+Even though it has been a popular research topic, it has yet to be widely implemented in practical use.
+\textcolor{Red}{I think?}
+The basic concept behind transactional memory may be clear, but when it comes to actually creating and using an implementation, solving the details becomes very difficult.
+Such details include but are not limited to the following:
+How should the transactions be exposed to and interact with the programmer?
+What correctness conditions should transactions follow?
+How can transactions be implemented efficiently?  Is it even possible to create a Transactional Memory that is efficient across all workloads?
+If not then what designs will be efficient for which workloads, or can the concept of the basic transaction be extened in order to improve performance?
+Much research has been done on all these topics and many different concepts of Transactional Memory have been considered, this survey gives an overview of some of the research that has been done on Transactional Memory, specifically looking at \emph{Software Transactional Memory}.
+
+\subsection{What is transactional memory?}
+Transactions have been originally used in database systems in order to make sure concurrent operations follow desirable properties.  Namely the ACID properties: \emph{atomicity}, \emph{consistency}, \emph{isolation}, and \emph{durability}.  Transactional memory is similar to this, except instead of having transactions that \emph{atomicall}y modify the state of the database, transactions are blocks of executable code running concurrently.
+In both database transactions and transactional memory much of the difficultly of accessing shared objects is abstracted away, making concurrent programming a much more manageable task.
+
+In transactional memory a transaction is a block of code that appears to execute atomically within a multi-threaded application that operates on memory shared with other threads and transactions.
+To the programmer this might be similar to the idea of having a single lock that is shared throughout the program, whenever the programmer wants a section of code to operate atomically or without interference from other threads he can just encapsulate the block within this single lock, this concept is called \emph{single lock atomicity},.
+So why not just program using a single lock?
+The problem with just using course grained locks like this, is that it inhibits concurrency resulting in poor performance.
+On the other hand fine grained locks can have good performance, but are difficult to program well, and can suffer from problems such as \emph{deadlock}.
+The goal of transactional memory is to be simple for the programmer to understand similar to coarse grained locks, while having good performance similar to fine grained locks.
+The concept behind the implementation of transactional memory is that a transaction will either commit, meaning that it executed successfully and its changes to shared memory become visible to other transactions, or abort, meaning that it conflicted with a concurrent transaction and that none of its changes to shared memory will be visible, and it must retry by re-executing from the start of the block of code that makes up the transaction.
+Two transactions conflict when they are run concurrently and access the same memory location, with at least one of the accesses being a write.
+Aborting a transaction causes overhead, the work it has done so far must be completely redone, so most implementations try to abort transactions as little as possible.
+But just because two transaction conflict does not mean that one must be aborted.
+For example assume you have two transactions $A$ and $B$, a shared memory location $X$, and the ordered history of events as follows:
+(Note that in this survey a single transaction's execution will be interpreted as a series of read and write operations ending in a commit (or abort))
+$$ start_{B},start_{A}, read_{A_{X}}, write_{B_{X}}, commit_{B}, commit_{A}$$
+Now as long as the transactions are ordered first $A$ then $B$ neither one must abort.
+As an example where two transactions must abort assume you have two transactions $A$ and $B$, two shared memory locations $X$ and $Y$, and the ordered history of events as follows:
+$$start_{B}, start_{A}, read_{A_{X}}, write_{B_{X}}, write_{B_{Y}}, commit_{B}, read_{A_{Y}}, commit_{A}$$
+Now the neither the order first $A$ then $B$ or first $B$ then $A$ is possible.  $A$ reads $X$ before $B$ writes $X$, so $A$ must occur before $B$, and $B$ writes $Y$ before $A$ reads $Y$, so $B$ must occur before $A$, creating a contradiction.  One of the transactions must be aborted.
+
+Aborting transactions means work has been wasted, but keeping track of all the conflicts between the transactions is not easy and deciding when and if a transaction should be aborted is no simple task, in some cases it can even be more efficient to abort transactions more eagerly than to keep track of all conflicts.
+There is also liveness to consider, should a transaction be allowed to be repeatedly aborted forever by other transactions?
+And how should efficiency be measured?  For example consider the workload that consists of a set of long running transactions that conflict with a set of short running transactions.
+Some implementation might allow the short transactions to commit, aborting the long transactions each time, while another system might allow the long transactions to commit, aborting the short transactions, while another might be somewhere in the middle.
+Should efficiency be measured by the number of transactions committed per unit time, or should it be measured by the total number of aborts, or some other measurement?
+In addition to this there are different consistency conditions to consider, in some conditions a transaction that is allowed to commit would have to abort in other conditions.
+Many of the solutions to these questions differ depending on application and workload, and there is often no obvious solution.
+
+\paragraph{STM/HTM}
+There are two main approaches for designing a Transactional Memory, \emph{Hardware Transactional Memory} and \emph{Software Transactional Memory}.
+Each has its strengths and weaknesses.
+Hardware Transactional Memory is implemented in the underlying architecture and can be very efficient, but transactions are bounded in size and restricted to the capabilites of the hardware.
+Software Transactional memory can be implemented on existing hardware and can have transactions of arbitrary size, but often do not have as good performance as Hardware Transactional Memory.
+There has also been research done for creating hybrid models combining both hardware and software.
+This survey will focus on Software Transactional Memory.
+Articles giving an overview of both STM and HTM can be found in \cite{10.1109/MM.2007.63} and \cite{1364800}.
+
+\section{Characteristics of a STM (for a Programmer)}
+Deciding how a programmer should interact with an implementation of Software Transactional Memory has been a subject of interest and difficulty.
+This includes how the programmer creates the transactions themselves as well as how he accesses the shared memory.
+
+\subsection{Static vs Dynamic Transactions}
+A \emph{static} transaction has its memory accesses predefined, before the code is run.
+Knowing what memory access the transaction is going to perform beforehand can help the implementation of the STM in terms of simplicity and performance, but is severely limiting to the programmer.
+With \emph{if} statements, and loops the exact execution path of a program is usually unknown so it is not practical to have static transactions.
+The first STM implementation was static \cite{224987}, and certain other static implementations have been designed in the interest of performance gains \textcolor{Red}{need a citation}.
+Most STM implementations use \emph{dynamic} transactions, allowing the memory access to be undefined until runtime.
+
+\subsection{Word Based}
+With \emph{word based} Software Transactional Memory shared memory locations are accessed as specific words of memory.  Many popular STMs are word based, such as TinySTM \cite{10.1109/TPDS.2010.49}, Swiss-STM \cite{1542494}, Elastic-STM \cite{LPD-REPORT-2009-002}, AVSTM \cite{LPD-CONF-2008-031}, and TL2 \cite{Dice06transactionallocking}.
+An advantage of word based STMs is that all transactional memory access are easily abstracted into reads and writes to the words of memory which is useful for clearly designing and analyzing STM algorithms.
+Though is might no be clear to the programmer to access memory as words, especially in object oriented languages.
+The size of the shared memory access is of course important when considering performance, and in order to minimize cache misses the size of a cache-line has been proposed \cite{1123001}, but in \cite{1542494} they believe a granularity size of four words gives optimal performance.
+
+\subsection{Object Based}
+Object based Software Transactional Memory is where shared memory locations are accessed by the programmer as objects.  This is more natural for the programmer to understand, especially in object oriented languages, and is also shown to be easily optimized by compilers \cite{1133985}.
+The construction of the STM is often different than word based implementations due to the fact that objects are accessed by pointers creating an additional level of indirection.  There are also many object based STM implementations with many interesting properties including RSTM \cite{Marathe06loweringthe}, LSA-STM \cite{10.1109/TPDS.2010.49}, DSTM \cite{872048},  \cite{Ennals05efficientsoftware}, SXM \cite{guerraoui05polymorphic/LPD}, and JVSTM \cite{1228566}.
+
+\subsection{Programming}
+Memory organization (into words of objects) is just one aspect of how programmers interact with, meaning create and use transcations.
+In order to actually define transactions in code, seemingly the most common and most obvious approach is to surround the code by some keywords that indicate the beginning and end of a transaction.
+For example the keywords $BEGIN\_TRANSACTION$, and $END\_TRANSACTION$ could be used.
+In a language even, if these are the only two keywords added in order to implement transactions it is not immediately obvious for the programmer how to use transactions.
+For example some unknows could be, can memory locations accessed inside a transaction be accessed outside of a transaction as well (this is a problem called privatization discussed later), or can a separate transaction be executed from within another transaction (this is called nesting, also discussed later)?
+In some implementations there are also some additional concepts and keywords that a programmer has access to, such as what to do in case of an abort, or to even release memory locations (memory locations that have been accessed and later released by a transaction will no longer conflict with any other transactions) giving the possibility of increasing performance, but also increasing the chance of programmer error.
+
+Even is a programmer is able to correctly write a program using transactions, it does not mean that it is a good program.
+As described in this survey there are many different ways to implement transactional memory, and they can each deal with transactions very differently resulting in varying performance for varying workloads.
+For example certain STM implementations might perform better or worse depending on the length of a transaction, while others might perform better if a programmer puts write acceses to memory early in a transaction, while still others might perform best if some of the additional STM language constructs specific to that implementation are used.
+Because of this variation, there are currently no \emph{"best practicies"} for programming using transactional memory and if a programmer wants to create the best program he has to find an implementation of Transactional Memory that is well suited for his application, and has to organize his code such that it is most efficient for the implementation he chose.
+This adds an additional learning curve for programmers, and is partially contradictory to the original idea of transactional memory, which is to abstract away the difficulties of concurrent programming.
+There are certain approaches to help take some of the burden off programmers to write efficient code such as using compilers to improve efficiency \cite{1133985}, or even to completely remove the concept of transactions from the programmer, and have them generated automatically. \textcolor{Red}{need citation, check Distributed computing column 29}
+
+\section{Correctness}
+\subsection{Consistency}
+A consistency criterion defines when transctions can be accepted (or commited) and when they must abort. 
+Choosing a consistency criterion for memory transactions is different than from database transactions.  A common consistency criterion for database transactions is \emph{serializability}.  Serializability guarantees that every committed transaction happened atomically at some point in time, as if they were executed sequentially.
+It is one of the weaker criterion because the real time order of execution does not need to be ensured.
+For example a transcation that took place long after a previous transaction committed can be ordered before the other, as long as the ordering creates a valid sequential execution.
+\emph{Lineraizability} another common criterion, is stronger than serializabilty by adding the condition that transactions must be ordered according on their occurrence in real time.
+Notice how these conditions only relate to committed transactions, in a database system a transaction can run without causing harm in the system even if it accesses an \emph{inconsistent set} of data.
+In transactional memory this is not always the case.
+An inconsistent view of the memory or set of data is one that could not have been created by previous committed transactions, meaning the transaction must abort.
+Consider the following example.  There are two transactions $A$, and $B$, and three shared variables $x$, $y$, and $z$ all initialized to $0$.  Transaction $A$ performs the following operations, first it reads $x$, then it reads $y$, then it sets $z$ to the value of $\frac{y}{x}$, then it tries to commit.
+Transaction $B$ writes the value $1$ to $x$, writes the value $1$ to $y$, then tries to commit.
+It is obvious that any transaction reading the consistent values of $x$ and $y$ will read them as either both $0$ or both $1$.
+Now consider the following execution pattern, where transaction $B$ commits successfully:
+$$start_{B}, start_{A}, read_{A_{X}}, write_{B_{X}}, write_{B_{Y}}, commit_{B}, read_{A_{Y}}, commit_{A}$$
+Now transaction $A$ will access an inconsistent state of the data, reading $x$ as $0$ (because $x$ was read before $B$ committed) and $y$ as $1$ (because $y$ was read after $B$ committed).
+Since $A$ now has an inconsistent view of the memory, when it performs the division $\frac{y}{x}$ a divide by $0$ exception is created possibly resulting in undesirable behavior such as crashing the program.
+Divide by zero exceptions are not the only possible undesireable behaviors that can be caused by reading inconsistent memory values, some other possible problems include infinite loops, and accessing invalid pointers.
+In order to deal with this many STM implementations abort a transaction before it can access an inconsistent view of the memory, but it depends on the consistency criterion.
+
+\subsubsection{Opacity}
+\emph{Opacity} \cite{LPD-CONF-2007-017} was the first formally defined consistency criterion for transactional memory, it is also the most widely used and understood.
+It can be simply stated as linearizability for all transactions, including aborted ones.  So all transactions must access a state of memory that has been produced by the previous committed transactions, and must be orderd based on real time execution.
+After a transaction reads an inconsistent state of memory it must not be allowed to execute any following statements.
+This prevents the bad behaviors (described previously) from happening due to reading an inconsistent state of memory.
+Consider the prefix of an aborted transaction upto the operation that caused the abort.
+For all aborted transactions this prefix must be ordered along with the committed transactions for a valid sequential execution.
+One important thing to notice is that both opacity and linearizability guarentee that a transaction looks to have executed atomically at any one point in its real time execution, not necessarily at its time of completion.
+So any concurrent transactions can be ordered in any way and depends on implementation, this flexibility gives the possibility to commit more transactions.
+
+\subsubsection{Virtual World Consistency}
+Imbs and Raynal recognized that for certain workloads opacity might be too strong of a consistency condition, so they defined \emph{Virtual World Consistency} which is strictly weaker than opacity, but still ensures transactions only see consistent states of memory, preventing the undesirable effects of reading inconsistent states.
+In opacity aborted transactions can effect whether another transaction can commit or not due to the fact that aborted transactions must be serialized along with committed transactions.
+They give the following example in their paper:
+\textcolor{Red}{use figure?}
+In virtual world consistency aborted transactions must see a consistent state of the memory, meaning that if you take the a prefix of the aborted transaction, the events up to, but not including the event that caused it to abort, there must exist a serialization of it with previously committed transactions, but other concurrent and later transactions need not be considered.
+This serialization of other transacions up to the transaction in question needs not necessarily to be the the same serialization that some other concurrent transaction sees (whether or not the concurrent transaction commits or not).
+On the other hand all commited transactions must see the same serilization.
+For example the view of an aborted transaction might not contain a transaction that was serialized before (in the committed history) some other transaction that the aborted transaction does see.
+Imbs and Raynal also give an STM algorithm that uses sequence numbers to keep track of writes to variables and satisfies virtual world consistency.  This algorithm accepts certain histories that are virtual world consistent, but not opaque.  They give a formal proof that the algorithm satisfies virtual world consistency.
+They prove that virtual world consistency will accept more histories than opacity, but how and if this is helpful in parctice is left unexaimed.
+
+\subsubsection{Snapshot Isolation}
+\textcolor{Red}{Need to write this section}
+
+\subsubsection{Consistency Criterion Limits}
+After Gerraoui and Kapa\l{}a define opacity \cite{LPD-CONF-2007-017} they prove an upper bound for a certain type of TM implementations that ensure this consistency condition.
+Namely single version TMs with invisible reads that do not abort non-conflicting transactions and ensure opacity require in the worst case $\Omega{}(k)$ steps for an operation to terminate, where $k$ is the total number of objects shared by transactions.
+
+The choice of consistency criterion obviously makes a large impact on a STMs implementation and performance, yet much of this relation is widely unknown.
+The previous paragraph gives one result showing a cost of choosing opacity for a TM implemented in a certain way.
+Opacity is the most widely studied and implemented consistency criterion and some research has been done on different aspects of how it effects implemntations, but there is still much to be done.
+Part of the difficulty is that consistency criterion is just one of many different design choices one can make for a TM that all impact eachother, and there is no universially accepted definate choice for any of these.
+For example any combination of choices for read visibility, write visibilty, blocking, livness, consistency, nesting, privatiztion, is just as valid as some other combination of these choices (these terms are discussed later in this survey).
+Many of these different combinations have been shown to work well on certain workloads or benchmarks, but very little theoretical results have been proven.
+Also few specific TM implementations formally prove their consistency criterion or show how the choice of criterion effects their implementation choices and performance.
+It is hopeful that as more theory is proven the choice of how to implement a TM will become more clear.
+As this survey introduces the different concepts behind STMs it will discuss some of the theory that has been proven for them.
+
+\subsubsection{Other Consistency Criterion}
+There are many other consistency criterion that have been proposed and implemented.
+For instance in order to increase the commit rate of transactions, removing the real time requirement of ordering transactions from opacity has been considered, defined in \cite{LPD-ARTICLE-2009-004} as \emph{real-time relaxation}.
+In \cite{Alvisi_lock-freeserializable} Alvisi defines a lock-free STM that follows this criterion.
+Another STM that implements real-time relaxation and is also decentralized is defined in \cite{LPD-ARTICLE-2009-004}.
+In the same paper they examine the acceptance of different transaction memory implementations based on different criterion they implement including consistency.
+Again in order to increase performance certain STMs can allow transactions that will eventually be aborted to access inconsistent states of memory following the definition of serializability or linearizability from database transactions.
+This usually leaves the programmer to deal with the problems that come with accessing inconsistent states of memory.
+Even though opacity and virtual world consistency have both been formally defined, and opacity has been partially exaimned, other consistency criterion have been studided even less, and for some TMs implementations their consistency criterion has not even been formally defined.
+
+Certain other mechanisms available to programmers have been proposed such as \emph{early release}, proposed in \cite{872048} which allows programmers to tell the system to treat some memory location it has read as if the read did not actually happen in order to increase the chance of committing the transaction.
+Another mechanism proposed in \cite{LPD-REPORT-2009-002} is \emph{elastic transactions} which allow the programmer to mark transactions that can be split into multiple transactions at runtime also in order to increase the commit rate.
+Both these and possibly other mechanism effect the consistency of an implementation, but the changes they cause to consistency, performance, and bounds are widely unstudied, and their effects can often be unclear to a programmer leading to possible errors.
+
+\subsection{Privatization}
+Another question on correctness is how should shared memory be dealt with outside of transactions, this is called \emph{privitization}.
+Many TM implementations do not address the issue of privatization, yet it is important, as a piece of code that is correct in one implementation may be wrong in another given by how they deal with privatization.  For example consider the following transactions $A$ and $B$ and a shared list object $list_x$.
+
+\paragraph{Transaction A}
+% \begin{algorithmic}[1]
+% \STATE $BEGIN\_TRANSACTION_A$
+% \STATE $list \gets list_x.head$
+% \STATE $list_x.head \gets null$
+% \STATE $END\_TRANSACTION_A$
+% \FORALL{\emph{elements in list}}
+% \STATE \emph{Perform some operation on the list elements}
+% \ENDFOR
+% \end{algorithmic}
+TODO
+
+\paragraph{Transaction B}
+% \begin{algorithmic}[1]
+% \STATE $BEGIN\_TRANSACTION_B$
+% \STATE $list \gets list_x.head$
+% \FORALL{\emph{elements in list}}
+% \STATE \emph{Perform some operation on the list elements}
+% \ENDFOR
+% \STATE $END\_TRANSACTION_B$
+% \end{algorithmic}
+TODO
+
+This example is similar to the one in \cite{}. \textcolor{Red}{in the guys phd thesis on page 156}
+Transaction $A$ reads the head of a list, and then sets the shared pointer to $null$ in the hopes that no other transaction will be able to access the list.
+Once the transaction commits, the code goes through the list performing some operations on the elements non-transactionally.
+Transaction $B$ reads the head of the list, then goes through the list performing operations on the list while in the transaction.
+Now assume the following order of execution happens.
+Transaction $B$ starts executing and gets to line $3$, now transaction $A$ starts executing and commits successfully.
+After transaction $A$ commits, the non-transactional code following $A$ continues to perform some operations on the list concurrently with transaction $B$, which is performing operations on the same list, resulting in some undesireable behavior.
+Notice that transactions $A$ and $B$ are concurrent, so in the described execution as long as they are serialized as $A$ first, then $B$, they can both be committed and satisfy opacity.
+
+In order to avoid problems such as this there are different models to deal with privatization, they each have trade offs on efficiency and programmer involvement.
+
+\subsubsection{Strong Isolation}
+A transactional memory that provides \emph{strong isolation} guarantees that transactions are isolated from other transactions operations on shared memory as well as from non-transactional loads and stores.
+In this model the example above would not be allowed to happen.  This could be done in several ways, one way would to not allow the code to compile at all.  In \emph{STM Haskell} \cite{sjbc000} variables are declared as either transactional or non-transactional, and only transactional variables are accessible inside of transactions, and only non-transactional variables are accessible outside of transactions, preventing code like the example above.
+\textcolor{Red}{does this weaken the programming in any way?}
+Another solution would be for the transactional memory implementation to execute the code in a way so that the non-transactional accesses do not interfere with the transactional accesses.
+This is called \emph{transparent privatization}, where the STM itself guarantees all transactions privatize data correctly.
+In \cite{spear:privitization:podc:2007} they introduce a way of implementing transparent privatization called \emph{validation fences} where after a transaction commits, it waits until all concurrent transactions to finish executing (committing or aborting) before executing any non-transactional code that occurs after the transaction.  Of course this can limit performance and scalability, especially in workloads that have long transactions, and in order to write efficient code the programmer may have to know that privitization is implemented in this way.
+In order to implement a more efficient and scalable privitization, SkySTM \cite{lev:anatomy:transact:2009} uses \emph{conflict-based} privatization which allows transactions to only wait on conflicting transactions to finish.
+
+\subsubsection{Semi-visible Privitization}
+\textcolor{Red}{mention semivisible privitization from the guys phd thesis?}
+
+\subsubsection{Weak Isolation}
+A transactional memory that satisfies \emph{weak isolation} guarantees only that transactions are isolated from each other.  In this model the example above would be allowed to happen.
+Most transactional memory implementations that do not mention privatization probably satisfy weak isolation.
+Usually these implementations assume a model similar to single lock atomicity, where if there is concurrent access to the same memory location within the lock as there is outside a lock, then this is considered a bug, likewise in a TM if there is a concurrent access to shared memory inside a transaction as there is outside a transaction, then this is programmer error.
+Certain implementations deal with this by allowing the programmer indicate when he wants to privatize data, this is called \emph{explicit privatization}.
+So that when a programmer privitizes the data he can be sure that it is no longer accessable by transactions.
+Again this is a trade off, weak isolation and explicit privatization are aimed at improving performance, but has the side effect of making code more difficult for the programmer to write.
+
+
+\subsection{Error Handling}
+An overview of error handling in transactional memory is given in \cite{1360456}, may of the concepts introduced there are repeated here.
+What should happen when an exception occurs midway through a transaction?
+For example say within a transaction there is some code that opens a file for reading, but when it tries to open it, the file has been previously deleted and an exception is thrown.
+Or say a transaction for a bank application transfers money from one account to another, but in some case when it tries to do this an exception is thrown because there is not enough money in the first account.
+
+one way of dealing with this could be, abort the transaction, and restart it, similar to if it was aborted due to a shared memory conflict.
+With the bank application this could possibly be acceptable, because the transaction will be executed successfully once enough money is deposited in the first account.
+For the file transaction this may or may not be acceptable, for example the file might have been permanently deleted, and the transaction will be aborted and re-executed indefinitely.
+
+Another solution might be to partially commit the transaction up to the exception, then propagate the exception.
+This can be viewed as similar to what happens in sequential code, when an exception is thrown in a sequential execution, the code up to what caused the exception was executed sucessfully.
+Unlike in sequential code doing this in transactions violates the expected atomic all or nothing behavior which can cause problems if the programmer does not deal with this correctly.
+For example say the money transfer transaction first increments the balance of the destination account and then decrements the source account, and if there is not enought money in the source account then some exception specifc to this is thrown.
+This may seem rediculous, but the programmer writes the code that handles this exception by consequently removing the amount added to the destination.
+But after the transaction is partially committed, and before the exception is handled, the system is in some sort of inconsistent state, and any number of bad things can happen, for example the money desposited in the destination account might be withdrawn by some other transaction. \textcolor{Red}{maybe can think of a better example?}
+
+A third solution might be to abort the transaction and propagate the exception, but this requires the programmer to make sure he handles the exception correctly knowing that the code that caused the exception and the code prior to it in the transaction appears as if it was never executed to the rest of the system.
+
+A fourth solution might be to require exceptions to be dealt with from within the transaction, similar to the following try, catch syntax in Java.
+% \begin{algorithmic}[1]
+% \STATE $BEGIN\_TRANSACTION$
+% \STATE $try \{$
+% \STATE $...$ transaction code
+% \STATE $\}$ $catch($Exception ex$) \{$
+% \STATE $...$ error handling
+% \STATE $\}$
+% \STATE $END\_TRANSACTION$
+% \end{algorithmic}
+
+TDODO!!
+
+Certain STMs implement their own mechanisms not specifically designed for handling exceptions, but that can be used for exception handling.
+For example STM Haskell \cite{sjbc000} has a mechanism that allows a transaction to follow a different execution path after it is aborted and retried.
+This mechanism even allows the programmer to abort the transaction for anywhere within the transaction's code.
+
+Due to the notion that transactions observing inconsistent states of shared memory can cause problems as described in the section of this survey on consistency criterion, most implementations ensure the opacity consistency criterion, where all live transactions observe a consistent view of shared memory.
+In the interest of efficiency weaker consistency conditions that allow inconsistent views of memory have been considered, but rarely examined deeply because of possible problems.
+Well done error handling could likely deal with these problems and lead to the possibility of these and other new consistency conditions be more widely considered.
+
+It is interesting to study how exception handling and its implementations can effect and bound correctness, liveness, and performance theoretically and in practice.
+Currently there is no obvious answer to handling exception in transactional memory and what works best might vary depending on the application and implementation.
+But if implemented correctly error handling in TMs could actually benefit code execution over sequential code.
+In transactional memory, a sequence of code that caused an exception could be automatically rolled back and then executed in a way that would prevent the exception.
+While in sequential code it might be difficult to make sure the sequence of code up to the exception is rolled back.
+
+\subsection{I/O}
+I/O is also a subject of difficulty in transactional memory because it is not always obvious how to abort and rerun an I/O operation.
+Take for example a transaction that writes some data to the screen, and then is aborted, the characters written could then be deleted from the screen, but this would be strange for the user.
+Output could be buffered until a transaction commits and then displayed, but this could cause performance issues.
+Input is also difficult because it often requires real time performance, and there are questions like should the input be repeated on abort, or should the previous values be reused?
+The answers might be application specific.
+
+A simple solution might be to disable I/O operations from being executed within transactions, such as in STM Haskell \cite{sjbc000}, but this might not always be possible, and might create difficulties in programming which may vary in conjunction with the chosen privitization technique.
+\textcolor{Red}{what effect does this exactly have on restricting power of programming?}
+
+Another solution implemented in \cite{1504199}, called \emph{inevitability}, allows a transaction with I/O operations to be marked as inevitable so that it is never aborted, whenever it conflicts with a transaction the other transaction will be aborted.
+The problem with this solution is performance, only one transaction at a time can be inevitable, and could cause a workload to execute at the speed of a single processor.
+Like with exception handling is also interesting to study how the implementation of I/O in transactional memory can effect and bound correctness, liveness, and performance theoretically and in practice.
+An overview of the difficulties associated with I/O in transactional memory is given in \cite{1364800} and \cite{10.1109/MM.2007.63}.
+
+\subsection{Nesting}
+Part of the difficulty caused by programming with locks is that they are not composable.
+It is often not obvious and not even always possible to create new code using locks that reuses code that also uses locks and still perform the correct function while avoiding deadlock.
+One of the suggested benefits of writing code using transactions is that they be composable, which could be a huge benefit over locks in terms of code simplicity and reuseability.
+Still it is not obvious how implement composibility correctly and efficiently in transactional memory.
+
+The term \emph{nesting} is used to describe the execution of transactions within other transactions.
+Different way of implementing nesting have been studied with varying properties.
+The simplest way to implement nesting is called \emph{flattening}, in this model a nested transaction is combined together with its parent, so it and its parent execute as if it were a single transaction.
+This is nice because it is simple and it is composable, but it just creates larger and larger transactions, limiting performance.
+
+A slightly more complex model \emph{closed nesting} allows a transaction $C$ to run as a separate transaction within its parent $P$, but when $C$ commits, its changes are only visible to $P$ and not visible to the rest of the system until $P$ commits.
+Running $C$ as a separate transaction allows it to abort itself without aborting $P$, hopefully increasing performance over the \emph{flattening} model.
+By not committing $C$'s changes to shared memory until $P$ commits, it prevents there from being consistency issues or roll backs of shared memory in the case that $P$ aborts after $C$ commits.
+In \cite{1133985} an implementation of closed nesting is given for the Java language along with some additional mechanisms that can be used when a nested transaction retries or aborts.
+
+A more complex notation of nesting is \emph{open nesting} which allows for nested transactions to write to shared memory upon their commit and not wait until their parent commits.
+The main advantage of open nesting is performance, like closed nesting it has the advantage that if a nested transactions conflicts with another transaction while it is running and must abort, then it does not have to abort the parent transaction.
+In addition to this open nesting has the advantage that the memory locations accessed by a nested transaction need not be shared with the parent transaction when detecting conclicts with concurrent transactions.
+For example consider a parent transaction $P$ that accesses memory location $x$ and a nested transaction $N$ that access memory location $y$, and a separate transaction $S$ that also accesses $y$.
+Now consider the execution where $P$ starts, then $N$ starts and commits, then $S$ starts and commits, and finally $P$ completes executing.
+In open nesting, $P$ can still commit, because even though $N$ accesses the same memory as $S$, $N$ has already committed to shared memory before $S$ started, so there is no conflict. 
+In closed nesting and flattening, $P$ might have to abort because $N$ has only committed within $P$ and not to shared memory, so there is a conflict between $P$ and $S$.
+\cite{_opennested} gives a comprehensive overview of open nesting.
+Allowing a transaction to commit to shared memory fromm within a transaction obviously violates the idea that everything within a transaction is executed atomically, so a new consistency model has to be considered, one such model, \emph{abstract} serializability, is described  in \cite{1229442}.
+
+In open nesting handling the situation where a parent transaction aborts after a nested transaction has committed becomes very difficult.
+It is not sufficient to just roll back the nested transaction as that could lead to inconsistencies with other transactions that had committed after the nested transaction committed.
+In order to deal with this \cite{1229442} introduces a set of extra mechanisms that a programmer can use, but this also introduces quite a bit of difficulty for the programmer, and if used incorrectly can cause deadlock.
+Because of these difficulties, they \cite{1229442} conclude that open nesting is only useful for expert programmers, but it allows them to create efficient libraries of data structures and algorithms that can benefit largely from open nesting.
+These libraries can then be reused by non-expert programmers when writing transactional code where they themselves cannot create open nested transactions.
+
+In \cite{1378553} a sort of hybrid compromise between open nesting and closed nesting is suggested in what they call an \emph{ownership-aware commit mechanism}.
+\textcolor{Red}{I haven't read this paper, but it looks like it might be interesting, but the work package does not mention nesting anywhere as something to work on??}
+
+\section{Liveness}
+Liveness is an important and well studied topic in transactional memory research.
+It deals with the concepts of what guarantees should an implementation ensure for the progress and completion of any workload.
+For example should every workload be guaranteed to complete, or is it acceptable to have the posibility for some workloads to be stalled indefinitely by concurrent conflicting transactions?
+At first intuition it might seem essential that a work load should be guaranteed to complete, but this and other guarantees of liveness often result in performance overhead, so the question has to be asked: it is worth it?
+
+\subsection{Non-blocking}
+Non-blocking implementations guarantee that threads cannot be postponed indefinitely while waiting on a competing shared resource.
+Traditional lock based programming does not guarantee this and many programs suffer from deadlock which is considered to be programmer error.
+The goal of transactional memory is to prevent this, so most transactional memories try to prevent programmer error from causing blocking.
+In the intrest of efficiency, as will be shown in the following sections, many implemntations still use locks so they are inheriently blocking.
+They are mostly written in a way such that dead lock cannot occur, but one transaction can still block another.
+For example a transaction that holds a lock could be deshceduled, thereby blocking any other transaction that must acquire that lock before continuing.
+There are three levels of nonblocking studied each with guarenteeing different levels of progress, namely obstruction freedom, lock freedom, and wait freedom.
+
+
+
+\subsubsection{Obstruction Freedom}
+Obstruction freedom is the weakest of the non-blocking guarantees, it says that any thread, if run by itself for long enough will make progress.
+Meaning that any thread running with no concurrent conflicting threads will make progress eventually.
+This seems like a nice property for transactional memory and under obstruction freedom the following are not true:
+
+It prevents dead lock.
+
+A crashed thread cannot prevent further progress.
+
+A thread that is descheduled cannot prevent further progress.
+
+The first STM implementation \cite{224987} was obstruction free, but it only allowed \emph{static} transactions.
+Since then other obstruction free STM implementations have come along such as DSTM \cite{872048}, which allows \emph{dynamic} transactions, WSTM \cite{Fraser:2007:CPW:1233307.1233309} \textcolor{Red}{what is new about WSTM?}, RSTM \cite{Marathe06loweringthe}, which aimed at reducing the overhead of non-blocking vs locking implementations, Adaptive-STM \cite{Marathe05adaptivesoftware}, which adapts itself based on the workload with the goal of improving performance, and LSA-STM \cite{10.1109/TPDS.2010.49}, which uses a \emph{time-based} approach to conflicts and implements \emph{multi-versioning}.
+Even though the properties guaranteed by obstruction freedom are nice, they are not free, guaranteeing obstruction-freedom can create a large amount of overhead for a transactional memory implementation.
+
+In \cite{Ennals06softwaretransactional} Ennals gives a strong argument against current obstruction-freedom implementations.
+Most STMs use pointers to memory loactions in order to implemnt obstruction freedom creating at least one level of indirection.
+This allows the pointers to be atomically changed to a new memory location at commit time using \emph{compare and swap} operations.
+Because of this Ennals argues that obstruction freedom implementations by design result in increased cache misses, which in certain workloads can drastically hurt performance.
+Additionally he explains that if you have more transactions ready to execute than number of cores, in obstruction freedom all of them must start executing immediately, while a better solution would be to only execute as many transactions concurrently as you have cores because the fewer transactions running currently, the fewer possible conflicts, and less overhead from sharing a core.
+He also argues that the benefits of obstruction freedom are not entirely necessary.
+For example a descheduled transaction will only be paused temporarily, and if the system is implemented correctly this should not be a common problem because there should only be as many transactions running as there are cores, and a system could be discouraged from descheduling a live transactions.
+In \cite{1693465} the kernel of the operating system is modified to allow \emph{time-slice extension} which allows a thread's time-slice to be extended up to some chosen amount of time if it is running a transaction.
+Ennals also argues that a crashed or failed thread would prevent further progress in a non-STM system, so it is also acceptable to do so in an STM program.
+
+Reguardless, if the good properties of obstruction freedom can be ensured without too much overhead this gives TMs even more benifits over shared code.
+A deeper study of the complexity of obstruction-free implementation of concurrent objects in general has been done in \cite{1538908} and \textcolor{Red}{I need to read this paper so I know what it says.}
+Even though obstruction-freedom ensures some good properties, bad properties can still exist though such as starvation and livelock so stronger non-blocking properties are needed in oder to ensure these do not happen.
+
+\subsubsection{Lock Freedom}
+In an algorithm that guarantees \emph{lock freedom} the system as a whole must make progress after a finite amount of time.
+Meaning that at least one thread is guaranteed to make progress eventually.
+This can be desirable for an STM because it prevents \emph{livelock} and at any point when there are active transactions executing, at least one of those transactions must commit.
+Being an even stronger guarantee that obstruction freedom, it requires even more overhead and a decision has to be made if the beneficial properties are more valuable than the additional overhead.
+
+Most transactional memory implementations that are lock free do so by informing other transactions of the locations it will write \emph{lazily} (meaning at commit time) and recursively \emph{helping} conflicting transactions commit.
+For example if a transaction containing write a is descheduled while it is committing, and just after this some other conflicting transaction comes along wanting to commit, instead of waiting for the descheduled transaction to commit, it will start helping the other transaction to commit.
+The problem with helping is that an arbitrary number of transactions can be concurrently trying to help another transaction commit, performing many costly low level operations such as \emph{compare-and-swap}, resulting in many cache misses, contention, and likely poor performance.
+Some STMs that guarantee lock freedom are OSTM \cite{Fraser:2007:CPW:1233307.1233309} and AVSTM \cite{LPD-CONF-2008-031}, and another in \cite{Alvisi_lock-freeserializable}.
+Lock freedom still does not prevent \emph{starvation} so stronger guarantees of progress are also considered.
+
+\subsubsection{Wait Freedom}
+\emph{Wait freedom} is the strongest of the non-blocking guarantees and it says that each thread will make progress after a certain finite amount of time.
+Wait freedom prevents \emph{starvation}.
+\textcolor{Red}{I am not aware of any wait-free implementations, are there any?}
+
+\subsection{Contention Management}
+Only very few transactional memory implementations are lock-free, most are either blocking or obstruction free, which allow starvation and livelock, and even lock-free implementations do not prevent starvation.
+Yet starvation and livelock are very undesirable properties to have, and if they are ignored can ruin the performance and progress of a system on certain workloads.
+\emph{Contention Management} is used in order to discourage livelock and starvation, and in certain cases, provably eliminate one or both completely \cite{1073863}.
+
+\subsubsection{Contention Management Implementations}
+Contention management was originally implemented in DSTM \cite{872048} as an out-of-bound mechanism that a transaction would call when it detected a conflict with another transaction, asking whether it should back off, abort, or tell the conflicting transaction to abort.
+DSTM was proposed with two possible contention management policies \emph{aggressive} and \emph{polite}.  In the aggressive policy when a transaction detects a conflict, it immediately forcefully aborts the conflicting transaction.
+In the polite policy, when a transaction detects a conflict, it will back off and wait a certain amount of time.
+When the transaction starts back up if the conflict still exists the transaction will back off again for some exponential and possibly randomized amount of time, this cycle will continue until some given time threshold is reached, at which time the conflicting transaction will be forcefully aborted.
+The hope of the back off is that the extra time will allow the conflicting transaction to commit or abort possibly removing the conflict and avoiding aborts all together.
+Since DSTM was introduced various contention managers have been proposed, each with varying levels of complexity, admitting increased overhead in the hopes of increasing liveness and producing better overall performance.
+Some of these include \emph{passive} (or \emph{suicide}), in which a transaction aborts itself whenever it detects a conflict, \emph{timestamp} in which an older transaction aborts younger transactions and a younger transaction waits for older transactions to finish, \emph{karma} which uses a heuristic to determine the amount of work a transaction has done, then aborts the one that has done the least amount of work, and \emph{polka} which extends karma by adding a randomized exponential back-off mechanism.
+
+\subsubsection{Difficulties}
+Mostly these contention managers have been proposed and designed by making certain assumptions about what appications transactional memory will be used for, then validating (or disproving) their assumptions by examining the contention manager's performance on a limited set of implementations and workloads.
+Part of the difficulty is that an contention management strategy that may work well for one STM implementation may not work at all for another, based on how the STM implements things such as visibility of reads, and eagerness of acquire for writes \cite{1542494}.
+Given this, certain TM implementations such as LSA-STM have been tested using a wide array of different contention managers \cite{10.1109/TPDS.2010.49} but there is no definiate answer as to what type of contention manager works best for which TM properties.
+
+A workload can largely effect how well a contention manager performs, for example passive contention managment is know to perform well on workloads with a regular access pattern \cite{1504199}, while polka \cite{1073861} works well on small scale benchmarks \cite{1542494}.
+The obvious problem with this is that there is no "best" contention manager that performs well in all reasonable situations, in \cite{guerraoui05polymorphic/LPD} they come to this conclusion by running a set of the top performing contention managers on a range of benchmarks designed to simulate real world applications.
+In addition, many contention managers do not actually prove any guarantee of progress, they often only suggest why they should work well, there are possibly workloads that can be generated that cause extremely poor performance and admit livelock or starvation.
+The contention manager \emph{greedy} \cite{1073863} is an exception to this, when it was introduced it was also proven to prevent livelock and starvation, yet in oder to ensure these properties it introduces a high amount of contention on some shared meta data, resulting in poor performance in workloads with a large amount of short transactions \cite{1542494}.
+Similar to being livelock free, but not quite as powerful, greedy ensures the \emph{pending commit} property, which ensures that at any time, some running transaction will run uninterrupted until it commits.
+Greedy works by assigning a timestamp to each transaction when it starts, then when a transaction $A$ discovers a conflict with a transaction $B$ it will abort $B$ only if $B$ has a later timestamp or if $B$ is waiting on another transaction, otherwise transaction $A$ will start waiting.
+Note that the timestamp is kept even after a transaction is aborted and restarted.
+
+\subsubsection{Improved Techniques}
+Some solutions have been proposed in order to increase the efficiency across all workloads, for example in \cite{guerraoui05polymorphic/LPD} \emph{polymorphic contention management} is defined.
+In this paper a generic framework for a contention manager is defined, allowing multiple different types of contention managers to be used throughout a workload.
+A specific contention manager can be defined for each transaction, or even on the abort of a transaction a new contention manager can be used for it when it is retried.
+This allows the best contention manager to be chosen at any point in a program's execution.
+But unfortunately this does not answer the difficult question of what manger will be of best use at what time, and it introduces more difficulty for the programmer to decide what to use and when.
+
+A recent STM implementation \emph{Swiss-STM} \cite{1542494} uses \emph{two-phase} contention management in order to deal with varying workloads.
+It combines the passive contention manager for short transactions, with the Greedy contention manager for longer transactions.
+They define a long transaction as one that has performed more than $10$ writes (although this can be changed to any number), if a transaction has performed less writes then this whenever it detects a conflict it will abort itself, as soon as the transaction performs $10$ writes it is given a timestamp to be used with the greedy contention manager.
+If a transaction that is using the greedy contention manger detects a conflict with a transaction using the passive contention manager, it immediately aborts the conflicting transaction.
+By combining the two contention managers, Swiss-STM, guarantees freedom from starvation and livelock ensured by the greedy contention manager for long transactions, without introducing too much overhead for short transactions.
+They also expand on this by adding a randomized linear (in the number of successive aborts) back-off for when aborted transactions restart, similar to the polite contention manger, except in polite the back-off is done before the abort.
+This is done because if there is certain meta data in an implementation or shared memory in a workload that is updated frequently restarting a transaction immediately after a conflict can increase contention on this data and cause scalability issues \cite{lev:anatomy:transact:2009}. 
+
+In \cite{1504199} they recognize that most contention management schemes take the approach of \emph{conflict resolution} so they try to add to this approach by examing other aspects of conflicts.
+In order to discourage livelock no transactions announce their writes until commit time (called \emph{lazy acquire}), so conflicting writes can only cause an abort at commit time.
+This is usually a short time window compared to the total duration of the transaction, resuting in it being likely that at any time at least one running transaction will commit.
+They also suggest using a randomized back off on abort mechanism similar to Swiss-STM.
+A separate mechanism is also implemented to discourage starvation which is more similar to other contention management implementations.
+This works by assigning a priority to a transaction so that a lower priority transaction cannot abort a higher priority transaction.
+Implementing priority for every transaction causes a large amount of overhead, so they implement a system where only certain transactions are assigned priority, which lowers the overhead, but does not make any guarantees of progress for transactions without priority.
+They suggest two ways of assigning a priority to a transaction, the first is by allowing the programmer to give a transaction priority when writing the code, and the second is increasing the priority of a transaction after it has been aborted a certain amount of times. 
+
+\subsection{Transactional Scheduling}
+\emph{Transactional Scheduling} is similar to contention manager in that it tries to improve and ensure progress of transactions.
+But instead of just deciding to abort or wait when transactions conflict, it also decides how to order the execution of transactions.
+For example assume there are $N$ cores in a system and at some point in time there are $2N$ different program threads each with a transaction ready for execution.
+There are different ways to choose how to execute the transactions, a system could just execute all $2N$ transaction concurrently, but this could decrease performance for two reasons.
+The first more obvious reason is that the more transactions that are run in parallel, the higher the chance of conflict, the second reason is that since there are more transactions then cores, a transaction could get descheduled, possibly causing problems such as preemption.
+The purpose of a \emph{transactional scheduler} is to improve on situations such as this by attempting to optimize the order of execution of the transactions.
+This is done by having a queue of pending transactions waiting to be executed at each core.
+A simple scheduler might just assign transactions to a processor based on how many items it has in its queue.
+So in this example each processor would be assigned tow transactions each.
+This is obviously not the perfect solution, for example one processor might be assigned two short transactions while another might be assigned two long ones, so a possible improvement might be to assign a single transaction to a process as it completes the previous transaction.
+There are other issues to consider, such as how to deal with aborts, if a transaction aborts, should it immediately be restarted again risking the same conflict, or should it be queued somehow and executed later.
+
+Transactional schedulers are implemented to improve efficiency and often define their own conflict resolution protocols, but it is also interesting to examine how they can effect liveness properties, and where possible how the combination of different schedulers with contention managers effect liveness and performance.
+
+\subsubsection{Work stealing}
+The idea behind \emph{work stealing} \cite{1505821} is to prevent cores from being idle when there are pending transactions in the system.
+When a core is ready to execute a transaction, first it tires to get one from its own queue, but if it is empty, it then randomly selects another core with a nonempty queue, and removes the transaction at the tail of that queue and starts executing it.
+
+\subsubsection{Steal-on-Abort}
+\emph{Steal-on-abort} is a transactional scheduler and contention manager proposed in \cite{1505821}.  Its goal is to reduce \emph{repeat conflicts}, which are defined at as conflicts that occur between two transactions that had previously occurred.
+Many contention managers will restart an aborted transaction immediately, likely resulting in the same conflict happening again.
+Steal-on-abort deals with this by taking the aborted transaction and placing it in the queue of the core that is executing the transaction that caused the abort.
+Different implementations might place it at different locations in the queue.
+This way the aborted transaction will (likely) not execute again until the transaction it conflicted with has completed execution, thereby avoiding repeat conflicts.
+Steal-on-abort also implements work stealing so that there are no idle cores when there are pending transactions, but note that this also creates the possibility for repeat conflicts.
+
+\subsubsection{BIMODAL Scheduler}
+The \emph{BIMODAL scheduler} \cite{1696831} is an advanced transactional scheduler designed to be efficient on \emph{bimodal} workloads, which are workloads containing only early-write and read-only transactions.
+In the BIMODAL scheduler there is a single FIFO queue called the RO-queue (or read-only queue) shared among all cores, along with a double-ended queue, or dequeue at each core. 
+As transactions arrive they are inserted at the tail of the cores' dequeues in round-robin order.
+Each transaction is assigned a timestamp when it first starts, that it retains even after aborts.
+If a write transaction conflicts with another write transactions, the one with the later timestamp is aborted and placed on the dequeue of the conflicting transaction's core (similar to  steal-on-abort).
+The system alternates between \emph{writing epochs} and \emph{reading epochs} in which conflicts between read-only and write transactions are handled differently.
+In a writing epoch transactions are executed from the work dequeues of the cores, if a read-only transactions conflicts with a write transaction, then the read-only transaction is aborted and is placed at the end of the read-only (or RO) queue.
+Note that here read only transactions are thought of as ones that have only done reads up to the point they conflict (it is possible they might do a write later).
+During a reading epoch transactions are executed by taking them from the shared RO-queue, if there is a conflict between a read-only and write transaction, the write transaction is aborted, and placed at the head of the work-dequeue of the core that was executing it.
+Epochs switch after either a given number of transactions have been executed, or when their corresponding queues are empty.
+
+\subsection{Contention Management and Transactional Scheduling Bounds}
+
+Some work has been done on proving the efficiency bounds of contention managers and schedulers.
+In order to show these results, first some definitions will be reproduced from \cite{1696831}.
+
+\begin{definition}
+\textbf{(Makespan)}
+Given scheduler or contention manager $A$ and a workload $\Gamma$, $makespan_A(\Gamma)$ is the time $A$ needs to complete all the transactions in $\Gamma$.
+\end{definition}
+
+\begin{definition}
+\textbf{(Competitive ratio)}
+The \emph{competitive ratio} of a scheduler or contention manager $A$ for a workload $\Gamma$, is $\frac{makespan_A(\Gamma)}{makespan_{Opt}(\Gamma)}$, where OPT is the optimal, clairvoyant scheduler or contention manager that has access to all the characteristics of the workload before execution.
+
+The \emph{competitive ratio} of $A$ is the maximum, over all workloads, of the competitive ration of $A$ on any $\Gamma$.
+\end{definition}
+
+\begin{definition}
+\textbf{(Conservative scheduler or contention manager)}
+A scheduler or contention manager $A$ is \emph{conservative} is it aborts at least one transaction in every conflict.
+\end{definition}
+
+In \cite{1073863} they prove that any contention manager that insures the pending commit property has an upper bounded competitive ratio of $O(s^{2})$, where s is the number of shared objects in the system, this includes the greedy contention manager.
+Specifically for greedy this upper bound is improved to $O(s)$, and an equivalent lower bound of $\Omega(s)$ is given in \cite{1146428} for any deterministic contention manager, creating a tight bound of $\Theta(s)$ for greedy.
+The effect of \emph{failed} \textcolor{Red}{i.e. crashed (i think?)} transactions on the bounds of the competitive ratio of greedy are also examined \cite{1146428}. 
+
+Some bounds are also proven for \emph{randomized contention} managers \cite{1146428} and a decentralized randomized implementation satisfying the lower bound within a logarithmic factor is given in \cite{1146428}.
+
+In addition to defining the BIMODAL scheduler in \cite{1696831} they also prove some efficiency bounds for certain classes of tranactional schedulers.
+They prove that any non-clairvoyant conservative scheduler is $\Omega(m)$ competitive for some workload with late writes, where $m$ is the number of cores.
+This is obviously bad because the optimal solution uses all cores at all times, while the transactional memory version is no more efficient than using a single core.
+Note that not all contention managers are conservative, for example some will have a transaction back-off in presence of a conflict instead of immediately aborting.
+Although this is not a promising result for transactional memory, it is very common to have \emph{read dominated} workloads in transactional memory, and for these they show that every deterministic scheduler is $\Omega(s)$ competitive, where $s$ is the number of shared resources.
+
+Concentrating on workloads without late writes $i.e.$ bimodal workloads, they show that steal-on-abort also has this poor $\Omega(m)$ competitive makespan even for some bimodal work loads. 
+The BIMODAL scheduler improves on this by having a $O(s)$ competitive ratio for for any bimodal workload, which they also show is optimal for a conservative scheduler.
+Even though the BIMODAL scheduler provides some nice bounds it requires quite a bit of extra computation including visible reads, and a shared counter, which introduces contention and increased meta data, so it might not be a good solution for practical implementations.
+Most other schedulers and contention mangers have the opposite problem of BIMODAL,  that have only been shown to be efficient on certain benchmarks, they might have very poor bounds, and worst case workloads, which could cause problems that do not show up in the benchmarks.
+
+
+\section{Alternative Models}
+This section will look at some of the alternative mechanisms that have been proposed that are extentions of the basic idea of transactional memory that are not needed for an implmentation to be defined as a transactional memory.
+
+\subsection{Early Release}
+\emph{Early Release} was first introducted as along with DSTM \cite{872048} as a method to increase concurrency.
+In the code of a transaction a programmer can \emph{release} objects that were previously read by the transaction.
+Releasing a memory location that has been read means that the location will no longer be considered a point of conflict, to the underlying implementation it looks like that value was never read by that transaciton.
+This is useful for situations such as traversing through a list, as a transaction traverses through a list, it can release previous locations it had read as long as it does not access them again.
+This decreases conflicts without the posibilty of unwanted side-effects.
+Unfortunately this is not true in all cases, if used incorrectly releasing memory can cause the system to view inconsistent states of the memory.
+This can voilate the consistency condition, and introduces more difficulty for the programmer as he must make sure releasing memory does not cause problems.
+Since DSTM many other STMs have also incuded early in their implementations release in the intrest of performance.
+
+\subsection{Elastic Transactions}
+Like early-release, \emph{elastic} transactions \cite{LPD-REPORT-2009-002} were introduced as a way to increase concurrency.
+Also similiar to early-release they provide an extra mechanism to the programmer which if used correctly can increase poerformance, and if used incorrectly can cause the transaction to view inconsistent states of the data.
+The idea behind elastic transactions is that a programmer declares a transaction as elastic or as normal, and the implementation can split transactions defined as elastic into multiple transacions so that they can be committed more often.
+If transactions could be cut anywhere then obvoiulsy this would not be any different than not using a transaction at all, so they restrict cuts to certain curcumstances.
+For example they do not allow a transaction to be cut inbetween two acceses to the same varible, where a concurrent transaction writes to that variable inbetween the cut.
+Elastic transactions allow things like searching a linked list to be implemented safely, but traversing the list while summing the vales for example could not be implemented safely.
+Since this changes the consistency condition for elastic transactions a new consistency criterion called \emph{elastic-opacity} is introduced and a TM that implements this criterion is defined \cite{LPD-REPORT-2009-002}.
+They also show they there are histories accepted by this that could not be accepted by using early release.
+
+\subsection{Abort/Retry/Blocking}
+A consistency criterion defines when a transaction must abort, and a conflcit managers decides how to deal with transactions in case of a conflict.
+In the basic model the programmer is not concerned with aborts, he just knows that all the code in a transaction will execute atomically.
+Ceratin implementations give more options to the programmer to deal with aborts.
+
+STM Haskell \cite{sjbc000} allows the programmer to call a function called \emph{retry} from within a transaction which will immediately abort the transaction.
+STM Haskell also implements strong isolation, so only transactional variables are accessable from within a transaction.
+This allows the implementation to \emph{block} until one of the transactional variables have been modified, so that in a well written program the retry should not be called again for the same reason.
+An additional mechanism that STM Haskell provides is what is called \emph{choice}.
+This is implemented by an \emph{orElse} keyword, this allows the programmer to define two blocks of code, the transaction executes the first block, and if retry is called from within this block, then it is aborted, and the second block is executed, if the second block calls retry, then the whole transaction is aborted.
+Two other TM implementations \cite{1133985} and \cite{1123001} also give similar retry and orElse constructs and \cite{1133985} shows how they can be optimized by a compliler.
+
+In \cite{guerraoui05polymorphic/LPD} not only is the programmer able to define a specifc contention manager for each transaction, but on abort the posibility is given to be able to change the conention manager.
+
+RSTM \cite{Marathe06loweringthe} introduces a construct called \emph{$ON\_RETRY$}, which a progammer can put around a block of code at the end of a transaction.
+When a transaction aborts the code in this block will be exectued.
+It is intended to allow the programmer to clean up memory that was allocated from within the transaction.
+
+These and many other constructs can add different and new, interesting and helpful properties to a TM, yet most of them break the original simplicity of transactions.
+They can create different effects such as increased difficulty for programmers, modified consistency condidtions, and changed theoretical aspects of the TM.
+Many of these effects have yet to be fully studied or understood and before they are it is unlikely that these constructs will be accepted or integrated into the core concepts of transactional memory.
+
+\section{Implementation}
+The previous sections discussed what an STM should do, and looked at why this is not an easy question to answer.
+This next section will look at how to to actually implement these things, and some of the difficulties that go along with this.
+For many of these design options there is not a clear choice, in \cite{1123001} they perfrom benchmarks on many of these options and come conclusions as to which choices are prefered, but it is not clear that their decisions are conclusive.
+
+\subsection{Write Buffering vs Undo locking}
+When performing a write within a transaction, to the rest of  the world the value written is not known until the transaction commits.
+An aborted transaction must not effect the state of memory.
+Traditionally there have been two ways of keeping track of writes before they have committed in memory.
+
+In an implementation that uses \emph{undo locking}, the transaction performs its write directly to the shared memory, and then in case of an abort, the transaction must rollback the state of the memory to where it was before the transaction performed its first write.
+In order to prevent other transactions from writing to the shared memory concurrently or reading a value that could be rolled back, a transaction will use some sort of locking mechanism of each piece of memory before it writes to it.
+This is usually implemented as \emph{visible writers}, which are described later in this section.
+
+In an implementation that uses \emph{write buffereing} when a transaction wants to perform a write to a shared memory location first it will make a local copy of that variable only visble to the transaction.
+Any subsequent writes this transaction does will be preformed on this local copy, and if the transaction commits successfully then the value of the local copy will be put into the shared memory.
+
+There are some advantages and disadvanteges to both solutions.
+Undo locking is nice because it does not have to keep track of local memory for writes, and when write transactions committ it does not have to copy the values from local to shared memory.
+Write buffering is nice when transactions abort because it does not have to perform roll back on the shared memory, and it allows the posibility to use invisible writes which are described later in this section.
+Different STMs choose to use one or the other, given that write buffering can implement invisible as well as visible reads it has been implemented in many TMs, but other then this there is often no definite or obvious reason to choose on over the other, or why one is better.
+\textcolor{Red}{What limitations does one have over the other?}
+
+\subsection{Compilation}
+Special complication technicques specifically oriented towards transactions can improve the performance of STM.
+Different design decisions impact the performace of compiled transactional code.
+For example certain implementations require that a programmer define what variables will be access transactionally, while others require the compiler determine these variables, and in order to be correct the compiler might declare more variables as transactional then nesssary causing increased overhead during execution.
+In \cite{1133985} an efficent STM is designed with optimizations for their JIT complier.
+\cite{LPD-REPORT-2009-003} discusses some of the dificulties with STM code complication.
+
+\subsection{Cache misses}
+In his paper about efficient software transactional memory \cite{Ennals06softwaretransactional}, Enanals especially brought forward the problem of cache misses where he designed an STM that performed as few cache misses as possilbe and showed it to be much faster than other STM designs.
+One of his main claims was against obstruction free implementations where, he claims, that since they require at least one level of inderection between object metadata and actual data they introduce many cache misses.
+Cache misses are also common when there is high contention over shared objects such as a commonly accessed global counter, so cache misses and sclibility are inherently related.
+
+Other then Ennals design \cite{Ennals05efficientsoftware}, many STMs take cache misses directly into consideration.
+RSTM \cite{Marathe06loweringthe} is an obstruction free implementation that organizes its meta and object data in a way to reduce cache misses, and SwissTM \cite{1542494} is designed for efficency where they consider the size of shared memory words and components of the STM in order to reduce cache misses.
+It could be interesting to study what components of a TM effect cache misses, and how cache misses can effect other TM properties such a scalibility.
+
+\subsection{Non-blocking \& Obstruction-free}
+As discussed in the section of this survey on obstruction-free liveness properties, implementing a STM with locks is much more straightforward then implementing one that is obstruction-free, but obstruction freedom insures some nice properties.
+In \cite{1538908} they discuss some of the complexity required for implementing obstruction-free objects in general, which could have some implications towards how TMs should be implemneted.
+\textcolor{Red}{Need to read this paper}
+
+The previous section shows that cache misses have been a concern as something that could hinder performance for obstruction free implementations.
+Recently what are considered and are designed as the more efficient implementations such as TL2 \cite{Dice06transactionallocking} and SwissSTM \cite{1542494} use locks.
+It is difficult to tell though if this is because lock based implementations are easier to design, or because obstruction freedom is actually inherently slower.
+Research still needs to be done on these subjects and even less is know as how to efficently implement even stronger guarentees of progress such as lock-freedom and wait-freedom.
+
+\subsection{Kernel Modification}
+Modifying the kernal in order to better support the exection of transactions from the operating system could be important for the implementation of effective and efficient transactions.
+In \cite{1693465} they modify a linux kernel in order to better support transactional contention managment and scheduling.
+From within the OS they provide what they call \emph{serialization}, which will yield an aborted transaction from executing until its conflicting transaction has completed.
+They also provide a sort of contention managment similar to serialization that uses prioirty, so that when an aborted transaction is restarted, it is started with lower priority which is then used by the OS thread scheduler.
+They show with benchmarks that implementing these funtions in the OS is more efficient the performing them at user level.
+
+Another mechanism implemted in the kernel is \emph{time-slice extention}, which allows a thread that is executing a transaction to request its time slice to be extended when it has expired and the OS is about to deschedule it.
+The thread can request extentions up to some maximum ammount defined by the OS.
+Desceduling a transaction during execution delays it, increasing its likelyhood to conflict with another transaction, time-slice extention tries to prevent this.
+
+There are likely many other ways that transactional memory can be supported in the operating system, and if a mainstream OS supports some transactional memory implementation it could help lead to the wide acceptance of transactional memory.
+
+\subsection{Conflict Detection}
+The definition of a conflict in transactional memory is straightforward, two transactions conflict if they are run concurrently and they both access the same shared memory location with at least one being a write.
+Earlier in this survery in the section on liveness it was shown that deciding what to do after detecting a conflict is no easy task.
+This section will discuss some of the ways transactional memory implementations detect conflicts, and like conflict resolution, there is no simple answer to conflict detection.
+
+
+\subsubsection{Visibility}
+Transactional reads and writes can either be \emph{visible} or \emph{invisible}.
+When a transaction performs an invisible read or write it does not perform any modification to shared meta data, so no other transactions are aware that it has performed the read or write.
+Whenever a read occurs in a visible implementation, the transaction writes some information to the shared meta data (usually adding its identity to the list of transactions that have read that memory location), allowing other transactions to be aware that this read has occured.
+
+Invisible reads have the advantage of not having to write to shared data, which can become a point of contention at shared memory locations that are accessed frequently.
+This problem of contention can be especially worrysome for read dominated workloads beceause contention is being introduced when there are no conflicts and can limit scalibility.
+Invisibe reads have the disadvantage that they have to perfrom \emph{validation} every time the read a new location, otherwise they might have an inconsistent view of the shared memory.
+With visible reads, when a location that has been read gets overwritten by a writing transaction the contention manager is called, so validation is not needed.
+
+While it is fine to have mulitple readers for a memory location, there can only be one writer per location, so visible writes are usually implemented by acquiring a revokable lock (or something similar) for the memory location.
+A possible disadvantage of invisible writes is that whenever a transaction performs a read it has to perform a write set lookup.
+Meaning that the implementation has to check if the value read should be loaded from shared memory or from a local copy, this is usually done by traversing the local set of writes that the transaction has done so far, causing overhead.
+In order to get around this, in \cite{1504199} they use a hash table to map addresses to indexes in the local write set.
+They show this gives negligible overhead for write set lookup when comparted to visible writes.
+
+\subsection{Eager vs Lazy}
+There are two basic conecepts for conflict detection, \emph{eager} and \emph{lazy}.  An eager scheme will detect conflicts as soon as they happen, while a lazy scheme will detect conflicts at commit time.
+Write/write, read/write, and write/read conflict detection can be eager or lazy.  Depending on which combination of these is choosen makes an implact on many different parts of a TM.
+
+\subsubsection{Eager}
+An implementation can detect read/write, write/read, and write/write conflicts eagerly.
+Eager read/write conflict detection requires that the implementation use visible reads, and eager write/write conflict detection requires that the implemenation use visible writes, while eager write/read conflict detection can use either visible reads or visible writes..
+
+If visible writes are used than read/wrtie conflicts are detected more eagerly than if invisible writes are used.
+With visible writes the conflict is detected as soon as the wrting transaction performs its write and aquires the lock for the memory location, with invisible writes the conflict is detected when the writing transaction tries to commit.
+Read/write conflicts are detected because when a write occurs (or the writing transaction tries to commit) the writing transaction checks to see if there are any active readers in the list for this memory location, and if there are, then a read/write confict has occured and is dealt with according to the implementation and contention manager.
+
+The visibility of writes and reads effect write/read conflicts.
+If a write is visible then from when a transaction acquires the write lock until it commits (or aborts), if a seperate transaction performs a read at this location then a write/read conflict is detected and the conflict is dealt with.
+With invisible writes, write/read conflicts can still be detected eagerly, but require visible reads and are not detected until the writing transaction commits.
+When the writing transaction commits it will check if there are any readers for the memory location, and if there are then a write/read conflict has occured and is dealth with.
+
+When a write occurs the transaction checks to see if there is another transaction that owns the lock on this memory location, and if there it means a write/write conflict has occured, and the conflict is dealt with according to the implementation.
+
+\subsubsection{Lazy}
+Read/write, write/read, and write/write conflicts can also be detected lazily.
+This means they are not dected until committ time or when the read would cause the transaction to see an inconsistent view of the memory (depending on the consistency condition).
+They all use invisible reads and writes.
+
+The lazy detection of a write/read or read/write conflict is done by the transaction that does the read.
+The conflit is not detected at the time of the read, but instead either when the transaction tries to perform its next read, or tries to commit.
+In order to be able to tell if a conflict has occured the transaction will \emph{validate} its read set at each read and at commit time (again depending on consistency criterion), which means to check if the combination of reads it has done so far are still consistent with respect to the choosen consistency criterion.
+Since the transaction doing the write has no idea the read has occured it is usually unaffected by the read.
+
+If write/write conflicts are detected lazily then they are found at the commit time of the transaction that commits last.
+The transaction that commits first has no idea there is a conflit so it is usually unaffected.
+When the second transaction commits it must make sure that by committing with the write/write conflict it will not violate the consistency criterion.
+Many implementations choose thier serialzation point as time of their committ operation and it is easy to see that in this case a write/write conflict by itself will not violate consistency and in this case it is not necessary to worry about these types of conflicts.
+
+In order to make sure its operations are viewed a atomic when a writing transaction is committing in most implementation it will grab some sort of lock or set a flag for the memory locations it is going to write preventing other concurrently committing transactions from writing to these locations.
+When a concurrent transaction tries to commit, but notices that some other transaction is also committing to the same memory, a write/write conflict also occurs and must be handled by the TM implementation.
+
+\subsection{Choosing a conflict detection scheme}
+
+The thought behind choosing lazy vs eager is choosing between future wasted work vs past wasted work.
+By detecting and handling a conflict as soon as possible, an eager detection scheme is attempting to avoid future wasted work by assuming the conflict and consistency criterion will most likely require that one of the transactions abort.
+On the other hand, wating as long as possible before detecting conflicts, a lazy detection scheme is attempting to avoid past wasted work hoping that most conflicts and the consistency criterion will not necessarily require a transaction to abort.
+
+The differences between lazy and eager detection have been examined and benchmarked in quite a few different ways, but there is currently no obvious choice of one over the other.
+In fact many of the benchmakrs done so far show that the best choice depends on the worload.
+Certain implementations such as RSTM \cite{Marathe06loweringthe} are designed to support both invisible and visible reads and lazy and eager aquire, giving the programmer the freedom to choose which to use.
+They \cite{Marathe06loweringthe} run benchmarks on all different posibilities and come to the conclusion that there is no clear choice that works best in all situations.
+
+One argument for having at least some conflicts detected eagerly is conflict managment.
+When a conflict is detected between two transaction is detected early then the conflict manager is able to choose what to do.
+Certain conflict managers have been designed to promote desirable properties so the more often and the earlier conflicts are detected the more chances a conflict manager has to promote liveness.
+
+A recent paper \cite{1504199} has suggested using lazy detection for increased performance.
+They claim that using lazy detection promotes good livness properties such as freedom from livelock because locks are only aquired during committ time and it is unlikely that two transaction will repatibly try to commit at exaclay the same time (this is given along with other reasons).
+They perform benchmarks to support their claims.
+This works along side an additional mechanism they propose to discourage starvation.
+Another recent paper \cite{LPD-ARTICLE-2009-004} seems to support their claims.
+In this paper a mechanism called \emph{input acceptance} is proposed which measures the ammount of histories an implementation will accept for their consistency criterion.
+They show that a lazy implementation will accept more histories than an eager one, and come to the conclusion that an implementation that accepts more histories is likely to provide better performance across different workloads.
+More about input acceptance is give later in this svrvey in the section about measuring TMs.
+
+An implementation does not have to be all lazy or all eager, for example SwissTM \cite{1542494} uses a \emph{mixed invlidation} scheme.
+They employ lazy detection of read/write conflicts in the hope that this type of conflict will often not require a necessary abort.
+Write/write conflicts on the other hand are detected eagerly on the assumption that they will most likely require one of the transactions to necessarily abort.
+
+
+\subsection{Implementing Conflict Detection}
+The underlying mechanisms that are used to implemt visible or invisible reads and writes and lazy or eager acquire are often used as part of the reason for choosing one or the other.  This section will go over some of the ways they can be implemented as well as some of the extentions that have been proposed.
+
+\subsubsection{Validation for invisible reads}
+As described previously for a TM implementation that uses invisible reads each time a transaction does a read its read set must be validated, otherwise the transaction might see an inconsistent view of the memory.
+Of course the validation that needs to be done depends on the consistency condition, but here we will consider opacity because it is the most widely used  consistency condition.
+In order to perform read set validataion, every time a read occured, early STMs would check to see if every item previously read was still valid ($i.e.$ it had not been overwritten), if a value had been overwritten, then the transaction would abort.
+Each transaction then has a quadratic cost on the number of reads to perform validation, which can drastically hurt performance \cite{10.1109/TPDS.2010.49}.
+
+\paragraph{Logical Clock / Time}
+In \cite{10.1109/TPDS.2010.49} they introduce an improvement to this called the \emph{lazy snapshot algorithm} or LSA which allows for fewer long validations.
+This algorithm uses a logical clock that is incremented each time a writing tranaction commits and the shared memory objects that are updated are assigned this clock value.
+While a transaction is active it maintains a \emph{snapshot}, or valid range of linearization points, this range is based on the shared memory objects it has read so far.
+If a transaction reads a value that is valid within its snapshot, then the value is read and the snapshot is updated with no other validation required.
+In the case that a transaction reads a value that is not valid within its snapshot it first tries to see if it can extend the range of its snapshot, in which it checks to see if each value it has read so far is still valid (similar to the normal validation process), if this succeeds the snaphot is extended and the value is read, otherwise the transaction aborts.
+They show that using the LSA improves performance over invisible reads using standard validation throughout many benchmarks.
+
+TL2 \cite{Dice06transactionallocking} introduced a simplier, but similar clock based scheme where read validations always occur in constant time.
+It works very similar to LSA without the extensions, so TL2 will abort the transactions where the extentions would have occured.
+
+\subsubsection{Multi-versioning}
+\emph{Multi-versioning} was introducted in \cite{1228566} as a way to prevent read only transactions from conflicting with any other transactions.
+By keeping past versions of objects a transaction only reads form the state of the memory was when it started allowing read only transactions to always commit.
+
+Along with proposing using a clock to reduce the cost of validating invisible reads in \cite{10.1109/TPDS.2010.49} they also extend on the idea of multi-versioning with the use of clocks.
+They keep available multiple older versions of the object in the hopes of committing more read only transactions.
+In LSA if a snaphost cannont be extended to be valid for the most recent version of the object to be read, then an older version can be read that is within the snapshot if it is available.
+The more versions that are kept, the more memory overhead required by the implementation, so they suggest multiple ways of choosing the amount of versions to keep, including dynamically choosing how many current versions to keep based on if the could  be useful for any live transactions.
+Through benchmarks they find that keeping 8 versions seems to work best.
+Since then some efficency improvements have been proposed for multi-versioning such as garbage collection and \textcolor{Red}{more info, cite?}
+In \cite{1584015} they study some of the theroetical limitations of multi-versioning to be disjoint access parallel (see the section in this survey on disjoint access parallelism).
+
+\subsubsection{Announcing for visible reads}
+In order to implement visible reads a transaction must somehow annouce to other transactions that it has read this object.
+Normally this is done by having each shared object keep a list of live transactions that have read it.
+This list is one of the main arguments against using visible reads, because it is a source of contention preventing scalablility.
+When a transaction reads a shared object it has to add itself to this shared list, and if a variable is read often there could be high levels of contention on this list, even if these are all read only transactions and have no reason to conflict.
+
+\paragraph{RSTM}
+RSTM \cite{Marathe06loweringthe} tries to avoid this contention by keeping a limited number of visible readers in the header for each shared object, if there is a spot open a reading transaction can just perform a compare and swap opertaion to place a pointer to itself in the header.
+If there are no spots open then the transaction will read the object invisibly.
+A transaction will only have to validate the set of reads that it was not able to do visibly.
+
+\subsubsection{Semi-visible reads}
+The idea behind semivisible reads \cite{lev:anatomy:transact:2009} is to avoid the scalibility problems of visible reads, while reducing the cost of constantly validating the read set necessary for insiible reads.
+It is implemented as an additional mechanism on top of invisible reads.
+A read counter is assigned for each shared memory object, and each time a transaction reads an object, it increases its counter, when a transaction that writes to this object committs, it resets this counter to zero.
+In addition to the read counter there is a global counter used for two things. 
+First when a transaction starts it reads and stores the value of this counter.
+Second when a transaction performs a write it increments this counter if the read counter for any of the objects it is writing are non-zero.
+Now when a transaction performs validation it checks to see if the value of the gobal counter is different than the value it had stored, and if it is unchanged then the transaction knows none of its reads have been invlidated so it can continue.
+Otherwise it performs the normal valididation for invisible reads.
+If validation succeds then it updates its stored value of the global counter to the current value.
+If validation fails it aborts.
+They expect in many read dominated workloads this will keep transactions from having to do the expensive validation process very often.
+Note that they also introduce a \emph{scalible non-zero indicator} or SNZI as a replacement for the read counter at each shared memory object that is more scalible then a traditional counter.
+
+\subsection{Scalibility}
+As the number of cores on a processor keeps increasing every year, the scalibility of a transactional memory implementation gets more and more important.
+By design certain programs might not be able to scale well, and a programmer should take care to not create such programs, but he should not have worry that his program will not scale due to the implementation of the underlying TM system.
+As mentioned in the section on read visibility, having visible reads is worried to harm scalibility, but it is also possible for any other component of a TM implementation to become a bottle neck for scalibility and it is important examine where  these happen.
+Following this, two similar concepts, \emph{disjoint access parallelism} and \emph{conflict-based synchronization}, have been introduced as concepts for STM implementations to follow in order be scailble, but it is still unknow in many ways what exactly makes a TM scalible or not.
+
+\subsubsection{Conflict-based Synchronization}
+Certain recent STM designs have been concerned with scalibility such as SkySTM \cite{lev:anatomy:transact:2009}, where in designing the system they take a \emph{conflict-based} approach to synchronization in order to promote scalibility.
+Conflict-based synchroniztion is defined as where contention on STM medatadata in induced only (or at least primarily) when there is contention on application data.
+If this goal is accomplished then when an application is not scaling well it is the fault of the application or the workload, and not the underlying STM implementation.
+
+\subsubsection{Disjoint Access Parallelism}
+As a general definition, in order for a STM implementation to be \emph{disjoint access parrallel}, transactions that do not concurrently access the same shared memory location must not interfere with eachother.
+For example if every transaction accesses a global counter at creation to get its start time, then the counter becomes a point of centention for all transactions and the TM implementation is not disjoint access parallel.
+It is not always possible for a TM to be disjoint access parrallel and still be implemented in a desired way, in \cite{1584015} they examine some of these limitations.
+Specifically they show that it is not possilbe to have an implementation with invisible reads and read-only transactions that always commit and still be joint access parallel.
+They also show that a disjoint access parrallel implementation with read only transaction that always commit must write to meta data a number of times at least in the order of number of objects it reads for any transaction.
+This could be used as an argument against multi-versioning (which allows every read only transaction to commit), because ether these implementations can have visible reads and not be disjoint access parrallel, limiting scability, or they can be disjoint access parallel and perform quite a bit of work for read only transactions, which might be too much overhead for read dominated workloads which thought of as common.
+Although disjoint access parallelism is an viewed as an interesting property to study and a crucial component of scailible transactional memory, many of its other theroetical limitations remain unknown.
+
+\section{Measuring Efficiency}
+Apart from the progress guarantees such as liveness, and starvation freedom, and the cost of implementing different components, measuring efficiency an important part of gaging how effective a transactional memory is.
+There are multiple ways to measure efficiency looking at different parts of a TM and its execution.
+
+\subsection{Commit-abort Ratio}
+The \emph{commit-abort ratio} is defined in \cite{LPD-ARTICLE-2009-004} as the ratio of the number of committing transactions over the total number of complete transactions (committed or aborted) for some execution of a workload.
+Being able to commit a lot of transactions while aborting very might be a good goal for a TM to achieve, but it does not necessarily mean a efficiency.  For example an implementation could just only run one transaction at a time and have a perfect commit abort ratio.
+
+\subsection{Makespan}
+The \emph{makespan} is the amount of time it takes a given TM implementation to complete a workload.
+The measurement is often used on benchmarks to compare one TM to another, but just because a TM has a good makespan for one workload does not mean it will do well on another.
+This is a common problem with STM implementations, often when they are introduced they are only tested on a limited set of benchmarks showing good performance, then some new implementation comes along showing the old implementation has poor performance on a different set of benchmarks and this new implementation is better, and the process repeats.
+
+\subsection{Competitive Ratio}
+Competitive ratio is the ratio between the makespan of two different implementations.
+This can be used to compare two different TM implementations.
+
+\subsection{Throughput}
+The \emph{throughput} of a TM is the amount of transactions it commits per unit time and is commonly used in benchmarks to compare TMs.
+This can be especially useful on workloads with equal size transactions to compare the cost of the meta data computations that different TMs use.
+A shortcoming of this measure is, for example a TM that favors short transactions over longer ones might have high throughput, but low progress compared to one that might sometimes abort short transactions in favor of long ones.
+
+\subsection{Scalability}
+It is important that a transactional memory implementation scale to multiple threads as they are designed for multi-core processors.
+Other measures such as throughput and makespan are often crossed with number of threads for testing \emph{scalability} when performing benchmarks.
+It is not an obvious thing to measure scalability though.
+For one, workloads themselves might only scale to a certain point.
+Also certain mechanisms used in a TM to provide it with some good property, such as obstruction freedom, might limit scalability to a certain amount, or some implementation choice, such as visible reads, might make it fast only up to a certain point.
+The obvious optimal implementation might be able to scale infinitely, but this might not always be possible given some implementation choices, or even necessary for the hardware it is used on.
+It is also interesting to look at what mechanisms and properties of TMs limit or encourage scalability.
+Some of this has been examined in \cite{lev:anatomy:transact:2009} and \cite{1584015}. \textcolor{Red}{should write more on these and need to read the second one}
+
+\section{Measuring Properties ensured by a TM}
+Other then measuring efficiency there are ways to measure a TM by certain properties that it ensures.
+
+\subsection{Blocking and Liveness}
+Earlier in this survey different blocking and liveness conditions were discussed, and they are also used to gage the capabilities of a TM.
+For example many TMs use locks and even though locks do not provide the good properties of a non-blocking TM, they can be more efficient.
+Or a TM that is shown to be very fast on certain workloads but not proven to avoid livelock might not be preferable to a slower TM that it lock-free for certain applications where progress is essential.
+There is no clear choice as to what is always best, and it could depend on the application or workload choice.
+
+\subsection{Bounds on performance}
+As discussed in the efficiency section, the competitive ratio can be used to compare two TMs.
+Competitive ratio is used in \cite{1696831} and \cite{1073863} by comparing the makespan of a clairvoyant implementation (one that knows all the characteristics of the workload beforehand) with realistic implementation to prove bounds over all workloads.
+This can be important because even though a TM might be efficient on certain benchmarks, there might be some worst case workloads where it performs much worse than another TM.
+It is interesting to know just by general characteristics of a TM implementation, such as how visible its reads are, what possible bounds on performance it has.
+Note that proving some theoritecial bounds does not actaully mean a TM will be efficient in practical cases, the bookkeeping required may make the TM too slow for many real world applications.
+It might be interesting to see what bounds on bookkeeping a TM would need in order to ensure certain properties or perform certain operations.
+
+\subsection{Conflict/Arbitration Functions}
+Different TM implementations have different ways of defining and identifying a conflict.
+For example some implementations might identify a conflict as soon as two concurrent transaction access the same memory location, while others might wait until when a transaction tries to commit.
+In \cite{scott:semantics:transact:2006} they define a \emph{conflict function} as a way to characterize how a TM identifies conflicts.
+The conflict function has 3 inputs: a total order history of an execution (containing read, write and commit events), and two transactions.  And a single boolean output: true if the two transactions conflict, otherwise false.
+They define six different conflict functions and show how the sets of conflicts they identify are related.
+For example the set of conflicts identified by a function that returns true whenever two concurrent transactions access the same object, is contained within set of conflicts from a function that returns true whenever two transactions are concurrent.
+This is interesting because identifying a smaller set of conflicts means that there is less often a reason to abort a transaction.
+
+When a conflict occurs between two transactions in a TM, most implementations will abort one transaction, in \cite{scott:semantics:transact:2006} they define an \emph{arbitration function} as a function that decides which of the conflicting tractions to abort.
+It takes as input a total ordered history, and two transactions T1 and T2, and outputs true if the transactions conflict and that T1 should abort, and false otherwise.
+They use these functions as a way of characterizing contention managers.
+The way in which a certain arbitration function is defined can ensure liveness properties such as starvation freedom, livelock freedom, and nonblocking.
+
+\subsection{Input Acceptance}
+In \cite{LPD-ARTICLE-2009-004} they compare TM implementations based on the \emph{input patterns} they accept.
+The \emph{input history} of a TM on some workload consists of the total order of all read, write, and commit (where commit is the execution of the try to commit operation, it could return success or abort) operations.
+An \emph{input pattern} is some total order of read, write, and commit operations.
+A TM \emph{accepts} an input pattern if when it executes this pattern it commits all transactions.
+In \cite{LPD-ARTICLE-2009-004} they use regular expressions to represent classes of input patters with special wild cards for example, star '*' meaning zero or more of the preceding event, and compliment '$\neg$' meaning anything but the preceding event.
+An example of an \emph{input class} would be the following:
+$$ C_1 = \pi{}^*(r_iw_i|w_ir_i)\pi{}^*$$
+Here $\pi$ represents any operation, so input class $C_1$ would be any sequence of events followed by either a read then write by transaction $i$ or a write then read by transaction $i$, followed by any sequence of events.
+A TM \emph{does not accept} an input class if for every input pattern of this class, it aborts at least one transaction.
+They use different input classes to upperbound the input acceptance of different TMs based on their characteristics.
+A higher upper bound means that at TM is able to accept more input patterns.
+By observation it seems that a higher input acceptance would mean that the implementation is more likely to have a higher \emph{commit-abort} ratio across most workloads and this assumption is supported by some benchmarks they did.
+
+What also might be valuable would to be show that certain workloads or classes of workloads are likely to have a high occurrence of some input pattern.
+This can then be matched to an input acceptance class of a TM implementation to say the implementation would be good or bad to use with the given workloads.
+It would also be interesting to see if input acceptance can be connected in any way liveness or other conditions.
+In addition, input acceptance as it stands is not a throughogh benchamrk as does not capture everything about a TM such as how much additional work it is doing on meta data, or things like waiting.
+Note that input acceptance is similar to the idea of a conflict function \cite{scott:semantics:transact:2006}.
+A conflict function says some pattern will cause a conflict, while an input acceptance defines a pattern that cannot occur because it would have caused a conflict.
+An important difference is that in \cite{scott:semantics:transact:2006} where conflict functions are defined, transactions must be serialized at their commit point in real time which makes the consistency condition more strict than opacity, but input acceptance is examined on various consistency properties, including serializability.
+
+\subsection{Obligation}
+In \cite{1532612} a safety property called \emph{obligation} that can be used on transactions is defined.
+If a TM satisfies some given obligation property, then every transaction that satisfies that given property must commit.
+Safety properties such as opacity ensure some level of consistency, but they do not prevent unnecessary aborts.
+Liveness and non-blocking properties such as lock freedom and livelock freedom guarantee some sort of progress, but still do not prevent unnecessary aborts.
+A trivial example of this is a TM implementation that always commits transactions running on a given core, while aborting every transaction on every other core.
+This is similar to just running the program sequentially, and is obviously opaque and as can even be wait-free.
+In order to avoid unnecessary aborts, obligation can be used in addition to other safety properties ensuring consistency, and liveness.
+
+In \cite{1532612} they give two obligation properties, and define a TM that satisfies the properties.
+Other that just defining when a transaction must commit, they prove that a TM that implements this two properties contains only transactions that see consistent views of the shared memory, and are atomic.
+It could be interesting to look at what other guarentees can obligation properties ensure, for example other consistency properties, or liveness?
+Also, are the properties proposed in \cite{1532612} too strong? $i.e.$ Do they prevent certain types of TM implementations?
+Note that obligation is similar to the idea of input acceptance and conflict functions, except it is looked at from the point of view of where a transaction will commit vs where a transaction will conflict.
+
+\subsection{Permissiveness}
+A TM that is \emph{permissive} \cite{LPD-CONF-2008-031} will only abort a transaction if by committing that transaction the chosen correctness criterion will be violated, these unnecessary aborts are called \emph{spare aborts}.
+In fact most TM implementations have contention managers that will abort at least one transaction whenever there is a conflict, which it likely too often.
+In \cite{1696831} it is shown show that for any deterministic TM that aborts at least one transaction on a conflict, there exist workloads where the TM will execute at the parallelism of a single core (due to a large number of aborts), when the optimal (clairvoyant) contention manager and transactional ordering will execute maximumally parrell on all cores in the system.
+Creating a TM that does not allow any or even few spare aborts is difficult due to the amount of meta data needed to keep track of all transactions that might conflict, especially when considering more relaxed consistency criterion such as serializability where transaction ordering needs not to respect real time order.
+In \cite{1584013} they look at the problem of spare aborts in depth and show some limitations of TMs and preventing spare aborts.
+\textcolor{Red}{need to finish reading this one}
+
+An interesting approach to avoiding spare aborts is taken in \cite{LPD-CONF-2008-031} where they create a TM, called AVSTM, that is \emph{probabilistically permissive} with respect to opacity.
+This means that it has a positive probability (greater than zero) to accept any history that is opaque.
+This is accomplished by whenever a transaction tries to commit, a valid sterilization point is randomly chosen from any time within its execution window (most implementations will simply chose the time of commit as the serialization point).
+The basic reason why this allows any opaque history to be possibly accepted is because in any valid opaque history a transaction is serialized to sometime within its execution window, so there is a positive probability that this point will be chooen randomly by AVSTM.
+
+For an online TM to keep track of what that serialization point should be in order to avoid spare aborts is expensive, the only TM they know that does this requires $O(n^2)$ cost to perform operations.
+By randomly choosing a serialization point they avoid this cost while still having the possibility of avoiding spare aborts.
+AVSTM is shown to exhibit good performance in selected benchmarks, while performing poorly in others, but it is important to note that AVSTM is implemented as lock-free and it is compared to implementations that are obstruction free or use locks so it is hard to tell what is causing the performance differences.
+It might be interesting to see if AVSTM can be implemented as obstruction-free or with locks.
+
+They also suggest the idea of $k$-permissiveness, which is defined as the maximum ratio of spare aborts to the total number of transactions for any history that satisfies the consistency condition as a way to compare non-permissive TMs.
+It is not exactly clear how to measure this though.
+Input acceptance \cite{LPD-ARTICLE-2009-004} is a step in this direction because it gives patterns of histories that a TM does not accept, and TMs can be compared on how general the patterns they accept are, but this does not consider number of aborts.
+
+
+\section{Implementations}
+This section introduces some of the interesting features of some popular STM designs.
+\cite{1612021} gives an introductory overview of the algorithms and principles behid three different STM implementations including TL2 and JVSTM.
+
+\subsection{DSTM}
+Dynamic STM or DSTM \cite{872048} was introduced as the first dynamic software transactional memory, meaing the memeory accesses made by a transaction did not need to be defined beforehand by the programmer.
+It also introduced the idea of \emph{contention managment} and \emph{early release}.
+It is obstruction-free.
+
+\subsection{ASTM}
+Adaptive STM or ASTM \cite{Marathe05adaptivesoftware} was designed with the ability to dynamically adjust how it performs underlying operations based on the workload in order to improve performance.
+It has the ability to change between eager and lazy acquire for writes, and change metadata structure between direct or indirect object referencing.
+It is obstruction-free.
+
+\subsection{RSTM}
+RSTM \cite{Marathe06loweringthe} is an obstruction-free implementation designed with the idea of improving the performance of non-blocking TMs.
+It does this by organizing sharded data and transactional metadata in memory efficently, as well as using visible reads designed for low contention in combination with invisible reads.
+
+\subsection{TL2}
+Transactional Locking 2 or (TL2) \cite{Dice06transactionallocking} was developed as an efficient TM that ensures opacity.
+It uses invisible reads along with a global clock in order to perform constant time read set validation.
+It is implemented using locks.
+
+\subsection{JVSTM}
+With the goal of improving concurrency JVSTM \cite{1228566} introduces multi-versioning allowing a read-only transaction to never conflict with any other transaction.
+It uses locks.
+
+\subsection{TinySTM/LSA-STM}
+TinySTM and LSA-STM \cite{10.1109/TPDS.2010.49} introduce the lazy snapshot or LSA algorithm which uses a logical clock.
+This allows invisible reads with mostly constant time read set validation and less aborts than TL2.
+LSA-STM is obstruction free and can use multi-versioning.
+TinySTM uses locks.
+
+\subsection{McRT-STM}
+McRT-STM \cite{1123001} was designed based on testing many different impementation aspects of sn STM in order to choose the most efficient ones.
+It supports closed nested transactions and lets the programmers use retry and orElse constructs.
+It uses locks.
+
+\subsection{SwissTM}
+SwissTM \cite{1542494} is a recent STM designed through a process of trial and error in order to find the best performance across a wide range of workloads.
+It uses a mixed eager/lazy conflict detection scheme, and a two phase contention manager intended to put no overhead on read-only and short read-write transactions while insuring the progress of larger transactions.
+Its performance is shown in a wide range of benchmarks in \cite{LPD-REPORT-2009-003} and \cite{1542494}.
+It is implemented using locks.
+
+\subsection{SkySTM}
+SkySTM \cite{lev:anatomy:transact:2009} is a recent implementation designed especially for scalibility and performance.
+It introduces \emph{semivisibile} reads as well as \emph{conflict} based waiting to implement privitization.
+It is implemented using locks.
+
+\subsection{STM Haskell}
+STM Haskel \cite{sjbc000}l is an implementation designed in and for the Haskell programming language.
+It provides some interesting properties such as strong isolation, composable transactions, disallows I/O from within transactions, as well as the language constructs \emph{retry} and \emph{orElse}.
+
+\section{Conclusion}
+Software transactional memory has been widely studied and many problems have been solved since the first STM was desribed in 1995 \cite{224987}.
+Still though many problems remain unsolved and many new questions have been introduced since then and because of this STMs are not yet widely used in practice.
+Yet it is still a promising solution to the difficulty of writing concurrent programs and there is much reserach still to be done.
+
+% \newpage
+% \bibliographystyle{plain}
+% \bibliography{survey}
+% \end{document}

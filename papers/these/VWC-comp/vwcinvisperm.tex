@@ -1,0 +1,142 @@
+% % ============================================================================
+% % ============================================================================
+% \documentclass[11pt]{article}
+% \usepackage{epic,eepic,amsmath,latexsym,fullpage,amssymb,color,times}
+% \usepackage{ifthen,graphics,epsfig}
+% \usepackage[english]{babel}
+% \usepackage{times}
+% \usepackage{graphicx}
+% 
+% \bibliographystyle{plain}
+% 
+% %============================================================================
+% \usepackage{float}
+% \newfloat{algorithm}{thp}{lop}
+% \floatname{algorithm}{Algorithm}
+% 
+% \begin{document}
+% %-----------------------for square--------------------------------------------
+% \newlength {\squarewidth}
+% \renewenvironment {square}
+% {
+% \setlength {\squarewidth} {\linewidth}
+% \addtolength {\squarewidth} {-12pt}
+% \renewcommand{\baselinestretch}{0.75} \footnotesize
+% \begin {center}
+% \begin {tabular} {|c|} \hline
+% \begin {minipage} {\squarewidth}
+% \medskip
+% }{
+% \end {minipage}
+% \\ \hline
+% \end{tabular}
+% \end{center}
+% }  
+%  
+% %--------------------------------------------------------------------
+% %-------- macros for algorithm ---------------------------------------
+% \newtheorem{definition}{Definition}
+% \newtheorem{theorem}{Theorem}
+% \newtheorem{lemma}{Lemma}
+% \newtheorem{corollary}{Corollary}
+% \newcommand{\toto}{xxx}
+% \newenvironment{proofT}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+% \newenvironment{proofL}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+% \newenvironment{proofC}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+% 
+% 
+% \newcounter{linecounter}
+% \newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}
+% {(0\arabic{linecounter})}{(\arabic{linecounter})}}
+% \renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+% \newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+% \renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 
+% 9\else 0\fi \arabic{linecounter}}
+% 
+% 
+% 
+% % ----------------------for appendix --------------------------------------
+% \newenvironment{lemma-repeat}[1]{\begin{trivlist}
+% \item[\hspace{\labelsep}{\bf\noindent Lemma~\ref{#1} }]}%
+% {\end{trivlist}}
+% 
+% \newenvironment{theorem-repeat}[1]{\begin{trivlist}
+% \item[\hspace{\labelsep}{\bf\noindent Theorem~\ref{#1} }]}%
+% {\end{trivlist}}
+% 
+% \newenvironment{corollary-repeat}[1]{\begin{trivlist}
+% \item[\hspace{\labelsep}{\bf\noindent Corollary~\ref{#1} }]}%
+% {\end{trivlist}}
+
+(Permissiveness is defined as follows: A transaction only aborts if by committing it violates consistency.
+Read operations are invisible, but committed read only transactions are visible.
+Other defninitions and notations are used from the paper \emph{Read invisibility, virtual world consistency, and permissivenss are compatible})
+
+\begin{theorem}
+\label{vwcinvisperm} 
+It is possible for a TM to implement VWC, invisible read operations and permissiveness.
+\end{theorem}
+\vspace{-0.15cm}
+\begin{proofT}
+
+Consider some TM that has invisible read operations executing on some workload.
+We will show by induction that it is possible to have committed transactions that are permissive and VWC, and that aborted transactions are VWC.
+
+The base case for the committed transactions is obvious (the first transaction to perform the $try\_to\_commit$ operation in the shared memory history will commit).
+Now assume some transaction $T_N$ is performing the $try\_to\_commit$ operation after $n-1$ transactions have previously performed this operation in the shared memory history (either committing successfully or aborting).
+First notice that each operation of the shared memory history of all previously commited transactions are visible to $T_N$.
+Now assume by contridiction that this transaction commits and creates a history that is not VWC.
+This means that by commiting this transaction it becomes false that \emph{all committed transaction have a realtime-complinat legal linear extension}.
+But since all operations of previous transactions are visible to this transacions then the transaction would have aborted if this was violated.
+
+Now assume this transaction commits if this property is not violated.
+For a TM to be permissive the transaction must not abort unless by committing it violates consistency.
+From the above we know that the transactions are commiting as often as possible and that the committed transactions are VWC, but we do not know that the aborted tranactions are VWC.
+
+Now consider the aborted transactions.
+We will prove by contradiction that the aborted transactions are VWC.
+For an aborted transaction $T_A$ to not be VWC it must be false that its \emph{causal past has a legal linear extension}.
+This means that some commited transaction $T_B \in past(T_A)$ and $T_B$ must be illegal in the casual past of $T_A$ ($past(T_A)$).
+
+This crease the following posibilites (from the definition of a legal transaction):
+\begin{enumerate}
+
+\item \label{poss1} The transaction $T_C$ that wrote the value that was read by $T_B$ is not in $past(T_A)$.
+But it is obvious that $T_C$ must be in $past(T_A)$ because if $T_B$ read the value from $T_C$ then $T_C$ must have committed before the read in the shared memory history, and will be in $past(T_A)$.
+
+\item \label{poss2} The transactions $T_B$, $T_C$, and $T_D$, are in $past(A)$.
+$T_B$ read a value written by $T_C$.
+$T_C \rightarrow_S T_D \rightarrow_S T_B$ and $w_{T_D}(X) \in T_D$.
+
+\end{enumerate}
+
+There are two cases to consider for posibility \ref{poss2}, first consider that $T_A \neq T_B$.
+So we have $T_C \rightarrow^{rf} T_B$ and $T_C \rightarrow_S T_D \rightarrow_S T_B$ and $w_{T_D}(X) \in T_D$, but this is impossible because each of these transactions are committed and are VWC (one of these transactions would have aborted when performing its $try\_to\_commit$ operation).
+
+Now consider that $T_A = T_B$.
+So we have $T_C \rightarrow^{rf} T_A$ and $w_{T_D}(X) \in T_D$ and $T_D \in past(T_A)$.
+There are three posibilties for $T_D$ being in $past(T_A)$ (from the definition of casual past).
+
+\begin{enumerate}
+
+\item \label{pas1} $T_D \rightarrow_{PO} T_A$.  This is impossible because then $T_A$ would never have read from $T_C$.
+
+\item \label{pas2} $T_D \rightarrow^{rf} T_A$.  But since we also have $T_C \rightarrow^{rf} T_A$, then $T_A$ would have aborted before it completed both of these reads.
+
+\item \label{pas3} $\exists (T_D \rightarrow_{PO} T) \wedge (T \rightarrow_{PO} T_A)$.
+First notice that in order for $T_D$ to be in $past(T_A)$ it must commit in the shared memory history before the last read done by $T_A$.
+So assume $T_D$ commits at a time in the shared memory history before $T_C \rightarrow^{rf} T_A$.
+Then it is possible that $T_D \in past(T_A)$ before $T_C \rightarrow^{rf} T_A$ in the shared memory history, but if this is true then $T_A$ will abort when it tries to read a value from $T_C$.
+This means that $T_D$ must be added to $past(T_A)$ after $T_C \rightarrow^{rf} T_A$ so the following must be true:
+$(T_D \rightarrow_{PO} T) \wedge (T \rightarrow^{rf} T_A)$ and $(T_C \rightarrow_{rf} T_A) <_H  (T \rightarrow^{rf} T_A)$.
+But then $T_A$ would abort when it performs the read from $T$.
+
+\end{enumerate}
+
+\renewcommand{\toto}{vwcinvisperm} 
+\end{proofT}
+
+% \end{document}
