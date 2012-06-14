@@ -1,0 +1,122 @@
+\documentclass[10pt]{book}
+
+%%%%%%%%%%
+% Packages utilises
+%%%%%%%%%%
+% Langue
+\usepackage[T1]{fontenc}
+\usepackage[frenchb]{babel} % On peut aussi mettre english ici.
+% Figures et couleurs
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{color}
+\definecolor{gris}{gray}{0.45}
+% Font math
+\usepackage{amssymb, amsmath, amsfonts}
+\usepackage{dsfont}
+% Mise en page latex et police
+\usepackage{vmargin}
+
+%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%
+
+%\addtocounter{page}{-1} % Pour revenir a 0 dans la numerotation des pages.
+
+%%%%%%%%%%
+% PREMIERE DE COUVERTURE
+%%%%%%%%%%
+
+\newlength{\plarg}
+\setlength{\plarg}{8cm}
+\newlength{\glarg}
+\setlength{\glarg}{14cm}
+\newlength{\Glarg}
+\setlength{\Glarg}{15cm}
+
+\begin{titlepage}
+\thispagestyle{empty}
+%\noindent
+%\noindent
+%\begin{minipage}{\glarg}
+%{\large LOGO labo} \hfill {\large LOGO Ecole} 
+%{\rule{\glarg}{1pt}} \vspace{-1cm}
+%\begin{center}
+%\begin{tabular}{p{13cm}r}
+%\hspace{-2mm}\textbf{Nom Labo} & \textbf{LABO} \\
+%\hspace{-2mm}Nom complet & Section \dots \\
+%\hspace{-2mm}du laboratoire & 
+%\end{tabular}
+%\end{center}
+%\end{minipage}
+
+\vspace{-1cm}
+\begin{minipage}{\glarg}
+\vspace{-4.5cm}
+\hspace{-1.5cm}{\color{gris}\large\bf N$^o$ d'ordre  : \hspace{10cm} \bf ANN\'EE 2012}
+\end{minipage}
+\vspace{-2cm}
+\begin{figure}[htp]
+\center
+\hspace{-1cm}\includegraphics[angle=0,width=16cm]{Logos.png}
+\end{figure}
+
+\begin{center}
+\begin{minipage}{\glarg}
+\vspace{0.5cm}
+\centering{\Large\bfseries TH\`ESE / UNIVERSIT\'E DE RENNES 1}\\ \vspace{0mm}\emph{\Large sous le sceau de l'Universit\'e Europ\'eenne de Bretagne}\\ \vspace{0.5cm}
+{\Large pour le grade de}\\ \vspace{2mm}
+{\Large\bf DOCTEUR DE L'UNIVERSIT\'E DE RENNES 1}\\ \vspace{0.4cm}
+\emph{\Large Mention : Inform{\'a}tique}\\ \vspace{2mm}
+{\Large\bf Ecole doctorale Matisse}\\ \vspace{0.3cm}
+{\Large pr\'esent\'ee par} \\ \vspace{3mm}
+{\Huge\bf Fern{\'a}ndez  H{\'e}ctor}\\ \vspace{0.4cm}
+{\Large pr\'epar\'ee \`a l'unit\'e de recherche: UMR 6074-IRISA\\
+\'{E}quipe d'accueil: Myriads\\
+\'{E}cole doctoral: Matisse\\
+Composante universitaire: Ifsic }   \vspace{0.3cm}
+\\
+\hspace{-20mm}{\rule{\Glarg}{1pt}}\\
+\vspace{8mm}
+
+\begin{tabular}{p{7cm}p{10cm}}
+\begin{minipage}{\plarg}
+\vspace{-4cm}
+\hspace{-1.8cm}{\huge\bf Intitul\'e de la th\`ese:}\vspace{5mm}
+
+\hspace{-1.8cm}{\huge\bf Flexible Coordination}\vspace{5mm}
+
+\hspace{-1.8cm}{\huge\bf through}\vspace{5mm}
+
+\hspace{-1.8cm}{\huge\bf the Chemical Metaphor}\vspace{5mm}
+
+\hspace{-1.8cm}{\huge\bf for Service Infrastructures}\vspace{5mm}
+
+
+\end{minipage}
+&
+\begin{minipage}{\plarg}
+{\large\bf Th\`ese soutenue \`a l'INRIA -- Rennes \vspace{1mm}\newline}
+{\large\bf le 20 Juin 2012\vspace{2mm}\newline}
+{\large devant le jury compos\'e de : \vspace{2mm}\newline}
+{\Large\bf Jean-Pierre Ban{\^a}tre\vspace{0mm}\newline}
+{ Professeur d'Universit{\'e}, Universit{\'e} de Rennes 1 \!/\! pr\'esident\vspace{1mm}\newline}
+{\Large\bf Jean-Louis Giavitto\vspace{0mm}\newline}
+{ Directeur de Recherche, CNRS / IRCAM \!/\! rapporteur\vspace{1mm}\newline}
+{\Large\bf Christian Perez\vspace{0mm}\newline}
+{ Directeur de Recherche, INRIA \!/\! rapporteur\vspace{1mm}\newline}
+{\Large\bf Oscar Sanju{\'a}n Mart{\'i}nez\vspace{0mm}\newline}
+{ Professeur Associ{\'e}, Universit{\'e} Carlos III de Madrid\!/\! examinateur\vspace{1mm}\newline}
+{\Large\bf Thierry Priol \vspace{0mm}\newline}
+{ Directeur de Recherche, INRIA \!/\! directeur de th\`ese\vspace{1mm}\newline}
+{\Large\bf C{\'e}dric Tedeschi\vspace{0mm}\newline}
+{ Ma{\^i}tre de Conf{\'e}rences, Universit{\'e} de Rennes 1 \!/\! co-directeur de th\`ese\vspace{1mm}\newline}
+
+\end{minipage}
+\end{tabular}
+
+\end{minipage}
+\end{center}
+\end{titlepage}
+
+\end{document}

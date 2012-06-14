@@ -1,0 +1,151 @@
+% Style de document Publication Interne Irisa
+% (c) Philippe Louarn - INRIA/IRISA - 1993/2009
+%
+% 
+%%% Pour utilisation interne a l'UMR Irisa seulement %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\styleoption{umr.sty}
+\def\fileversion{v2.0}
+\def\filedate{09/03/08} 
+\NeedsTeXFormat{LaTeX2e}
+
+
+\typeout{Style de document Publication Internes Irisa : \styleoption,
+\fileversion\space du <\filedate>}
+
+\@twosidetrue
+
+\def\RRdate#1{\gdef\@RRdate{#1}}
+\def\@RRdate{\ifcase\the\month
+ \or Janvier\or F{\'e}vrier\or Mars\or Avril\or Mai\or Juin
+ \or Juillet\or Ao{\^u}t\or Septembre\or Octobre\or Novembre\or D{\'e}cembre\fi\space
+ \number\the\year
+ \@warning{*** Pas de \string\RRdate \space : aujourd'hui par défaut. ***}}
+
+\def\RRauthor#1{\def\and{, }\gdef\@RRauthor{#1}\gdef\@authorhead{#1}}
+\def\@RRauthor{??\@warning{***Il manque le nom d'auteur,^^J
+utilisez \string\RRauthor{Prenom1 NOM1 \string\and \space Prenom2 NOM
+\string\and \space... ***}}}
+
+\def\RRtitle#1{\gdef\@RRtitle{#1}\@ifundefined{ifFrench}{\relax}%
+{\gdef\@titlehead{#1}}}
+\def\@RRtitle{??\@warning{*** Pas de titre français, utilisez \string\RRtitle. ***}}
+
+\def\titlehead#1{\gdef\@titlehead{#1}}
+\def\authorhead#1{\gdef\@authorhead{#1}}
+\titlehead{}
+\authorhead{}
+
+\long\def\RRnote#1{\begingroup
+\def\protect{\noexpand\protect\noexpand}\xdef\@RRnote{\@RRnote
+  \protect\footnotetext[0]{#1}}\endgroup}
+
+\def\@RRnote{}
+
+
+\gdef\@thanks{}
+\gdef\@abstract{}\gdef\@resume{}\gdef\@motcle{}\gdef\@keyword{}
+
+
+\def\motcle#1{\def\@motcle{\noindent{\bf Mots cl\'es : } #1\par}}
+\def\keyword#1{\def\@keyword{\noindent{\bf Key-words: } #1\par}}
+
+\def\RRetitle#1{\gdef\@RRetitle{#1}\@ifundefined{ifFrench}
+{\gdef\@titlehead{#1}}{\relax}}
+\def\@RRetitle{??\@warning{*** Pas de titre anglais, utilisez \string\RRetitle. ***}}
+
+\newcommand\RRNo[1]{%
+    \gdef\@RRNo{#1}}
+\newcommand\@RRNo{????}
+
+%%\URRennes
+
+\RequirePackage{graphicx}
+%%\RequirePackage{a4wide}
+\evensidemargin-1.34cm
+\oddsidemargin-1.34cm
+\textwidth19cm
+\topmargin-1.54cm
+\advance\textheight by 5cm
+
+\def\makeRR{
+%% Page de titre interieure
+\begin{titlepage} 
+\thispagestyle{titre}
+\vskip-8cm\noindent\parbox[b]{8cm}{\bf{Publications Internes de l'IRISA}\\
+{ISSN : 2102-6327}\\
+{PI} \@RRNo{} -- \@RRdate{}}\hfill
+\parbox[b]{4cm}{\includegraphics[width=4cm]{logo_irisa_bibli.jpg}}%
+\bgroup\let\footnote 1\def\@fnsymbol##1{\ifcase##1 \or * \or {**} \or {***} \or {****} \or
+{*****} \or {******} \else\@ctrerr \fi\relax}  
+\def\@fndot{\null}
+\def\thefootnote{\fnsymbol{footnote}} 
+\def\@makefnmark{\hbox{\@textsuperscript{\@thefnmark}}}
+\long\def\@makefntext##1{\parindent 1em\noindent
+            \hb@xt@1.8em{%
+                \hss\@textsuperscript{\normalfont\@thefnmark}}##1}%
+\let\footnoterule\relax \null \vfil \vskip 30pt% 
+\begin{center}
+  \vfill
+  {\Large\bf \@ifundefined{ifFrench}{\@RRetitle}{\@RRtitle} \par} \vskip 2em
+  {\large \lineskip .75em \@RRauthor \par} \vskip 1em 
+\end{center}\pagebreak[0]
+\@RRnote \@thanks 
+\par \vfil\@ifundefined{ifFrench}{\@abstract\par\vskip2mm \@keyword}
+{\@resume \par\vskip2mm \@motcle} \vfil \hfill\hbox{\rule{4cm}{.03cm}}\hfill\null
+{\samepage\@ifundefined{ifFrench}
+{{\large\em \begin{center}\@RRtitle\end{center}}}
+{{\large\em \begin{center}\@RRetitle\end{center}}}
+\pagebreak[0]\@ifundefined{ifFrench}{{\em \@resume \par\vskip2mm \@motcle}}
+{{\em \@abstract\par\vskip2mm \@keyword}}}%
+\hfill\hbox{\rule{4cm}{.03cm}}\hfill\null \vfill \null 
+\egroup\end{titlepage}
+\setcounter{footnote}{0} \let\thanks\relax
+\let\maketitle\relax}
+
+
+\long\def\resume#1{\long\def\@resume{\noindent{\bf R\'esum\'e : } #1\par}}
+\long\def\abstract#1{\long\def\@abstract{\noindent{\bf Abstract: } #1\par}}
+
+\let\RRresume=\resume \let\RRabstract=\abstract
+\let\RRmotcle=\motcle \let\RRkeyword=\keyword
+
+\@ifundefined{reset@font}{\gdef\reset@font{\relax}}{}
+
+\def\inibe{\let\\\space\def\thanks##1{\relax}\def\footnotemark[##1]{\relax}}
+
+\def\ps@pi{\let\@mkboth\@gobbletwo%
+     \def\@oddhead{\vbox{\hbox to \textwidth{%
+\normalsize\it{\inibe\@titlehead}\hfil\rm\thepage}%
+\hbox{\rule[-1ex]{\textwidth}{.03cm}}}}
+     \def\@oddfoot{{\footnotesize Collection des Publications Internes de l'Irisa \copyright{}\/IRISA}\hfill}
+     \def\@evenhead{\vbox{\hbox to \textwidth{%
+\rm\thepage\normalsize\it\hfil{\inibe\@authorhead}}
+\hbox{\rule[-1ex]{\textwidth}{.03cm}}}}%
+     \def\@evenfoot{\hfill{\footnotesize Collection des Publications Internes de l'Irisa \copyright{}\/IRISA}}}
+
+\def\ps@titre{\let\@mkboth\@gobbletwo%
+     \def\@oddhead{}%
+     \def\@oddfoot{\hbox to \textwidth{%
+\footnotesize\null\hfill \copyright{}\/IRISA -- Campus de Beaulieu -- 35042 Rennes Cedex
+-- France -- +33 2 99 84 71 00 -- www.irisa.fr\hfill\null}}
+     \let\@evenhead=\@oddhead
+     \let\@evenfoot=\@oddfoot}
+
+%% Fraction et compteurs pour les flottants
+\setcounter{topnumber}{5} \def\topfraction{1} \setcounter{bottomnumber}{4}
+\def\bottomfraction{1} \setcounter{totalnumber}{10} \def\textfraction{0}
+\def\floatpagefraction{.5}
+
+\clubpenalty=10000  %% ligne orpheline
+\widowpenalty=10000 %% ligne veuve
+\hfuzz=2pt %% pour ne pas avoir trop de overfull hbox...
+\vfuzz=5pt %%   "           "         "          vbox...
+\pagestyle{pi}
+
+%% chapter pour book et report
+
+\@ifundefined{chapter}{\relax}{\def\chapter{\clearpage \thispagestyle{pi}
+\global\@topnum\z@ \@afterindentfalse \secdef\@chapter\@schapter}}
+
+

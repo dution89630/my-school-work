@@ -1,0 +1,163 @@
+\begin{algorithm*}[!ht]
+  \caption{A Portable Speculation-Friendly Binary Search Tree}\label{alg:tree1}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+   		\Part{State of node $n$}{
+			\State $\ms{node}$ a record with fields: 
+			\State \T $\ms{k} \in  \mathbb{N}$, the node key
+			\State \T $\ms{v} \in  \mathbb{N}$, the node value
+			\State \T $\ms{\ell}, \ms{r} \in \mathbb{N}$, left/right child pointers, initially $\bot$
+			\State \T $\ms{left-h}, \ms{right-h} \in \mathbb{N}$, local height of left/right 
+			\State \T\T child, initially 0
+			\State \T $\ms{local-h} \in \mathbb{N}$, expected local height, initially 1
+			\State \T $\ms{del} \in \{\lit{true}, \lit{false}\}$, indicate whether 
+			\State \T\T logically deleted, initially $\lit{false}$
+   		}\EndPart
+   	
+%		\Statex   	
+%		
+%		\Part{State of shared memory $s$}{
+%			\State $\ms{root}$ shared pointer to root 
+%   		}\EndPart
+		
+		\Statex
+		
+		\Part{State of process $p$}{
+			\State $\ms{root}$, shared pointer to root 
+			%\State $\ms{curr}$, a pointer to a node used while traversing the tree
+			%\State $\ms{\ell}, \ms{r}$, pointers to left/right children 
+			%\State $\ms{left-h}, \ms{right-h}, \ms{left-local-h}, \ms{right-local-h}, \ms{local-h}  \in \mathbb{N}$
+			%\State $\ms{bal} \in \mathbb{N}$, the imbalance level
+		}\EndPart
+		
+		
+		\Statex
+		
+		\Part{$\act{find}(k)_p$}{
+			\State $\ms{next} \gets \ms{root}$
+			\While{$\lit{true}$}
+				\State $\ms{curr} \gets \ms{next}$
+				\State $\ms{val} \gets \ms{curr.k}$
+				\If{$\ms{val} = \ms{k}$} \label{sline:find-value}
+					$\lit{break}$
+				\EndIf
+				\If{$\ms{val} > k$} $\ms{next} \gets \lit{read}(\ms{curr.r})$ \label{sline:find-right}
+				\Else{} $\ms{next} \gets \lit{read}(\ms{curr.\ell})$ \label{sline:find-left}
+				\EndIf
+				\If{$\ms{next} = \bot$} \label{sline:find-bot}
+					$\lit{break}$
+				\EndIf
+			\EndWhile
+			\Return $\ms{curr}$ \EndReturn \label{sline:find-return}
+		}\EndPart
+
+		\Statex
+   	
+		\Part{$\act{contains}(k)_p$}{
+			\Atom
+				\State $\ms{result} \gets \lit{true}$
+				\State $\ms{curr} \gets \lit{find}(k)$ \label{sline:cont-find}
+				\If{$\ms{curr.k} \neq k$}
+					$\ms{result} \gets \lit{false}$ \label{sline:cont-neq}
+				\ElsIf{$\lit{read}(\ms{curr.del})$} $\ms{result} \gets \lit{false}$ \EndIf \label{sline:del-cont}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\ms{result}$ \EndReturn \label{sline:cont-return}
+		}\EndPart
+
+				
+		\newpage
+		
+   		\Part{$\act{insert}(k,v)_p$}{
+			\Atom
+				\State $\ms{result} \gets \lit{true}$
+				\State $\ms{curr} \gets \lit{find}(k)$  \label{sline:find-ins}
+				\If{$\ms{curr.k = k}$}
+					\If{$\lit{read}(\ms{curr.del})$} \label{sline:del-ins}
+						$\lit{write}(\ms{curr.del}, \lit{false})$ \label{sline:del-false-ins}
+						%\State $\lit{commit()}$ 
+						%\Return $\lit{true}$ \EndReturn
+					\Else{}
+						%\State $\lit{commit}()$
+						%\Return $\lit{false}$ \EndReturn
+						$\ms{result} \gets \lit{false}$ \label{sline:false-ins}
+					\EndIf
+				\Else{} \Comment{allocate a new node} \label{sline:new-node}
+					\State $\ms{new.k} \gets \ms{k}$
+					\State $\ms{new.v} \gets \ms{v}$
+					\If{$\ms{curr.k} > \ms{k}$} $\lit{write}(\ms{curr.r},\ms{new})$ \label{sline:start-ins}
+					\Else{} $\lit{write}(\ms{curr.\ell}, \ms{new})$ \label{sline:end-ins}
+					\EndIf
+				\EndIf
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\ms{result}$ \EndReturn \label{sline:insert-return}
+   		}\EndPart
+		
+		\Statex
+		
+
+	   	\Part{$\act{right\_rotate}(\ms{parent}, \ms{left-child})_p$}{
+			\Atom
+				\If{$\ms{left-child}$} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$
+				\Else{} $\ms{n} \gets \lit{read}(\ms{parent.r})$ \EndIf
+				\If{$\ms{n = \bot}$} {\bf return} $\lit{false}$  \EndIf
+				\State $\ms{\ell} \gets \lit{read}(\ms{n.\ell})$
+				\If{$\ms{\ell = \bot}$} {\bf return} $\lit{false}$  \EndIf
+				\State $\ms{\ell{}r} \gets \lit{read}(\ms{\ell.r})$
+				\State $\lit{write}(\ms{n.\ell}, \ms{\ell{}r})$
+				\State $\lit{write}(\ms{\ell.r}, \ms{n})$
+				\If{$\ms{left-child}$} $\lit{write}(\ms{parent.\ell}, \ell)$
+				\Else{} $\lit{write}(\ms{parent.r}, \ms{\ell})$ \EndIf
+				\State $\act{update-balance-values()}$ \label{line:u-b-v1}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+		\newpage
+		
+		\Part{$\act{delete}(k)_p$}{
+			\Atom
+				\State $\ms{result} \gets \lit{true}$
+				\State $\ms{curr} \gets \lit{find}(k)$ \label{sline:del-find}
+				\If{$\ms{curr.k} \neq k$}
+					%\State $\lit{commit()}$ 
+					%\Return $\lit{false}$ \EndReturn
+					\State $\ms{result} \gets \lit{false}$ \label{sline:del-false2}
+				\Else
+					\If{$\lit{read}(\ms{curr.del})$} \label{sline:del-del}
+						$\ms{result} \gets \lit{false}$ \label{sline:del-false}
+						%\State $\lit{commit()}$
+						%\Return $\lit{false}$ \EndReturn
+					\Else{} 
+						$\lit{write}(\ms{curr.del}, \lit{true})$ \label{sline:del-set}
+						%\State $\lit{commit()}$
+						%\Return $\lit{true}$ \EndReturn
+					\EndIf
+				\EndIf
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\ms{result}$ \EndReturn \label{sline:del-return}
+   		}\EndPart
+
+		\Statex
+
+		\Part{$\act{remove}(\ms{parent}, \ms{left-child})_p$}{
+			\Atom
+				\If{$\ms{left-child}$} \State $\ms{n} \gets \lit{read}(\ms{parent.\ell})$
+				\Else{} \State $\ms{n} \gets \lit{read}(\ms{parent.r})$ \EndIf
+				\If{$\ms{n = \bot}$ or $\neg\lit{read}(\ms{n.del})$} {\bf return} $\lit{false}$ \EndIf	
+				%\If{$\ms{n = \bot}$} {\bf return} \State $\lit{false}$ \EndIf
+				%\If{$\neg\lit{read}(\ms{n.del})$} {\bf return} $\lit{false}$ \EndIf
+				\If{$(\ms{child} \gets \lit{read}(\ms{n.\ell})) \neq \bot$}
+					\If{$(\ms{child} \gets \lit{read}(\ms{n.r})) \neq \bot$} {\bf return} $\lit{false}$ \EndIf \label{sline:rem-2child}
+				\EndIf
+				\If{$\ms{left-child}$} \State $\lit{write}(\ms{parent.\ell}, \ms{child})$ \label{sline:rem-unlink1}
+				\Else{} \State $\lit{write}(\ms{parent.r}, \ms{child})$ \EndIf \label{sline:rem-unlink2}
+				\State $\act{update-balance-values()}$ \label{line:u-b-v2}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

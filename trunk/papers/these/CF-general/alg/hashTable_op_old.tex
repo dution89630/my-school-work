@@ -1,0 +1,110 @@
+\begin{algorithm*}[!ht]
+  \caption{HashTable Specific Operations}\label{alg:hashTable_op}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+   		\Part{Additional fields of node $n$}{
+			\State $\ms{node}$ a record additional with fields: 
+			\State \T $\ms{hash}$, hash value for this node
+			\State \T $\ms{reverse}$, binary reverse of the hash
+			\State \T $\ms{next}$, pointer to next node in list
+			\State \T $\ms{prev}$, pointer to previous node in list
+   		}\EndPart
+   	
+%		\Statex   	
+%		
+%		\Part{State of shared memory $s$}{
+%			\State $\ms{root}$ shared pointer to root 
+%   		}\EndPart
+		
+		\Statex
+		
+		\Part{State of structure $s$}{
+			\State $\ms{table}$, pointer to array, each location in
+			\State \T the array contains a list
+			\State $\ms{table.dummy}$, pointer to dummy node
+			\State $\ms{table.mask}$, binary mask
+			\State $\ms{new-table}$, pointer to a table used during
+			\State \T rehash operations
+			\State $\ms{next-trav}$, pointer to a node used for
+			\State \T traversal in the maintenance
+			%\State $\ms{curr}$, a pointer to a node used while traversing the tree
+			%\State $\ms{\ell}, \ms{r}$, pointers to left/right children 
+			%\State $\ms{lefth}, \ms{righth}, \ms{left-localh}, \ms{right-localh}, \ms{localh}  \in \mathbb{N}$
+			%\State $\ms{bal} \in \mathbb{N}$, the imbalance level
+		}\EndPart
+
+		\Part{Process local variables}{
+			\State $\ms{l-table}$ local pointer to table
+		}\EndPart
+		
+		\newpage
+
+   		\Part{$\act{get-first}(\ms{k})_s$}{
+
+			\Return $\ms{l-table}[\lit{hash}(k) \& \ms{l-table.mask}]$ \EndReturn
+   		}\EndPart
+
+
+
+		\Statex
+   	
+		\Part{$\act{get-next}(\ms{node}, \ms{k})_s$}{
+
+			\State $\ms{next} \gets \ms{node.next}$
+			\State $\ms{list-next} \gets \lit{list}(\lit{get-next}(\ms{node}, \ms{k}))$
+			\If{$\ms{list-next} = \bot$}
+				\If{$\ms{next.is-dummy} \cap \ms{next \neq l-table.dummy}$}
+					\State $\lit{check-table}()$
+					\Return $\lit{get-first}(\ms{k})$ \EndReturn
+				\Else{}
+					\Return $\bot$ \EndReturn
+				\EndIf
+			\EndIf
+			\Return $\ms{list-next}$ \EndReturn
+		}\EndPart
+
+		\newpage
+
+   		\Part{$\act{validate}(\ms{node}, \ms{k})_s$}{
+
+			\If{$\ms{node.rem}$}
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\If{$\ms{node.next.is-dummy}$}
+				\If{$\ms{l-table.dummy = node.next}$}
+					\Return $\lit{true}$ \EndReturn
+				\EndIf
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\Return $\lit{list}(\lit{validate}(\ms{node},\ms{k}))$ \EndReturn
+   		}\EndPart
+		
+		\Statex
+
+   		\Part{$\act{add}(\ms{node}, \ms{k})_s$}{
+
+			\State $\lit{list}(\lit{add}(\ms{node},\ms{k}))$
+   		}\EndPart
+
+
+		\Statex
+
+		\Part{$\act{check-table}()$}{
+
+			\State $\ms{t2} \gets \ms{new-table}$
+			\State $\ms{t1} \gets \ms{table}$
+			\If{$\ms{l-table = t1}$}
+				\State $\ms{l-table} \gets \ms{t2}$
+			\Else{}
+				\State $\ms{l-table} \gets \ms{t1}$
+			\EndIf
+
+		}\EndPart
+
+		\Statex
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

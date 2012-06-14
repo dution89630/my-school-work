@@ -1,0 +1,114 @@
+\begin{algorithm*}[!ht]
+  \caption{Optimizations to the Speculation-Friendly Binary Search Tree}\label{alg:tree2}% \vincent{Replace uread by read, then remove all tx read/write.}}
+  \begin{algorithmic}[1]
+   \begin{multicols}{3}
+   {\size 
+   		\Part{State of node $n$}{
+			\State $\ms{node}$ the same record with an extra field: 	
+			\State \T $\ms{rem} \in \{\lit{true}, \lit{false}\}$ indicate whether 
+			\State \T\T physically deleted, initially $\lit{false}$
+   		}\EndPart
+
+		\Statex	
+
+		\Part{$\act{remove}(\ms{parent}, \ms{left-child})_p$}{
+			\Atom
+				\If{$\lit{read}(\ms{parent.rem})$} {\bf return} $\lit{false}$ \EndIf \label{line:rem-par-rem}
+				\If{$\ms{left-child}$} \State $\ms{n} \gets \lit{read}(\ms{parent.\ell})$
+				\Else{} \State $\ms{n} \gets \lit{read}(\ms{parent.r})$ \EndIf
+				\If{$\ms{n = \bot}$ or $\neg\lit{read}(\ms{n.deleted})$} {\bf return} $\lit{false}$ \EndIf
+				\If{$(\ms{child} \gets \lit{read}(\ms{n.\ell})) \neq \bot$} \label{line:rem-start}
+					\If{$\lit{read}(\ms{n.r}) \neq \bot$} {\bf return} $\lit{false}$ \EndIf
+				\Else{} \State $\ms{child} \gets \lit{read}(\ms{n.r})$
+				\EndIf \label{line:rem-mid}
+				\If{$\ms{left-child}$} \State $\lit{write}(\ms{parent.\ell}, \ms{child})$ \label{line:rem-write}
+				\Else{} \State $\lit{write}(\ms{parent.r}, \ms{child})$ \EndIf \label{line:rem-end}
+				\State $\lit{write}(\ms{n.\ell}, \ms{parent})$ \label{line:child-par-rem1}
+				\State $\lit{write}(\ms{n.r}, \ms{parent})$ \label{line:child-par-rem2}
+				\State $\lit{write}(\ms{n.rem}, \lit{true})$ \label{line:rem-rem}
+				\State $\act{update-balance-values()}$ \label{line:u-b-v3}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+
+		\newpage
+
+		
+		\Part{$\act{find}(k)_p$}{
+			\State $\ms{curr} \gets \ms{root}$
+			\State $\ms{next} \gets \ms{root}$
+			\State $\ms{rem} \gets \lit{true}$
+			\While{$\lit{true}$}
+				\While{$\lit{true}$}
+					\State $\ms{parent} \gets \ms{curr}$
+					\State $\ms{curr} \gets \ms{next}$
+					\State $\ms{val} \gets \ms{curr.k}$
+					%\State $\ms{rem} \gets \lit{uread}(\ms{curr.rem})$
+					\If{$\ms{val} = \ms{k}$} \label{line:eq-find}
+						\If{$\neg(\ms{rem} \gets \lit{read}(\ms{curr.rem}))$} \label{line:rem-check1}
+							$\lit{break}$ \label{line:break1}
+						\EndIf
+					\EndIf
+					\If{$\ms{val} > k$} $\ms{next} \gets \lit{uread}(\ms{curr.r})$ \label{line:next-find1}
+					\Else{} $\ms{next} \gets \lit{uread}(\ms{curr.\ell})$ \label{line:next-find2}
+					\EndIf
+					\If{$\ms{next} = \bot$}
+						\If{$\neg (\ms{rem} \gets \lit{read}(\ms{curr.rem}))$} \label{line:rem-check2}
+							\If{$\ms{val} > k$} 
+								$\ms{next} \gets \lit{read}(\ms{curr.r})$ \label{line:null-par-find1}
+							\Else{} $\ms{next} \gets \lit{read}(\ms{curr.\ell})$ \label{line:null-par-find2}
+							\EndIf
+							\If{$\ms{next} = \bot$} $\lit{break}$ \EndIf \label{line:break2} \label{line:null-find}
+						\Else{}
+							\If{$\ms{val} \leq k$} 
+								$\ms{next} \gets \lit{uread}(\ms{curr.r})$ \label{line:rem-find1}
+							\Else{} $\ms{next} \gets \lit{uread}(\ms{curr.\ell})$ \label{line:rem-find2}
+							\EndIf
+						\EndIf
+					\EndIf
+				\EndWhile
+				\If{$\ms{curr.k} > \ms{parent.k}$} $\ms{tmp} \gets \lit{read}(\ms{parent.r})$\label{line:par-read1}
+				\Else{} $\ms{tmp} \gets \lit{read}(\ms{parent.\ell})$ \label{line:par-read2}
+				\EndIf
+				\If{$\ms{curr} = \ms{tmp}$} 
+					\State $\lit{break}$ \label{line:par-check1}
+				\Else{} 
+					\State $\ms{next} \gets \ms{curr}$ \label{line:par-check2}
+					\State $\ms{curr} \gets \ms{parent}$ \label{line:par-check3}
+				\EndIf
+			\EndWhile
+			\Return $\ms{curr}$ \EndReturn \label{line:find-return}
+		}\EndPart	
+
+		\newpage
+
+		   \Part{$\act{right\_rotate}(\ms{parent}, \ms{left-child})_p$}{
+			\Atom
+				\If{$\lit{read}(\ms{parent.rem})$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:rot-par-rem}
+				\If{$\ms{left-child}$} \State $\ms{n} \gets \lit{read}(\ms{parent.\ell})$
+				\Else{} \State $\ms{n} \gets \lit{read}(\ms{parent.r})$ \EndIf
+				\If{$\ms{n = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf
+				\State $\ms{\ell} \gets \lit{read}(\ms{n.\ell})$
+				\If{$\ms{\ell = \bot}$} \Return $\lit{false}$ \EndReturn \EndIf \label{line:l-child-rot}
+				\State $\ms{\ell{}r} \gets \lit{read}(\ms{\ell.r})$
+				\State $\ms{r} \gets \lit{read}(\ms{n.r})$
+				\State \Comment{allocate a new node}\label{line:new-node-ret}
+				\State $\ms{new.k} \gets \ms{n.k}$ 
+				\State $\ms{new.\ell} \gets \ms{\ell{}r}$ \label{line:rot-path1}
+				\State $\ms{new.r} \gets \ms{r}$ \label{line:rot-path2}
+				\State $\lit{write}(\ms{\ell.r}, \ms{new})$ \label{line:rot-path3}
+				\State $\lit{write}(\ms{n.rem}, \lit{true})$ \label{line:rem-rot}
+				\If{$\ms{left-child}$} \State $\lit{write}(\ms{parent.\ell}, \ms{\ell})$ \label{line:rot-write}
+				\Else{} \State $\lit{write}(\ms{parent.r}, \ms{\ell})$ \EndIf \label{line:rot-end}
+				\State $\act{update-balance-values()}$ \label{line:u-b-v4}
+			\EndAtom{} \Comment{current transaction tries to commit}
+			\Return $\lit{true}$ \EndReturn
+   		}\EndPart
+
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\end{algorithm*}

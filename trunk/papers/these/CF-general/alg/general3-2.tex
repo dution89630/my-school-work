@@ -1,0 +1,128 @@
+\begin{algorithm*}[t]
+   \caption{Operations of the Generic CF Algorithm}\label{alg:general_op-2}  
+\algtechrep
+   \begin{algorithmic}[1]
+ 
+   \algrestore{general}
+    
+   \begin{multicols}{3}
+   {\size 
+
+  		\Part{State of node $n$}{
+			\State $\ms{node}$ a record with fields: 
+			\State \T $\ms{k} \in  \mathbb{N}$, the node key
+			\State \T $\ms{del} \in \{\lit{true}, \lit{false}\}$, indicate whether 
+			\State \T\T logically deleted, initially $\lit{false}$
+			\State \T $\ms{rem} \in \{\lit{true}, \lit{false}\}$, indicate whether 
+			\State \T\T physically deleted, initially $\lit{false}$
+			\State \T $\ms{lock}$, used to lock the node
+   		}\EndPart
+
+		\Statex
+
+
+		\Part{$\act{contains}(k)_p$}{
+			\State $\ms{node} \gets \lit{get\_first}(\ms{structure})$
+			\While{$\lit{true}$}
+				\State $\ms{next} \gets \lit{get\_next}(\ms{node}, \ms{k})$
+				\If{$\ms{next} = \bot$}
+					\If{$\lit{validate}(\ms{node}, \ms{k})$}
+						\State $break$
+					\EndIf
+% 				\ElsIf{$\ms{next.k} = \ms{k}$}
+% 					\If{$\neg \ms{next.rem}$}
+% 						\State $\ms{node} \gets \ms{next}$
+% 						\State $break$
+% 					\EndIf
+				\Else{}
+					\State $\ms{node} \gets \ms{next}$
+				\EndIf
+			\EndWhile
+			\State $\ms{result} \gets \lit{false}$
+			\If{$\ms{node.k = k}$}
+				\If{$\neg \ms{node.del}$}
+					\State $\ms{result} \gets \lit{true}$
+				\EndIf
+			\EndIf
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+
+		\newpage
+
+		\Part{$\act{insert}(k)_p$}{
+
+			\State $\ms{node} \gets \lit{get\_first}(\ms{structure})$
+			\While{$\lit{true}$}
+				\State $\ms{next} \gets \lit{get\_next}(\ms{node}, \ms{k})$
+				\If{$\ms{next} = \bot$}
+					\State $\lit{lock}(\ms{node})$
+					\If{$\lit{validate}(\ms{node}, \ms{k})$}
+						\State $break$
+					\EndIf
+					\State $\lit{unlock}(\ms{node})$
+% 				\ElsIf{$\ms{next.k} = \ms{k}$}
+% 					\State $\lit{lock}(\ms{next})$
+% 					\If{$\neg \ms{next.rem}$}
+% 						\State $\ms{node} \gets \ms{next}$
+% 						\State $break$
+% 					\EndIf
+% 					\State $\lit{unlock}(\ms{next})$
+				\Else{}
+					\State $\ms{node} \gets \ms{next}$
+				\EndIf
+			\EndWhile
+			\State $\ms{result} \gets \lit{false}$
+			\If{$\ms{node.k = k}$}
+				\If{$\ms{node.del}$}
+					\State $\ms{node.del} \gets \lit{false}$
+					\State $\ms{result} \gets \lit{true}$
+				\EndIf
+			\Else{}
+				\State $\lit{add\_node}(\ms{node}, \ms{k})$
+				\State $\ms{result} \gets \lit{true}$
+			\EndIf
+			\State $\lit{unlock}(\ms{node})$
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+
+		\newpage
+
+		\Part{$\act{delete}(k)_p$}{
+			\State $\ms{node} \gets \lit{get\_first}(\ms{structure})$
+			\While{$\lit{true}$}
+				\State $\ms{next} \gets \lit{get\_next}(\ms{node}, \ms{k})$
+				\If{$\ms{next} = \bot$}
+					\State $\lit{lock}(\ms{node})$
+					\If{$\lit{validate}(\ms{node}, \ms{k})$}
+						\State $break$
+					\EndIf
+					\State $\lit{unlock}(\ms{node})$
+% 				\ElsIf{$\ms{next.k} = \ms{k}$}
+% 					\State $\lit{lock}(\ms{next})$
+% 					\If{$\neg \ms{next.rem}$}
+% 						\State $\ms{node} \gets \ms{next}$
+% 						\State $break$
+% 					\EndIf
+% 					\State $\lit{unlock}(\ms{next})$
+				\Else{}
+					\State $\ms{node} \gets \ms{next}$
+				\EndIf
+			\EndWhile
+			\State $\ms{result} \gets \lit{false}$
+			\If{$\ms{node.k = k}$}
+				\If{$\neg \ms{node.del}$}
+					\State $\ms{node.del} \gets \lit{true}$
+					\State $\ms{result} \gets \lit{true}$
+				\EndIf
+			\EndIf
+			\State $\lit{unlock}(\ms{node})$
+			\Return $\ms{result}$ \EndReturn
+   		}\EndPart
+
+	}
+    \end{multicols}
+    
+    
+  \end{algorithmic}
+\algtechrepend
+\end{algorithm*}

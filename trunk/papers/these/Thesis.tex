@@ -1,0 +1,437 @@
+%=============================================================
+% Thesis Template
+% Hector Fernandez 
+% University of Rennes 1  - 2009
+%=============================================================
+
+%=============================================================
+% Thesis Template
+% Hector Fernandez 
+% University of Rennes 1  - 2009
+%=============================================================
+
+%\documentclass[a4paper,12pt]{report}
+\documentclass[11pt]{book}
+\bibliographystyle{plain}
+%-------------------------------------------------------------
+% used packages
+%-------------------------------------------------------------
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel} % On peut aussi mettre english ici.
+\usepackage[style=list,toc,number=none]{glossary}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage{float}
+\usepackage{subfigure}
+\usepackage{color}
+\usepackage{rotating}
+\definecolor{gris}{gray}{0.45}
+% Font math
+\usepackage{amssymb, amsmath, amsfonts}
+\usepackage{dsfont}
+% Mise en page latex et police
+
+\usepackage[nottoc,notlot,notlof]{tocbibind} 
+\usepackage{listings}
+%\usepackage{algorithm}
+% \usepackage{vmargin}
+\usepackage{textpos}
+\usepackage{color}
+\usepackage{letterspace}
+
+\usepackage{macros}
+\usepackage[ruled]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{ioa_code}
+\usepackage{flushend}
+\usepackage[table]{xcolor}
+\usepackage{mathptmx}
+% \usepackage{hyperref} 
+
+\usepackage{fancyvrb}
+
+
+\usepackage{these}
+\usepackage[vmargin=3.7cm]{geometry}
+% \usepackage{these}
+
+\usepackage{imakeidx}
+
+
+\usepackage{boxedminipage}
+
+\usepackage{floatflt}
+
+
+\newcommand{\algtechrep}[0]{
+
+
+  \hspace{-0.75cm}
+  \begin{minipage}{15cm}
+
+}
+
+\newcommand{\algtechrepend}[0]{
+
+  \end{minipage}
+
+}
+
+\newcommand{\tuple}[1]{\ensuremath{\left \langle #1 \right \rangle }}
+
+
+\newcommand{\CAS}{CAS}
+\newcommand{\opfont}[1]{$\lit{#1}$}
+
+\newcommand{\toto}{xxx}
+\newenvironment{proofT}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofL}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofC}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+
+\newenvironment{proof}{\noindent{\bf Proof.}}{\hfill$\Box${\vspace*{\medskipamount}}}
+
+\newcommand{\remove}[1]{}
+\newcommand{\vincent}[1]{{\bf [V: #1]}}
+\newcommand{\michel}[1]{{\bf [M: #1]}}
+\newcommand{\tyler}[1]{{\bf [T: #1]}}
+
+
+
+% \input thesisformat        % Document format
+%\setcounter{secnumdepth}{4} \setcounter{tocdepth}{3}
+
+
+
+\newcount\ALGOLine
+\ALGOLine=-1
+\newcount\ALGOLineStart
+\ALGOLine=0
+\newcount\ALGONum
+\ALGONum=1
+\newcommand{\LineSep}{.}
+\newcommand{\LINESTYLE}{\tiny}
+\newcommand{\INITALGO}[1]{\global\ALGONum=#1}
+\newcommand{\INITLINE}[1]{\global\ALGOLineStart=#1}
+\newcommand{\RESETLINE}{\global\ALGOLine=\ALGOLineStart}
+\newcommand{\formatLine}{\ifnum\the\ALGOLine<10 0\fi\the\ALGOLine}
+\newcommand{\NA}{\global\advance\ALGONum  by 1 \RESETLINE}
+\newcommand{\AL}{\global\advance\ALGOLine by 1 \\\LINESTYLE{$\the\ALGONum$\LineSep$\formatLine$} }
+\newcommand{\VL}{\ \vline\> }
+\makeatletter
+\newcommand{\alglabel}[1]{%
+  \@bsphack%
+  \protected@write\@auxout{}%
+         {\string\newlabel{#1}{{\the\ALGONum\LineSep \formatLine}{\thepage}}}
+  \@esphack%
+}
+
+
+\lstdefinelanguage{hocl} {
+% basicstyle=\small, %\footnotesize
+ morekeywords={let,in,replace,by,if,not,or},
+ sensitive=false,
+% morecomment=[l]{//},   % commented because of conflict with 'file:///path/to/file/...'
+ morecomment=[s]{/*}{*/},
+ morestring=[b]",
+ mathescape=true,
+% frame=lines, %single
+ %numbers=left, numberstyle=\tiny, stepnumber=2, numbersep=5pt,
+ emph={parameters,ChWScheckCreditCard,a,h,f,idChWS,Destination,ep,q,p,ei,service,param,result,paramHotel,paramFlight,r,CreditCard,Hotel,Flight,Confirmation,
+  ChWShotel,ChWSflight,ChWSconfirmation,Class,Pass,rules,x,y,s,w,ChWSi,ChWSn},
+  emphstyle=\it, sensitive=true,
+ literate={<}{{$\langle$}}1 {>}{{$\rangle$}}1 {<=}{{$\leq$}}1 {>=}{{$\geq$}}1 {replace-one}{{\bf replace-one}}{11}
+}
+\lstset{language=hocl}
+
+
+
+
+% the fixme command
+\newcommand{\fixme}[1]
+{
+  \noindent
+  \begin{boxedminipage}{\linewidth}
+    \textsl{{\bf FIXME: #1}}
+  \end{boxedminipage}
+}
+
+\makeindex[columns=2,options={-s Thesis}]  % makeindex -s Thesis.ist Thesis.idx
+
+
+
+
+%-----------------------for square--------------------------------------------
+\newlength {\squarewidth}
+\renewenvironment {square}
+{
+\setlength {\squarewidth} {\linewidth}
+\addtolength {\squarewidth} {-12pt}
+\renewcommand{\baselinestretch}{0.75} \footnotesize
+\begin {center}
+\begin {tabular} {|c|} \hline
+\begin {minipage} {\squarewidth}
+\medskip
+}{
+\end {minipage}
+\\ \hline
+\end{tabular}
+\end{center}
+}  
+ 
+%--------------------------------------------------------------------
+
+
+\newcommand{\Xomit}[1]{}
+
+%-------- macros for algorithm ---------------------------------------
+%\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+% \newenvironment{proofT}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{\mathit{Theorem~\ref{\toto}}}$\par\vspace{3mm}}
+% \newenvironment{proofL}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{\mathit{Lemma~\ref{\toto}}}$\par\vspace{3mm}}
+% \newenvironment{proofC}{\noindent{\bf
+% Proof }} {\hspace*{\fill}$\Box_{\mathit{Corollary~\ref{\toto}}}$\par\vspace{3mm}}
+
+
+\newcounter{linecounter}
+\newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}
+{(0\arabic{linecounter})}{(\arabic{linecounter})}}
+\renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+\newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+\renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 
+9\else 0\fi \arabic{linecounter}}
+
+
+
+% ----------------------for appendix --------------------------------------
+\newenvironment{lemma-repeat}[1]{\begin{trivlist}
+\item[\hspace{\labelsep}{\bf\noindent Lemma~\ref{#1} }]}%
+{\end{trivlist}}
+
+\newenvironment{theorem-repeat}[1]{\begin{trivlist}
+\item[\hspace{\labelsep}{\bf\noindent Theorem~\ref{#1} }]}%
+{\end{trivlist}}
+
+\newenvironment{corollary-repeat}[1]{\begin{trivlist}
+\item[\hspace{\labelsep}{\bf\noindent Corollary~\ref{#1} }]}%
+{\end{trivlist}}
+
+
+
+
+\newcommand{\rf}[1]{\stackrel{#1}{\rightarrow}_{\mathit{rf}}}
+\newcommand{\lock}[1]{\stackrel{#1}{\rightarrow}_{\mathit{lock}}}
+
+
+
+
+
+%-------------------------------------------------------------
+%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%
+
+%\baselineskip 1.5em
+%\pagenumbering{roman}		
+%\thispagestyle{empty}
+
+\input Couverture
+
+
+%\input doc_frontPage			% Front Page
+%\thispagestyle{empty}		
+
+%  Abstract -----------
+
+
+\section*{Software Transactional Memory and Concurrent Data Structures: On the performance and usability of parallel programming abstractions}
+%\begin{abstract}
+\subsection*{Abstract}
+Writing parallel programs is well know difficult task and because of this
+there are some abstractions that can help make parallel programming easier.
+Two different approaches that try to solve this problem are transactional memory and
+concurrent data abstractions (such as sets or dictionaries).
+Transactional memory can be viewed as a methodology for parallel programming, allowing
+the programmer the ability to declare what sections of his code should be executed atomically,
+while concurrent data abstractions expose some specifically defined operations that can be
+safely executed concurrently to access and modify shared data.
+Importantly, even though these are separate solutions to the problem they are not mutually exclusive.
+They can be (and are) used together, as an example concurrent data abstractions are often used within transactions.
+Unfortunately they both are know to suffer from performance and (especially in the case of transactional memory)
+ease of use problems.
+This thesis examines and proposes some solutions trying to address these problems.
+
+Transactional memory is designed to make parallel programming easier by allowing the programmer to define
+what blocks of code he wants to be executed atomically while leaving the difficult synchronization tasks for the
+underlying system.
+Even though the idea of a transaction is clear, how the programmer should interact with the
+abstraction is still not clearly defined and STM systems are known to suffer from performance problems.
+Three STM algorithms are presented to help study these problems.
+\begin{enumerate}
+\item One that satisfies two properties that can be considered good for efficiency.
+\item One that guarantees transactions commit exactly once and hides the concepts of aborts to the programmer.
+\item One that allows safe concurrent access to the same memory both inside and outside of transactions.
+\end{enumerate}
+
+Concurrent data structures representing abstractions such as a set or map/dictionary are often
+an important component of parallel programs as they allow the programmer to access/store/and modify
+data safely and concurrently.
+Due to this they can be heavily used and highly contended in concurrent workloads leading to poor performance
+in programs.
+Some proposed solutions to this suggest weakening the abstraction, but this can make using the data structures
+more complicated.
+In this thesis a methodology is proposed that improves performance without weakening the abstraction.
+This methodology can also be applied to data structures used within transactions.
+
+
+
+%\end{abstract}
+
+%\input doc_abstract    	    % Abstract.
+
+\newpage
+
+\section*{Acknowledgments}
+%\input acknowledgment
+
+\sloppy
+
+%----------------------------------------------------------------
+%\pagenumbering{arabic}	
+\tableofcontents      	% Create list of contents
+\listoffigures        	% Create list of figures
+\clearpage
+
+
+
+
+\part{Software Transactional Memory Algorithms}
+
+\chapter{Introduction}
+%\markboth{\MakeUppercase{Introduction}}{\MakeUppercase{Introduction}}
+%\addcontentsline{toc}{chapter}{Introduction}
+%\input{./introduction/doc_introduction}
+
+\chapter{Read Invisibility, Virtual World Consistency and Permissiveness are Compatible}
+\label{chap:soc}
+
+\section{Related Work and Definitions}
+\section{Incompatibility Proof with Opacity}
+\section{Compatibility Proof with Virtual World Consistency}
+\section{A Probabilistic Permissive Virtual World Consistent STM Protocol with Invisible Reads}
+\subsection{Proof of Correctness}
+\subsection{Protocol Optimizations}
+\input{./VWC-comp/VWC-comp}
+
+\chapter{Universal Constructions and Transactional Memory}
+\label{chap:models}
+%\input{./chapter2/doc_chapter2}
+\section{Universal Constructions}
+\section{Aborts, Commits, and Liveness in Transactional Memory}
+\section{A Universal Construction for Transaction Based Multi-Process Programs}
+\subsection{Proof of Linearizability}
+\subsection{Proof of Liveness}
+\subsection{Computation Complexity}
+\section{***An Implementation***}
+\input{./No-abort/No-abort}
+
+
+\chapter{Ensuring Strong Isolation in STM Systems}
+\label{chap:decChem}
+%\input{./chapter3/doc_chapter3}
+\section{Isolation in STM Systems}
+\section{A STM Protocol with Non-Blocking Non-Transactional Operations}
+\subsection{Overview of TL2}
+\subsection{The Protocol}
+\subsection{***Proof of Linearizability***}
+\section{***An Implementation***}
+\input{./SI/SI}
+
+\part{Concurrent Data Structures}
+
+\chapter{Introduction}
+%\markboth{\MakeUppercase{Introduction}}{\MakeUppercase{Introduction}}
+%\addcontentsline{toc}{chapter}{Introduction}
+%\input{./introduction/doc_introduction}
+
+\chapter{Contention Friendly Data Structures}
+\label{chap:implementation}
+\section{Non-Contention Friendly Data Structures}
+\section{The Contention Friendly Methodology}
+\subsection{In Transactional Memory}
+\input{./CF-general/CF-general}
+
+\chapter{A Contention Friendly Binary Search Tree}
+\label{chap:scheduling}
+%\input{./chapter5/doc_scheduling}
+\section{Lock Based Algorithm}
+\section{***Lock Free Algorithm***}
+\section{Transactional Memory Based Algorithm}
+\input{./Tree/Tree}
+
+\chapter{A Contention Friendly Skip-List}
+\label{chap:scheduling}
+\section{Lock Based Algorithm}
+\section{Lock Free Algorithm}
+\section{Transactional Memory Based Algorithm}
+\input{./Skip-list/Skip-list}
+
+\chapter{A Contention Friendly Hash-Table}
+\label{chap:scheduling}
+\section{Lock Free Algorithm}
+\section{Transactional Memory Based Algorithm}
+
+\chapter*{Conclusion}
+\addcontentsline{toc}{chapter}{Conclusion}
+%\input{./conclusion/doc_conclusion}
+
+
+\appendix
+
+
+%\bibliography{./bibliography/Thesis}{}
+
+\input{bibliography}
+
+% My publications
+ \renewcommand{\bibname}{List of Publications}
+ \begin{thebibliography}{9}
+
+
+\section*{International Conferences Articles }
+
+
+
+
+\section*{Technical Reports}
+
+
+
+
+ \end{thebibliography}
+
+
+
+%\input {./appendix/appendix}
+
+
+% \printglossary
+
+\printindex
+
+
+\end{document}
+%------------------------------------------------------------------------------------------
+
+
+
+
+

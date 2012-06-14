@@ -1,0 +1,67 @@
+\begin{algorithm*}[!ht]
+  \caption{Lockfree Skip List Specific Operations}\label{alg:skipList_oplockfree}% \vincent{Replace unit-read by read, then remove all tx read/write.}}
+\algtechrep
+  \begin{algorithmic}[1]
+   \begin{multicols}{2}
+   {\size 
+
+
+
+
+
+
+		\Part{$\act{get-next-node}(\ms{node}, \ms{k})_s$}{
+
+			\While{$\lit{true}$} \label{lfline:get-while2s}
+				\While{$\ms{node.v = node}$} \label{lfline:get-while1s}
+					\State{$\ms{node} \gets \ms{node.prev}$} \label{lfline:get-while1f}
+				\EndWhile 
+				
+				
+				\State $\ms{next} \gets \ms{node.next}$
+				\If{$\ms{next \neq \bot \cap next.v = next}$} \label{lfline:get-helpcheck}
+					\State $\lit{help\_remove}(\ms{node, next})$ \label{lfline:get-help}
+					\State $\ms{next} \gets \ms{node.next}$
+				\EndIf
+				\If{$\ms{next = \bot} \cup \ms{next.k > k}$} \label{lfline:get-node}
+					\Return $\ms{node}$ \EndReturn
+				\EndIf
+				\State $\ms{node} \gets \ms{next}$ \label{lfline:get-while3s}
+			\EndWhile
+		}\EndPart
+
+		\newpage
+
+   		\Part{$\act{validate}(\ms{node}, \ms{k})_s$}{
+
+			\State $\ms{next} \gets \ms{node.next}$ \label{lfline:val-next}
+			\If{$\ms{node.v = node}$} \label{lfline:val-rem}
+				\Return $\lit{false}$ \EndReturn
+			\EndIf
+			\If{$\ms{next = \bot} \cup \ms{next.key > k}$} \label{lfline:val-check}
+				\Return $\lit{true}$ \EndReturn
+			\EndIf
+			\Return $\lit{false}$ \EndReturn
+   		}\EndPart
+
+		\Statex
+
+   		\Part{$\act{setup\_marker}(\ms{node})_s$}{
+
+			\State $\ms{new} \gets \lit{setup\_node}(\ms{node, \bot, \bot})$
+			\State $\ms{new.v \gets new}$
+			\State $\ms{new.rem} \gets \lit{true}$
+			\Return $\ms{new}$ \EndReturn
+   		}\EndPart
+		
+		\newpage
+   	
+
+				
+
+
+	}
+    \end{multicols}
+  \end{algorithmic}
+\algtechrepend
+\end{algorithm*}
