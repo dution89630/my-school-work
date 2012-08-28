@@ -1,0 +1,34 @@
+\section{Stuff for intro}
+
+More explicitly, an STM  is a middleware approach that provides the 
+programmers  with the {\it transaction} concept  \cite{HM93,ST97}.
+This  concept  is close  but  different  from  the notion  of  transactions
+encountered in  databases \cite{FFGH08,HCUAGSV07,HL08}. 
+A process is designed as 
+(or decomposed into)  a sequence of transactions, each transaction 
+being a piece  of code that, while  accessing any number of shared objects,
+always appears as being executed atomically. 
+The job of the programmer is only to define the units of computation that 
+are the  transactions. He does not have to worry about the fact that 
+the objects can be concurrently accessed by transactions. 
+Except when he defines the beginning and the end of a  transaction, 
+the programmer is not concerned by synchronization. It  is the job of the 
+STM system to ensure that transactions execute as if they were atomic. 
+
+
+Of course, a solution in which a single transaction  executes at a time
+trivially implements transaction atomicity but is irrelevant from 
+an efficiency point of view. So, a STM system has to do ``its best'' to 
+execute and commit as many transactions  per time unit as possible. 
+Similarly to 
+a scheduler, a STM system is an on-line algorithm that does not know 
+the future. If the STM is not trivial (i.e., it allows several transactions 
+that access the same objects in a conflicting manner to run concurrently),  
+this intrinsic limitation can direct it to abort some transactions in order 
+to ensure both transaction  atomicity and object consistency. 
+From a programming point of view, an aborted transaction has no effect (it is 
+up to the process that issued an aborted transaction to re-issue it or not; 
+usually, a transaction that is restarted is considered  a new transaction). 
+Abort is   the price that has to  be paid by transactional  systems to cope 
+with concurrency in  absence of explicit synchronization mechanisms
+(such as locks or event queues).
