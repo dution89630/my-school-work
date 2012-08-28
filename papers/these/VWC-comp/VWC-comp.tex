@@ -141,55 +141,96 @@
 % \setcounter{page}{1}
 % %===========================================================================
 
-\section{Introduction}
+
+
+
+
+
+\section{Motivation}
 \vspace{0.1cm}
 
 \subsection{Software transactional memory (STM) systems}
-The  aim of  an STM   system   is to  simplify the design and the writing 
-of  concurrent  programs by discharging the programmer from the explicit
-management of synchronization entailed by concurrent accesses to shared 
-objects. This means that, when faced to synchronization,  a programmer has 
+The most imporant goal of the concept of STM is to make concurrent programming
+easier and more accessable to any programmer.
+Arguably all a programmer should need to know in order to use STM abstraction is to know
+the syntax for writing an atomic block, likely something as simple as
+$$atomic \{ \dots \} $$
+All the complexities and difficult synchronization is then taken care of by the
+underlying STM system.
+This means that, when faced to synchronization,  a programmer has 
 to concentrate on where atomicity is required and not on the way it is 
 realized. 
+(Unfortunately, in reality, it is actually not so simple for the programmer, this is discussed in
+detail in section \ref{})
+Like many abstractions, even if what is exposed to the programmer is a fixed well
+defined interface there are many different possible implementations and different
+properties that exist to provide the abstraction.
 
+Let us consider the common example of a classical map abstraction provided by a
+data structure.  A programmer might want to access and store some data in memory
+and he knows that in order to do this he needs the $insert$, $delete$, and $contains$
+operations provided by the map abstraction.
+He also knows he wants to perform these operations concurrently.
+With this information he should be able to take a take a library providing this
+functionality and use it in his program without knowing any additional information.
 
-More explicitly, an STM  is a middleware approach that provides the 
-programmers  with the {\it transaction} concept  \cite{HM93,ST97}.
-This  concept  is close  but  different  from  the notion  of  transactions
-encountered in  databases \cite{FFGH08,HCUAGSV07,HL08}. 
-A process is designed as 
-(or decomposed into)  a sequence of transactions, each transaction 
-being a piece  of code that, while  accessing any number of shared objects,
-always appears as being executed atomically. 
-The job of the programmer is only to define the units of computation that 
-are the  transactions. He does not have to worry about the fact that 
-the objects can be concurrently accessed by transactions. 
-Except when he defines the beginning and the end of a  transaction, 
-the programmer is not concerned by synchronization. It  is the job of the 
-STM system to ensure that transactions execute as if they were atomic. 
+Now even though this is all that the programmer needs to know, there are many
+more details to consider at a lower level.
+The most obvious is that there are different data stuctures that can be used to
+provide a map abstraction, wich examples such as a skip-list, binary tree, or hash table.
+Chosing one of these may impact the applications performance or provide additional
+functionality in additon to that provided by the map abstraction.
+Even when considering a single data sturcture there are different properties a specific implementation might ensure.
+For example you might have a blocking skip-list or a non-blocking skip-list which provide
+different guarantees of the progress of the operations.
+Taking this a step further, different implementations might perform
+differently depending on the workload.
+For example you might have a skip-list implementation that is memory efficient, but is slower
+then another implementation that is less memory efficient.
 
+Each of these points are true in transactional memory as well.
+At the most basic level all a programmer should need to know is where
+to begin and end his atomic blocks.
+Beneth these atomic blocks lies the STM implementation which has many different aspects.
+Since the introduction of transactional memory in 1993 \ref{} dozens of different properties have emerged
+as well as many different STM algorithms.
+With each of these ensuring a greater or fewer number of these properties and more or less
+concerned with performance.
+(In the related work section (section \ref{}) we give an overview of many different properties and
+implementations of STM)
 
-Of course, a solution in which a single transaction  executes at a time
-trivially implements transaction atomicity but is irrelevant from 
-an efficiency point of view. So, a STM system has to do ``its best'' to 
-execute and commit as many transactions  per time unit as possible. 
-Similarly to 
-a scheduler, a STM system is an on-line algorithm that does not know 
-the future. If the STM is not trivial (i.e., it allows several transactions 
-that access the same objects in a conflicting manner to run concurrently),  
-this intrinsic limitation can direct it to abort some transactions in order 
-to ensure both transaction  atomicity and object consistency. 
-From a programming point of view, an aborted transaction has no effect (it is 
-up to the process that issued an aborted transaction to re-issue it or not; 
-usually, a transaction that is restarted is considered  a new transaction). 
-Abort is   the price that has to  be paid by transactional  systems to cope 
-with concurrency in  absence of explicit synchronization mechanisms
-(such as locks or event queues).  
+In an ideal world there would exist a \emph{``perfect''} STM algorithm that ensures all desirable properties
+without making any sacrifies.
+Unfortunately this algorithm has not yet been discovered (if it is even possible).
+In fact many of these desierable properties have been little more then introduced and many of their implications
+on how they affect STM algorithms or how they interact with eachother has yet to be explored.
+Motivated by this, this chapter examines two desiralbe properties that are concerned with performance,
+namely \emph{permissiveness} and \emph{invisible-reads}, and how they interact with two consistency
+criterion for STM systems, namely \emph{opacity} and \emph{virtual world consistency}.
+As previously noted, these are just a few of the many properties that have been defined for STM systems
+so this work is only touching on a much larger set of problems, but hopefully this work encourages
+the study of attitional properties.
+
 
 
 %----------------------------------------------------------------------
 \subsection{Two consistency conditions  for STM systems}
 
+If you have not noticed already, a reocurring theme throughout this document is that
+the most important goal of transactional memory is ease of use,
+and is the subject of this section.
+We alreay have our syntax defined for the programmer ($atomic\{ \dots \})$) and
+a basic idea of what this means, ``the code in the atomic block will appear as if
+it has been executeded instantaneously'', yet we need to precisely define what this
+means for an STM algorithm.
+At the heart of this we have consistency criterions.
+These criterions precisely define the semantics of a transaction and guide the creation
+of algorithms in order that the chosen criterion is satisfied.
+Without a clear and precisely defined consistency criterion we loose the ease of use
+that is the original intention of STM.
+
+In this section we give a overview of two well known consitency criterion previously
+defined for transactional memory.
 
 
 \paragraph{The opacity consistency condition}
@@ -340,61 +381,6 @@ As indicated in \cite{GHS08}, an STM system that checks at commit time that
 the values of the objects read by a transaction have not been modified (and 
 aborts the transaction if true) cannot be permissive  with respect to opacity. 
 
-%----------------------------------------------------------------------
-\subsection{Content of the paper}
-
-This paper is on permissive STM systems with invisible reads. 
-It has several contributions. 
-\begin{itemize}
-\vspace{-0.2cm}
-\item  
-It  first shows that an STM system that satisfies read invisibility and 
-opacity  cannot be permissive. 
-
-\vspace{-0.2cm}
-\item 
-The paper then presents an STM system (called IR\_VWC\_P)  that satisfies 
-read invisibility,  virtual world consistency and  permissiveness. 
-%
-The STM IR\_VWC\_P protocol  presents additional noteworthy properties. 
-\begin{itemize}
-\vspace{-0.2cm}
-\item  
-It uses only  base read/write operations and locks,  each associated with a
-shared object.   Moreover,  a lock is used at most once by a transaction 
-at the end of a transaction (when it executes an operation 
-called    ${\sf try\_to\_commit()}$). 
-\vspace{-0.1cm}
-\item  
-%Except for the access to a  global shared clock 
-it   satisfies the disjoint access parallelism property.  
-%\vspace{-0.1cm}
-%\item  
-%It allows for {\it fast} read operations. 
-%More precisely, the first read of an object $X$ by a transaction $T$ 
-%can cost up to $O(|lrs_T|)$ shared memory accesses (where $lrs_T$ is the 
-%current read  set of $T$) in the worst case and  $O(1)$ shared memory accesses 
-%in favorable cases. The cost of all the following reads of $X$ by 
-%$T$ is $O(1)$.  
-\end{itemize}
-\end{itemize}
-
-
-The paper is made up of \ref{sec:conclusion} sections. 
-Section \ref{sec:model-and-conditions} presents the computation model. 
-Section  \ref{sec:opacity-and-VWC} presents the  opacity and  virtual world
-consistency conditions. 
-Section \ref{sec:opacity-impos} shows that opacity, read invisibility 
-and permissiveness are incompatible. 
-The IR\_VWC\_P protocol is then described incrementally. 
-Section \ref{sec:algorithm-V1}  presents first a base  version 
-that satisfies the VWC property and  invisibility of  read operations. 
-%This protocol is proved in Section \ref{sec:algorithm-V1-proof}
-%and improved in Section \ref{sec:improving-base-protocol}
-%(these improvements concern additional features such as 
-%garbage  collection  of  useless  cells   and   fast   read    operations).
-Finally,   Section     \ref{sec:algorithm-V2}  enriches  it   to  obtain  a
-permissive protocol.  Section  \ref{sec:conclusion} concludes the paper. 
 
 
 
