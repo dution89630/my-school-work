@@ -192,7 +192,7 @@ Each of these points are true in transactional memory as well.
 At the most basic level all a programmer should need to know is where
 to begin and end his atomic blocks.
 Beneth these atomic blocks lies the STM implementation which has many different aspects.
-Since the introduction of transactional memory in 1993 \ref{} dozens of different properties have emerged
+Since the introduction of transactional memory in 1993 \cite{} dozens of different properties have emerged
 as well as many different STM algorithms.
 With each of these ensuring a greater or fewer number of these properties and more or less
 concerned with performance.
@@ -212,131 +212,8 @@ so this work is only touching on a much larger set of problems, but hopefully th
 the study of attitional properties.
 
 
-
 %----------------------------------------------------------------------
-\subsection{Two consistency conditions  for STM systems}
-
-If you have not noticed already, a reocurring theme throughout this document is that
-the most important goal of transactional memory is ease of use,
-and is the subject of this section.
-We alreay have our syntax defined for the programmer ($atomic\{ \dots \})$) and
-a basic idea of what this means, ``the code in the atomic block will appear as if
-it has been executeded instantaneously'', yet we need to precisely define what this
-means for an STM algorithm.
-At the heart of this we have consistency criterions.
-These criterions precisely define the semantics of a transaction and guide the creation
-of algorithms in order that the chosen criterion is satisfied.
-Without a clear and precisely defined consistency criterion we loose the ease of use
-that is the original intention of STM.
-
-In this section we give a overview of two well known consitency criterion previously
-defined for transactional memory.
-
-
-\paragraph{The opacity consistency condition}
-The classical consistency criterion for database
-transactions is serializability \cite{P79} (sometimes strengthened in ``strict
-serializability'',   as  implemented  when   using   the   2-phase  locking
-mechanism). The serializability  consistency criterion 
-involves only the transactions that commit. Said differently, 
-a transaction  that aborts is not prevented from accessing an inconsistent
-state   before aborting. 
-
-In contrast to database transactions that 
-are usually produced by SQL queries, in  a STM  system the code  
-encapsulated in a transaction is not restricted to particular patterns. 
-Consequently  a transaction always has to operate on a consistent state.  
-To be more explicit, let   us consider the following example where 
-a transaction  contains the statement $x\leftarrow a/(b-c)$ 
-(where $a$, $b$ and $c$ are  integer data), and let us assume that 
-$b-c$ is different from $0$  in all  consistent states
-(intuitively, a  consistent state is  a global state that,  considering only
-the committed transactions,  could have existed at some real time instant). 
-If the values of $b$ and $c$ read by a transaction come from 
- different states, it is possible  that the transaction obtains values such
-as $b=c$ (and  $b=c$ defines an inconsistent  state). If this 
-occurs,  the transaction  throws  an  exception  that  has to  be
-handled by the process that invoked the corresponding
-transaction. Even worse undesirable  behaviors can  be
-obtained when  reading values from inconsistent  states. 
-This occurs for example when an inconsistent state provides a transaction 
-with values that generate infinite loops.
-Such  bad  behaviors have  to  be prevented in  STM systems: 
-whatever its fate (commit or abort) a transaction has to see always  
-a consistent  state of  the data it  accesses. The aborted transactions
-have to be harmless.  
-
-
-
-Informally suggested  in   \cite{DSS06},  and  formally introduced  
-and investigated in \cite{GK08}, the  {\it   opacity} consistency condition
-requires  that  no transaction reads  values from an inconsistent global 
-state  where, considering only the committed transactions,  
-a  {\it consistent  global  state} is defined as the  
-state of the shared memory at some real time instant. 
-%Opacity  is the  same as  strict serializability when  we consider all the
-%committed  transactions, plus an  appropriate read prefix for each aborted
-%transaction, as defined below.  
-%
-Let  us  associate with each  aborted  transaction $T$ 
-its execution prefix (called {\it read prefix}) that contains all its  
-read operations  until  $T$  aborts  (if
-the  abort is  entailed by  a read, this  read is not included in the prefix). 
-An  execution of a set of  transactions satisfies the {\it opacity} 
-condition  if (i) all   committed transactions plus  
-each aborted transaction reduced to its read prefix appear  
-as if they  have been  executed sequentially and (ii)  
-this sequence respects the transaction real-time occurrence order.
-%We call {\it witness sequential execution} such a sequence.
-%Examples  of  protocols  implementing  the  opacity   property,  each  with
-%different additional features, can be found in \cite{DSS06,IR08,IR09,RFF07}. 
-
-
-
-\paragraph{Virtual world consistency}
-This consistency condition, introduced in \cite{IR09},  is 
-weaker  than  opacity while  keeping  its spirit.  It  states  that (1)  no
-transaction (committed or aborted)  reads values from an inconsistent global
-state, (2)  the consistent global states read by the committed transactions 
-are   mutually consistent (in the sense that they can be totally  ordered)  
-but    (3)  while the  global  state read  by each aborted transaction  is
-consistent from its individual point  of view, the  global states read by
-any two aborted  transactions are not  required to be  mutually consistent.  
-%
-Said differently, virtual world consistency requires  that  
-(1)  all the   committed  transactions  be serializable \cite{P79} (so  
-they all  have the same ``witness sequential execution'')  or linearizable 
-\cite{HW90} (if we want  this witness  execution  to also respect real time) 
-and (2)  each aborted transaction  (reduced  to a read  prefix as explained
-previously) reads values that are  consistent  with respect to its causal  
-past  only. 
-
-
-As two aborted transactions can have different causal pasts, 
-each can read from a  global state that is consistent from its causal past
-point of view, but  these two global states may be mutually inconsistent 
-as aborted transactions have not necessarily the same causal past  
-(hence the name {\it virtual world} consistency).  This  consistency 
-condition  can benefit many  STM applications as, from  its  local point
-of view,  a transaction cannot  differentiate it from opacity. 
-
-In addition to the fact that  it can allow more transactions to commit than
-opacity,  one of  the main advantages  of virtual world  consistency lies 
-in   the fact that,  as opacity, it  prevents  bad  phenomena  (as described 
-previously)    from occurring  without requiring  all the
-transactions  (committed   or  aborted)  to  agree on the very same  witness
-execution.  Let  us  assume  that each  transaction  behaves  correctly
-(e.g. it does not entail a division  by 0, does not enter an infinite loop,
-etc.) when, executed  alone, it  reads  values from  a consistent  global
-state.  As, due  to the virtual world consistency  condition, no transaction
-(committed or aborted)  reads from an inconsistent state,  it cannot behave
-incorrectly despite  concurrency, it can only  be aborted. This  is a first
-class requirement for transactional memories. 
-
-
-
-%----------------------------------------------------------------------
-\subsection{Desirable properties for STM systems}
+\subsection{Some interesting and desirable properties for STM systems}
 
 \paragraph{Invisible read operation}
 A read operation issued by a transaction is {\it invisible} if it does 
@@ -380,160 +257,164 @@ satisfies the condition is accepted with positive probability \cite{GHS08}.
 As indicated in \cite{GHS08}, an STM system that checks at commit time that
 the values of the objects read by a transaction have not been modified (and 
 aborts the transaction if true) cannot be permissive  with respect to opacity. 
+In fact virtually all published STM protocols abort transactions that could
+otherwise be safely commmitted, i.e. the protcols are not permissive.
 
 
 
 
-%=========================================================================
-%=========================================================================
-%=========================================================================
-\vspace{-0.3cm}
-\section{STM computation model and base definitions}
-\label{sec:model-and-conditions}
-\vspace{0.1cm}
-
-
-
-\subsection{Processes  and atomic shared objects}
-An application is made up of  an  arbitrary number  of  processes  and  $m$
-shared  objects.  The processes are denoted $p_i$, $p_j$, etc., 
-while the  objects are  denoted $X,Y,\ldots$, where each id $X$ is such 
-that $X \in \{1,\cdots,m\}$.   Each process consists of  a sequence of 
-transactions (that are not known in advance).
-
-Each of the $m$ shared objects is an atomic read/write object. 
-This means  that the read and  write operations issued on  such an  object
-$X$  appear as  if they have  been executed  sequentially, and this 
-``witness sequence'' is  legal (a read returns the value written by the  
-closest write  that precedes it in this sequence) and respects the real time 
-occurrence  order on the operations on $X$ (if  $op1(X)$  terminates  before
-$op2(X)$  starts, $op1$ appears before $op2$ in the witness sequence 
-associated with $X$). 
-
-
-
-
-%--------------------------------------------------------------------------
-\subsection{Transactions and object operations}
-\label{base-definitions}
-
-\paragraph{Transaction}
-A transaction is  a piece of code that is produced  on-line by a sequential
-process (automaton), that is assumed to be executed  atomically (commit) or
-not  at all  (abort). This  means  that (1)  the transactions  issued by  a
-process are totally ordered, and (2) the designer of a transaction does 
-not have to  worry about the  management of the  base objects  accessed  
-by the transaction.  Differently from  a committed transaction, an aborted  
-transaction has no effect on the shared objects. 
-A transaction  can read or write any shared object. 
- 
-
-The set of the objects read by a transaction  defines its
-{\it read  set}.  Similarly the set  of objects it writes  defines its 
-{\it write set}. A transaction that does not  write shared objects is 
-a  {\it  read-only}  transaction, otherwise it is an {\it update}
-transaction.  A transaction that issues only write operations is 
-a {\it write-only}  transaction. 
-
-Transaction are assumed to b dynamically defined. The important point is here 
-that the  underlying STM system does not know in advance the transactions. 
-It is an  on-line system (as a scheduler).  
-
-
-
-\paragraph{Operations issued by a transaction}
-We denote operations on shared objects in the following way.
-A read operation by transaction $T$ on object $X$ is denoted
-$X.{\sf read}_T()$. Such an operation returns either the value $v$ read from 
-$X$ or the value $abort$.  When a value $v$ is returned, 
-the notation  $X.{\sf read}_T(v)$ is sometimes used.  
-%
-Similarly, a write operation by transaction $T$ of value $v$ into object 
-$X$ is denoted $X.{\sf write}_T(v)$ (when not relevant, $v$ is omitted). 
-Such an operation returns either the value $ok$ or the value $abort$. 
-%
-The notations $\exists~ X.{\sf read}_T(v)$  and $\exists~ X.{\sf write}_T(v)$ 
-are  used as  predicates to  state whether a transaction  $T$ has issued a
-corresponding read or write operation. 
-
-
-If  it  has  not  been  aborted  during a  read  or  write  operation,    a
-transaction $T$ invokes  the operation ${\sf try\_to\_commit}_T()$ when 
-it terminates. That operation returns it $commit$ or $abort$. 
-
-
-
-\paragraph{Incremental snapshot}
-As  in \cite{BSW79},  we assume  that the behavior of a transaction $T$  
-can be decomposed in  three sequential steps:  
-it first reads  data objects,  then does local computations and 
-finally   writes  new values  in some  objects, which means
-that  a  transaction can  be  seen as  a software 
-${\sf read\_modify\_write()}$ operation that is 
-dynamically defined  by  a process. (This model is for 
-reasoning, understand and  state properties on STM systems.  
-It only requires that everything appears as described  in the model.)
-
-
-The read set is  defined  incrementally,  which  means  that a 
-transaction  reads  the objects of  its read set  asynchronously  one after
-the other (between  two consecutive reads, the transaction 
-can  issue local  computations   that  take  arbitrary, but finite,
-durations). We  say  that the  transaction $T$ computes an  {\it incremental
-snapshot}.  This snapshot has to be {\it consistent} which
-means that there is a time frame in which these values have co-existed 
-(as we will see later, different consistency conditions consider different  
-time frame  notions). 
-
-If it reads  a  new  object whose  current  value makes  inconsistent  its 
-incremental snapshot, the transaction   is  directed to  abort. 
-If the transaction is not aborted during its read 
-phase, $T$ issues local computations. Finally,  if the transaction  is  
-an update transaction, and its  write operations  can be issued 
-in  such a way that the transaction  appears as  being executed
-atomically,   the objects of its write set are updated  and the transaction
- commits.   Otherwise, it  is  aborted.
-
-\paragraph{Read prefix of an aborted transaction}
-A read prefix is associated with every transaction that aborts.
-This read prefix contains all its read operations if the transaction 
-has not been aborted  during its read phase.  If it has been  aborted during 
-its read phase, its read prefix contains all read operations it has issued 
-before the read that entailed the abort.  Let us observe that the values 
-obtained by the read operations of the read prefix of an aborted transaction 
-are mutually consistent (they are from a consistent global state). 
-
-
-%---------------------------------------------------------------------------
-\Xomit{%  OMITTED%%%%%%%%%%%
-\subsection{The incremental read + deferred update model}
-In this transaction system model, each transaction $T$ uses a local working
-space.  
-When  $T$ invokes $X.{\sf  read}_T()$  for  the first   time, it  reads the
-value of $X$ from  the shared  memory and copies it into its  local working
-space. Later  $X.{\sf  read}_T()$ invocations  (if any)  use this copy.
-So, if $T$  reads $X$ and then $Y$, these reads  are done incrementally, and
-the state of the shared memory may  have changed in between. 
-As already said, one usually says  that the  transaction $T$ 
-computes an  {\it incremental snapshot}.
-
-
-When  $T$ invokes $X.{\sf write}_T(v)$,  it writes  $v$ into  its working
-space (and does not access the  shared memory). 
-Finally, if $T$ is not aborted, 
-it copies  the values written (if  any) from its
-local working  space to  the shared memory.  (A  similar   deferred  update
-model  is used  in some  database transaction systems.)  
-} % end of omit 
-
-
-
-%---------------------------------------------------------------------------
-%===========================================================================
-\vspace{-0.3cm}
 \section{Opacity and virtual world consistency}
 \label{sec:opacity-and-VWC}
-\vspace{-0.2cm}
+
+%----------------------------------------------------------------------
+\subsection{Two consistency conditions  for STM systems}
+
+If you have not noticed already, a reocurring theme throughout this document is that
+the most important goal of transactional memory is ease of use,
+and is the subject of this section.
+We alreay have our syntax defined for the programmer ($atomic\{ \dots \})$) and
+a basic idea of what this means, ``the code in the atomic block will appear as if
+it has been executeded instantaneously'', yet we need to precisely define what this
+means for an STM algorithm.
+At the heart of this we have consistency criterions.
+These criterions precisely define the semantics of a transaction and guide the creation
+of algorithms in order that the chosen criterion is satisfied.
+Without a clear and precisely defined consistency criterion we loose the ease of use
+that is the original intention of STM.
+
+In this section we give a overview of two well known consitency criterion previously
+defined for transactional memory.
+
+
+\paragraph{The opacity consistency condition}
+The classical consistency criterion for database
+transactions is serializability \cite{P79},
+roughly defined as follows: ``A history is serializable if it is equivalent to one in which
+transactions appear to execute sequentially, i.e., without interleaving.''
+What is important to consider when thinking about transactional memory
+is that the serializability  consistency criterion 
+involves only the transactions that commit. Said differently, 
+a transaction  that aborts is not prevented from accessing an inconsistent
+state   before aborting. 
+It should be noted that serializability is sometimes strengthened in ``strict
+serializability''.
+Strict serializability has the additional constranst that the equivalent sequentail history
+must follow a real time order so that each transaction is placed somewhere between its
+invocation and response time,
+as  implemented  when   using   the   2-phase  locking
+mechanism.
+Strict serializability is often refered to as linearizability \cite{}  when considering the operations
+of an object instead of the system as a while.
+
+In contrast to database transactions that 
+are usually produced by SQL queries, in  a STM  system the code  
+encapsulated in a transaction is not restricted to particular patterns. 
+Consequently  a transaction always has to operate on a consistent state
+(no matter if it is eventually commited or not).
+To be more explicit, let   us consider the following example where 
+a transaction  contains the statement $x\leftarrow a/(b-c)$ 
+(where $a$, $b$ and $c$ are  integer data), and let us assume that 
+$b-c$ is different from $0$  in all  consistent states
+(intuitively, a  consistent state is  a global state that,  considering only
+the committed transactions,  could have existed at some real time instant). 
+If the values of $b$ and $c$ read by a transaction come from 
+ different states, it is possible  that the transaction obtains values such
+as $b=c$ (and  $b=c$ defines an inconsistent  state). If this 
+occurs,  the transaction  throws  a divide by zero  exception  that  has to  be
+handled by the process that invoked the corresponding
+transaction. Even worse undesirable  behaviors can  be
+obtained when  reading values from inconsistent  states. 
+This occurs for example when an inconsistent state provides a transaction 
+with values that generate infinite loops.
+Such  bad  behaviors have  to  be prevented in  STM systems: 
+whatever its fate (commit or abort) a transaction has to see always  
+a consistent  state of  the data it  accesses. The aborted transactions
+have to be harmless.  
+
+
+
+Informally suggested  in   \cite{DSS06},  and  formally introduced  
+and investigated in \cite{GK08}, the  {\it   opacity} consistency condition
+requires  that  no transaction, at any time, reads  values from an inconsistent global 
+state  where, considering only the committed transactions,  
+a  {\it consistent  global  state} is defined as the  
+state of the shared memory at some real time instant. 
+%Opacity  is the  same as  strict serializability when  we consider all the
+%committed  transactions, plus an  appropriate read prefix for each aborted
+%transaction, as defined below.  
+%
+Let  us  associate with each  aborted  transaction $T$ 
+its execution prefix (called {\it read prefix}) that contains all its  
+read operations  until  $T$  aborts  (if
+the  abort is  entailed by  a read, this  read is not included in the prefix). 
+An  execution of a set of  transactions satisfies the {\it opacity} 
+condition  if (i) all   committed transactions plus  
+each aborted transaction reduced to its read prefix appear  
+as if they  have been  executed sequentially and (ii)  
+this sequence respects the transaction real-time occurrence order.
+%We call {\it witness sequential execution} such a sequence.
+%Examples  of  protocols  implementing  the  opacity   property,  each  with
+%different additional features, can be found in \cite{DSS06,IR08,IR09,RFF07}. 
+
+
+
+\paragraph{Virtual world consistency}
+This consistency condition, introduced in \cite{IR09},  is 
+weaker  than  opacity while  keeping  its spirit.  It  states  that (1)  no
+transaction (committed or aborted)  reads values from an inconsistent global
+state, (2)  the consistent global states read by the committed transactions 
+are   mutually consistent (in the sense that they can be totally  ordered)  
+but    (3)  while the  global  state read  by each aborted transaction  is
+consistent from its individual point  of view, the  global states read by
+any two aborted  transactions are not  required to be  mutually consistent.  
+%
+Said differently, virtual world consistency requires  that  
+(1)  all the   committed  transactions  be serializable \cite{P79} (so  
+they all  have the same ``witness sequential execution'')  or linearizable 
+\cite{HW90} (if we want  this witness  execution  to also respect real time) 
+and (2)  each aborted transaction  (reduced  to a read  prefix as explained
+previously) reads values that are  consistent  with respect to
+its \emph{causal past} only.
+Informally the causal past of a transaction is some valid history as viewed by
+the transaction, but not necessarily the same history as the one seen by
+other transactions i.e. some transactions might be missing or ordered differently.
+Causal past is defined more formally in the next section.
+
+As two aborted transactions can have different causal pasts, 
+each can read from a  global state that is consistent from its causal past
+point of view, but  these two global states may be mutually inconsistent 
+as aborted transactions have not necessarily the same causal past  
+(hence the name {\it virtual world} consistency).
+
+In addition to the fact that  it can allow more transactions to commit than
+opacity,  one of  the most important points  of virtual world  consistency lies 
+in   the fact that,  as opacity, it  prevents  bad  phenomena  (as described 
+previously)    from occurring  without requiring  all the
+transactions  (committed   or  aborted)  to  agree on the very same  witness
+execution.  Let  us  assume  that each  transaction  behaves  correctly
+(e.g. it does not entail a division  by 0, does not enter an infinite loop,
+etc.) when, executed  alone, it  reads  values from  a consistent  global
+state.  As, due  to the virtual world consistency  condition, no transaction
+(committed or aborted)  reads from an inconsistent state,  it cannot behave
+incorrectly despite  concurrency, it can only  be aborted.
+This  consistency 
+condition  can benefit many  STM applications as, from  its  local point
+of view,  a transaction cannot  differentiate it from opacity.
+
+So what does this mean for the programmer who plans to use transactional memory
+to write his concurrent program?
+Possible performance implications aside, absolutely nothing,
+The programmer will see no difference between an STM protocol that is opaque
+versus one that is virtual world consistent.
+Given the first requirement of transactional memory is ease of use, this is extreely
+important, virtual world consistency would be much less interesting as an STM
+consistency condition if this were not true.
+
+
+\subsection{Formal Definitions}
+%---------------------------------------------------------------------------
+%===========================================================================
+
 
 This  section  defines  formally opacity  \cite{GK08} and virtual  world
 consistency \cite{IR09}. First, we  define some properties of STM executions. 
@@ -793,14 +674,18 @@ any opaque history is virtual world consistent. In contrast,
 a virtual world  consistent history is not necessarily  opaque.
 
 
-%%---------------------------------------------------------------
-%\begin{figure}[ht]
-%\centering
-%\scalebox{0.30}{\input{virtual-world-consistency.pstex_t}}
-%\caption{Examples of causal pasts}
-%\label{fig:example-linear-extensions}
-%\end{figure}
-%%---------------------------------------------------------------
+%---------------------------------------------------------------
+\begin{figure}[ht!]
+\centering
+\scalebox{0.30}{\input{VWC-comp/figures/virtual-world-consistency.pdf_t}}
+%\scalebox{0.40}{\input{virtual-world-consistency.pstex_t}}
+\caption{Examples of causal pasts}
+\label{fig:example-linear-extensions}
+\end{figure}
+%---------------------------------------------------------------
+
+
+
 
 To give a better  intuition of the virtual world  consistency condition,
 let us consider 
@@ -823,13 +708,24 @@ are consistent with respect to its causal past dependencies.
 
 
 
+\section{Invisible reads, permissiveness, and consistency}
+In the previous section several interesting properties and consistency conditions
+for STM have been defined.
+In this section we examine the some of the implcations of these properties
+on STM algorithms.
+
+We start by proving that an STM portocal cannot implemnt invisible reads, opactiy,
+and permissiveness at the same time.
+This is importat because it shows that no matter how well we keep track of
+the interatctions between transactions, an opaque STM portocol will have to abort
+transactions unnecessarily if invisible reads are used.
+We then show that by simply replacing virtual world consistency for opacity
+as the consistency condition no transactions need to be aborted unenessarily.
 
 
 %=========================================================================
-\vspace{-0.3cm}
-\section{Invisible reads, opacity and permissiveness are incompatible} 
+\subsection{Invisible reads, opacity and permissiveness are incompatible} 
 \label{sec:opacity-impos}
-\vspace{-0.2cm}
 
 \begin{theorem}
 \label{proof:opacity-impossibility}
@@ -882,16 +778,17 @@ has to be decided, $T_3$ is not aware of the existence of $T_1$.
 %%appear as being executed  atomically-, it would  discover thanks to the 
 %%visible read of $T_1$ that its read of $X$  has been overwritten .) 
 \end{enumerate}
-%%%
-%\begin{figure}[htb]
-%\centering{
-%  \scalebox{0.45}{\input{fig-opacity-impossibility.pstex_t}}
-%\caption{Invisible reads, opacity and permissiveness are incompatible}
+
 %%
-%\label{fig:opacity-impossibility}
-%}
-%\end{figure}
-%%%
+\begin{figure}[htb!]
+\centering{
+  \scalebox{0.45}{\input{VWC-comp/figures/fig-opacity-impossibility.pdf_t}}
+\caption{Invisible reads, opacity and permissiveness are incompatible}
+%
+\label{fig:opacity-impossibility}
+}
+\end{figure}
+%%
 
 
 
@@ -950,7 +847,7 @@ and opacity are  incompatible.
 \vspace{-0.2cm}   
 
 
-\paragraph{Remark 1}
+\paragraph{Remark}
 Let us  observe that any opaque system with invisible reads would be
 required to abort $T_3$.  When  $T_3$ performs the ${\sf try\_to\_commit}()$ 
 operation detecting that its read of $X$  has been overwritten, it must 
@@ -961,26 +858,66 @@ and opacity are {\it incompatible} in the sense that any pair of properties
 can be satisfied only if the third is omitted.
 
 
-\paragraph{Remark 2}
-The previous proof shows that opacity is a too strong consistency condition 
-when one wants  both  read invisibility and permissiveness. 
-Differently, when considering the previous execution, 
-the  virtual  world consistency protocol IR\_VWC\_P presented in this paper  
-will abort transaction $T_1$. 
-It is easy  to see that the  corresponding weak transaction history 
+
+
+
+
+
+
+
+
+
+\subsection{Invisible reads, virtual world consistency and permissiveness are compatible} 
+\label{sec:opacity-impos}
+
+
+\input{./VWC-comp/vwcinvisperm}
+
+
+
+
+
+
+\paragraph{Remark}
+The previous section (section \ref{sec:opacity-impos}) shows that opacity is a too strong consistency condition 
+when one wants  both  read invisibility and permissiveness
+while this section shows that virtual world consistency should be used instead.
+
+Let us consider the execution in figure \ref{fig:opacity-impossibility} that was used to show that opacity, invisible reads, and
+permissiveness are incompatible.
+Unsurprisingly this history can be made permissive and virtual world consistent even with read invisibility.
+In order for this to be true, a virtual  world consistency protocol must then
+abort transaction $T_1$. 
+Then it is easy  to see that the  corresponding weak transaction history 
 is virtual world consistent:  
  The  read prefix ``$X.{\sf  read}_{T_1}()$;  $Y.{\sf  read}_{T_1}()$'' 
 of the aborted transaction  $T_1$
 can be ordered after $T_2$ (and $T_3$ does not appear in its causal past). 
 
 
-%=========================================================================
-\vspace{-0.3cm}
-\section{Step 1: Ensuring virtual world consistency with read invisibility}
-\label{sec:algorithm-V1}
-\vspace{-0.2cm}
 
-As announced  in the Introduction,  the protocol IR\_VWC\_P  is built  is two
+
+
+
+
+
+
+%=========================================================================
+
+
+\section{A protocol satisfying permissiveness and virtual world consistency with read invisibility}
+
+Though the previous section shows that it is possible to have an STM protocol with read invisibility
+that is virtual world consistent and permissive, but it does not show that it is realistic to implement.
+In this section we introduce such a protocol that satisfies the above properties efficiently using
+realistic operations available in most hardware.
+
+
+\subsection{Step 1: Ensuring virtual world consistency with read invisibility}
+\label{sec:algorithm-V1}
+
+
+The protocol (named as IR\_VWC\_P)  is built  is two
 steps.  This section  presents  the  first step,  namely,  a protocol  that
 ensures  virtual consistency  with  invisible read  operations. The  second
 step  (Section  \ref{sec:algo-V2-permissiveness})  will  enrich  this  base
@@ -991,7 +928,7 @@ protocol to obtain  probabilistic permissiveness.
 
 
 %-------------------------------------------------------------------------
-\subsection{Base objects, STM interface, incremental reads and 
+\subsubsection{Base objects, STM interface, incremental reads and 
 deferred updates}
 %\vspace{-0.2cm}
 The underlying system  on top of which  is built the STM system  is made up
@@ -1028,7 +965,7 @@ local working  space to  the shared memory.  (A  similar   deferred  update
 model  is used  in some  database transaction systems.)  
 
 %-------------------------------------------------------------------------
-\subsection{The underlying data structures}
+\subsubsection{The underlying data structures}
 %\vspace{-0.2cm}
 \paragraph{Implementing a transaction-level shared object}  
 %
@@ -1076,16 +1013,18 @@ $CELL(X).next$ will be  used to obtain permissiveness
 (see Section \ref{sec:algo-V2-permissiveness}).
 \end{itemize}
 
-%%%
-%\begin{figure}[htb]
-%\centering{
-%  \scalebox{0.45}{\input{fig-implementing-register-X.pstex_t}}
-%\caption{List implementing a transaction-level shared object $X$}
+
 %%
-%\label{fig:list-implementation-register}
-%}
-%\end{figure}
-%%%
+\begin{figure}[htb!]
+\centering{
+  \scalebox{0.45}{\input{VWC-comp/figures/fig-implementing-register-X.pdf_t}}
+\caption{List implementing a transaction-level shared object $X$}
+%
+\label{fig:list-implementation-register}
+}
+\end{figure}
+%%
+
 
 No field of a cell is required to be an atomic read/write register of 
 the underlying  shared memory. Moreover, all fields (but  
@@ -1159,695 +1098,8 @@ $\mathit{VAR} \equiv (\uparrow  \mathit{VAR}) \downarrow)$.
 
 
 
-%%==================================================================
-%\begin{figure}[htb!]
-%\centering{ \fbox{
-%\begin{minipage}[t]{150mm}
-%\footnotesize 
-%\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-%\begin{tabbing}
-%aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
-%
-%
-%{\bf operation} ${\sf begin}_T()$:\\
-%\line{BA01} \> $window\_bottom_T \gets last\_commit_i$;
-%	       $window\_top_T \gets +\infty$;
-%	       $lrs_T \gets \emptyset$;
-%               $lws_T \gets \emptyset$. \\
-%
-%
-%~~~====================================================================================\\
-%
-%{\bf operation}  $X.{\sf read}_T()$: \\
-%
-%\line{BA02} \>   {\bf if} \= 
-%  ($\nexists$ local cell associated with the R/W shared object $X$)  
-%   {\bf then}\\
-%
-%\line{BA03} \>\>   allocate local space denoted $lcell(X)$;\\
-%
-%
-%\line{BA04}  \>\> 
-%                  $x\_ptr \leftarrow PT[X]$;\\
-%
-%\line{BA05}  \>\> $lcell(X).value 
-%                  \leftarrow (x\_ptr\downarrow).value$;\\
-%
-%
-%\line{BA06} \>\> 
-%   $lcell(X).begin 
-%                 \leftarrow (x\_ptr \downarrow).begin$; \\
-%
-%\line{BA07} \>\>  $lcell(X).origin \leftarrow x\_ptr$;\\
-%
-%
-%\line{BA08} \>\>  $window\_bottom_T \leftarrow 
-%                  \max(window\_bottom_T, lcell(X).begin)$;\\
-%
-%\line{BA09} \>\> $lrs_T \leftarrow lrs_T \cup X$;\\
-%
-%\line{BA10} \>\>
-%      {\bf for each} $(Y \in lrs_T)$ {\bf do} $window\_top_T \leftarrow 
-%          \min\big(window\_top_T,
-%     (lcell(Y).origin\downarrow).\mathit{end} \big)$ {\bf end for};\\
-%
-%\line{BA11} \>\> {\bf if} $(window\_bottom_T \geq window\_top_T)$ {\bf then}
-% 		 ${\sf return}(abort)$ {\bf end if}\\
-%
-%%\line{BA11} \>\> $lrs_T \leftarrow lrs_T \cup X$\\
-%
-%\line{BA12} \>   {\bf end if}; \\
-%
-%\line{BA13} \>   ${\sf return}~(lcell(X).value)$. \\
-%
-%
-%%~\\
-%~~~~====================================================================================\\
-%
-%
-%{\bf operation}  $X.{\sf write}_T(v)$: \\
-%
-%\line{BA14} \>  {\bf if} \= 
-%      ($\nexists$ local cell associated with the R/W shared object $X$) 
-%         {\bf then} allocate local space $lcell(X)$  {\bf end if}; \\
-%
-%
-%\line{BA15} \> $lws_T \gets lws_T \cup {X}$;\\
-%
-%
-%\line{BA16} \> $lcell(X).value \gets v$; \\
-%
-%\line{BA17} \> ${\sf return}(ok)$.\\
-%
-%
-%
-%
-%
-%~~~====================================================================================\\
-%
-%
-%{\bf operation} ${\sf try\_to\_commit}_T()$: \\
-%
-%\line{BA18} \> lock all the objects in $lrs_T \cup lws_T$; \\
-%
-%\line{BA19} \> {\bf for each} $(Y \in lrs_T)$ {\bf do} $window\_top_T \leftarrow 
-%          \min\big(window\_top_T,
-%     (lcell(Y).origin\downarrow).\mathit{end} \big)$ {\bf end for};\\
-%
-%\line{BA20} \> {\bf for each} $(Y \in lws_T)$ {\bf do} 
-%              
-%               $window\_bottom_T \leftarrow 
-%               \max((PT[Y]\downarrow).last\_read, window\_bottom_T)$ 
-%
-%               {\bf end for}; \\
-%	
-%\line{BA21} \> {\bf if} $(window\_bottom_T \geq window\_top_T)$ {\bf then}
-%      release all locks and disallocate all local cells; 		
-%      ${\sf return}(abort)$ {\bf end if};\\
-%
-%
-%\line{BA22} \> $commit\_time_T \leftarrow$ 
-%         select a (random/heuristic) time value
-%         $\in ~]window\_bottom_T.. window\_top_T[$; \\
-%
-%\line{BA23} \> {\bf for each} $(X \in lws_T)$ {\bf do} 
-%       $(PT[X] \downarrow).\mathit{end} 
-%            \leftarrow \mathit{commit\_time}_T$  {\bf end each};\\
-%
-%
-%\line{BA24} \> {\bf for each} $(X \in lws_T)$ {\bf do} \\
-%
-%
-%\line{BA25} \>\> 
-%       allocate in shared memory  a new cell for $X$ denoted $CELL(X)$; \\
-%
-%\line{BA26} \>\>  $CELL(X).value \gets lcell(X).value$;
-%                  $CELL(X).last\_read \gets commit\_time_T$;\\
-%
-%\line{BA27} \>\>  $CELL(X).begin \gets commit\_time_T$; 
-%                  $CELL(X).end \leftarrow +\infty$;\\
-%
-%\line{BA28} \>\>  $PT[X]  \leftarrow  ~ \uparrow CELL(X)$ \\
-%
-%\line{BA29} \> {\bf end for};\\
-%
-%\line{BA30} \> {\bf for each} $(X \in lrs_T)$ {\bf do} \\
-%
-%
-%\line{BA31} \>\>
-%   $(lcell(X).origin \downarrow).last\_read \leftarrow 
-%     \max((lcell(X).origin \downarrow).last\_read, commit\_time_T)$ \\
-%
-%\line{BA32} \> {\bf end for};\\
-%
-%\line{BA33} \> release all locks and disallocate all  local cells; 
-%               $last\_commit_i \leftarrow commit\_time_T$;\\
-%	
-%\line{BA34} \> ${\sf return}(commit)$. \\
-%
-%
-%\end{tabbing}
-%\normalsize
-%\end{minipage}
-%}
-%\caption{Algorithm for the operations of the protocol}
-%\label{fig:ttc-protocol}
-%}
-%\end{figure}
-%%=================================================================
-%
-%--------------------------------------------------------------------------
-\subsection{The ${\sf read}_T()$ and  ${\sf write}_T()$  operations}
-%\vspace{-0.1cm}
-When a process $p_i$ invokes a new transaction $T$,  it first 
-executes the operation ${\sf begin}_T()$ which  initializes the
-appropriate  local variables. 
 
 
-
-\paragraph{The  $X.{\sf read}_T()$ operation}
-The algorithm implementing $X.{\sf read}_T()$ is described in Figure
-\ref{fig:ttc-protocol}.  When $p_i$ invokes this operation, it 
-returns the value locally saved in $lcell(X).value$ if  $lcell(X)$ exists
-(lines  \ref{BA02} and \ref{BA13}). 
-%
-If  $lcell(X)$ has not yet been allocated, $p_i$ does it (line \ref{BA03}) and 
-updates its  fields $value$, $begin$  and  $origin$ with the corresponding 
-values obtained from the shared memory (lines \ref{BA04}-\ref{BA07}).
-%
-Process $p_i$ then updates $window\_bottom_T$ and $window\_top_T$.
-These updates are as follows. 
-\begin{itemize}  
-%
-\vspace{-0.2cm}
-\item 
-The algorithm defines the  commit time of transaction $T$ as a point of the  
-time line such that $T$ could have executed all its read and write operations 
-instantaneously as that time. Hence, $T$ cannot be committed before
-a committed transaction $T'$  that wrote the value of a shared object $X$  
-read by $T$. 
-According to the algorithm implementing the ${\sf try\_to\_commit}_T()$ 
-operation  (see line~\ref{BA27}), 
-the commit point of such a transaction $T'$ is  the time value kept in 
-$lcell(X).begin$. Hence, $p_i$ updates  $window\_bottom_T$ to 
-$\max(window\_bottom_T, lcell(X).begin)$ (line  \ref{BA08}).
-$X$ is then added to $lrst_T$  (line  \ref{BA09}).
-%
-%
-\vspace{-0.2cm}
-\item 
-Then, $p_i$ updates  $window\_top_T$ (the top side of $T$'s  commit window,
-line \ref{BA10}). 
-If there is a shared object $Y$ already read by $T$  (i.e., $Y\in lrs_T$)
-that has been written by some  other transaction $T''$ 
-(where $T''$ is a transaction that  wrote  $Y$ after $T$ read $Y$),   
-then $window\_top_T$ has to be set to  $commit\_time_{T''}$  
-if  $commit\_time_{T''} <window\_top_T$.
-%
-According to the algorithm implementing the ${\sf try\_to\_commit}_T()$ 
-operation,  
-the commit point of such a transaction $T''$ is  the date kept in 
-$(lcell(Y).origin\downarrow).\mathit{end}$. 
- Hence, for each $Y \in lrs_T$, $p_i$ updates  $window\_bottom_T$ to 
-$\min\big(window\_top_T, (lcell(Y).origin\downarrow).\mathit{end}$
-(line  \ref{BA10}).
-\end{itemize}
-Then, if the window becomes empty, the  $X.{\sf read}_T()$ operation 
-entails the abort of transaction $T$ (line  \ref{BA11}).
-If $T$ is not aborted, the value written  by $T'$ (that is  
-kept in  $lcell(X).value$) is returned (line  \ref{BA13}). 
-
-
-
-
-\paragraph{The  $X.{\sf write}_T(v)$ operation}
-The algorithm implementing this operation is described at lines 
-\ref{BA14}-\ref{BA17} of Figure \ref{fig:ttc-protocol}.
-If there is no local cell associated with $X$, $p_i$ allocates one 
-(line \ref{BA14}) and adds $X$ to $lws_T$ (line \ref{BA15}). 
-Then it locally writes $v$ into $lcell(X).value$   (line \ref{BA16})
-and return $ok$  (line \ref{BA17}).
-%
-Let  us observe  that  no $X.{\sf write}_T()$ operation can  entail 
-the abort of a transaction. 
-
-
-
-
-
-%--------------------------------------------------------------------------
-\subsection{The ${\sf try\_to\_commit}_T()$ operation}
-%\vspace{-0.1cm}
-The algorithm implementing this operation is described in Figure 
-\ref{fig:ttc-protocol} (lines \ref{BA18}-\ref{BA34}). 
-A process $p_i$ that invokes ${\sf try\_to\_commit}_T()$ first locks all 
-transaction-level shared objects $X$ that have been accessed by 
-transaction $T$  (line  \ref{BA18}). The locking of shared  objects is done
-in a canonical order in order to prevent deadlocks.
-
-
-Then, process $p_i$  computes the values that define the last commit window 
-of $T$ (lines  \ref{BA19}-\ref{BA20}).
-The update of $\mathit{window\_top}_T$ is the same as
-described in the ${\sf read}_T()$ operation. 
-The update of $\mathit{window\_top}_T$ is as follows.
-For each register $Y$ that $T$ is about to write in the shared 
-memory (if $T$  is not aborted before), $p_i$ computes the date of the last
-read of $Y$, namely the date $(PT[Y]\downarrow).last\_read$. 
-In order not to invalidate this read
-(whose issuing transaction has been committed), $p_i$ updates 
-$window\_bottom_T$ to  $\max((PT[Y]\downarrow).last\_read, window\_bottom_T)$. 
-If the  commit window of $T$ is empty, $T$ is aborted (line \ref{BA21}).
-All locks are then released and all local cells are freed.
-
-If $T$'s commit window is not empty, it can be safely committed. 
-To that end  $p_i$  defines $T$'s commit time as  a finite value randomly
-chosen in the current window $]window\_bottom_T.. window\_top_T[$  
-(let us remind that the  bounds are outside the  window, line \ref{BA22}).  
-This  time function  is such  that no  two processes  obtain the  same time
-value.  
-
-
-
-Then, before committing,  $p_i$ has to (a) apply the writes issued by $T$ 
-to the shared objects and (b) update the ``last read'' dates associated with 
-the shared objects it has read. 
-\begin{itemize}
-\vspace{-0.2cm}
-\item [a.] First, for every shared object $X\in lws_T$, process $p_i$ updates  
-$(PT[X] \downarrow).\mathit{overwrite}$ with $T$'s 
- commit date (line \ref{BA23}). 
-When all these updates have been done,  for every shared object $X\in lws_T$,
-$p_i$ allocates a new shared memory cell  $CELL(X)$  and fills in the 
-four fields of $CELL(X)$ (lines \ref{BA25}-\ref{BA28}).
-Process $p_i$  also has to update the pointer $PT[X]$ to its new  value
-(namely $\uparrow CELL(X)$)  (line \ref{BA28}). 
-%
-\vspace{-0.2cm}
-\item[b.] For each register $X$ that has been read by $T$, 
-$p_i$ updates the field $last\_read$ to the maximum of its previous value 
-and $commit\_time_T$ (lines \ref{BA30}-\ref{BA32}). 
-(Actually, this base version of the protocol remains correct 
-when   $X \in lrs_T$  is  replaced by  $X \in (lrs_T \setminus  lws_T)$. 
-(As this improvement is no longer valid in the final version of the 
-${\sf try\_to\_commit}_T()$  algorithm described in  
-Figure~\ref{fig:ttc-V22-protocol}, we do not consider it in this
- base protocol.) 
-
-
-\end{itemize}
-
-Finally, after these updates of the shared memory, $p_i$ releases all its 
-locks, frees the local cells it had previously allocated (line \ref{BA33}) 
-and returns the value $commit$ (line \ref{BA34}). 
-
-
-\paragraph{On the random selection of commit points}
-It is important to notice that, choosing randomly  commit points
-(line \ref{BA22}, Figure \ref{fig:ttc-protocol}),  there might be 
-``best/worst'' commit  points for committed  transactions,  
-where ``best point''  means that it  allows  more  concurrent 
-conflicting  transactions to commit.  Random selection of a commit point 
-can  be seen as  an inexpensive way to amortize the impact of ``worst'' 
-commit points  (inexpensive because  it eliminates the 
-extra overhead of computing which point is the best). 
-
-
-
-%===========================================================================
-
-\paragraph{Proof of the algorithm for VWC and read invisibility}
-Due to space limitations, the proof is not included here. It can be found in 
-Section \ref{sec:algorithm-V1-proof} of the Appendix and in \cite{CIR10}.
-
-
-\paragraph{Improving the  base protocol described in Figure 
-\ref{fig:ttc-protocol}}
-The base protocol 
-  presented previously can be improved on the following three points:
-how the useless cells  can be collected, how read operations can 
-be made fast  and how serializability can be replaced by linearizability. 
-Due to space limitations, these improvements are not included here. 
-They can be found in Section \ref{sec:improving-base-protocol}
-of the Appendix and in \cite{CIR10}.
-
-
-
-
-
-%===========================================================================
-\vspace{-0.3cm}
-\section{Step 2: adding probabilistic permissiveness to the  protocol}
-\label{sec:algorithm-V2} 
-\label{sec:algo-V2-permissiveness}
-\vspace{-0.2cm}
-
-This section  presents the final IR\_VWC\_P protocol that  ensures virtual
-world  consistency, read  invisibility and   probabilistic permissiveness. 
-The   first part describes  the protocol  while the  second part  proves 
-its correctness. 
-
-
-
-%\vspace{-0.1cm}
-\subsection{The IR\_VWC\_P protocol}
-%\vspace{-0.2cm}
-To   obtain   a  protocol   that   additionally  satisfies    probabilistic
-permissiveness,  only  the operation ${\sf try\_to\_commit}_T()$  has to be
-modified.  
-The algorithms implementing the operations ${\sf begin}_T()$, 
-$X.{\sf read}_T()$ and  $X.{\sf write}_T()$  are exactly the same as  
-the ones described in Figure \ref{fig:ttc-protocol}. 
-The  algorithm implementing  the new version of the operation 
-${\sf try\_to\_commit}_T()$ is described in Figure~\ref{fig:ttc-V22-protocol}. 
-As we are about to see, it is not a new protocol but an appropriate
-enrichment of the previous ${\sf try\_to\_commit}_T()$ protocol. 
-
-%%---------------------------------------------------------------
-%\begin{figure}[ht]
-%\centering
-%\scalebox{0.35}{\input{fig-intervals.pstex_t}}
-%\caption{Commit intervals}
-%\label{fig:intervals}
-%\end{figure}
-%%---------------------------------------------------------------
-%    
-
-
-\paragraph{A set of intervals for each transaction}
-Let us consider the execution depicted in Figure \ref{fig:intervals}
-made up of three transactions: $T1$ that writes $X$, $T2$ that reads $X$ 
-and obtains the value written by $T1$, and  $T3$ that writes $X$. 
-When we consider the base protocol described in Figure 
-\ref{fig:ttc-protocol}, the commit window of $T3$ is 
-$]commit\_time_{T2}..+\infty[$. 
-As the aim is  not to abort a transaction if it can be appropriately 
-serialized, it is easy to see  that associating  this window to $T3$ is not
-the best  choice that can be done.  Actually $T3$ can be  serialized at any
-point of the commit line as long as the  read of $X$ by $Y
-2$ remains
-valid. This  means that the  commit point of  $T3$ can be 
-any point in $]0..commit\_time_{T1}[ ~\cup~]commit\_time_{T2}..+\infty[$.
-
-This simple example shows that,  if one wants to ensure probabilistic 
-permissiveness,   the notion of  continuous commit  window  of a transaction
-is a too restrictive notion.  It has  to be replaced  by  a set  of time
-intervals  in order valid commit times not to be a priori eliminated from 
-random choices.  
-
-
-
-\paragraph{Additional  local variables}
-According to the  previous discussion, two new variables  are introduced at
-each process $p_i$.  
-The set   $\mathit{commit\_set}_T$ is  used to contain  the  intervals
-in which  $T$ will be allowed to  commit. To  compute  its   final  value,  
-the  set $\mathit{forbid}_T$ is used to store  the windows in which $T$ 
-cannot be committed.  
-
-
-\paragraph{The enriched ${\sf try\_to\_commit}_T()$ operation}
-The new  ${\sf try\_to\_commit}_T()$ algorithm
-is described in Figure~\ref{fig:ttc-V22-protocol}.
-In a very interesting way, this  ${\sf try\_to\_commit}_T()$ 
-algorithm has the same structure as the one described in  
-Figure \ref{fig:ttc-protocol}. The lines with the same number are 
-identical in both algorithms, while the number of the lines of 
-Figure \ref{fig:ttc-protocol} that are modified are postfixed by a letter. 
-The new/modified  parts are the followings. 
-
-
-
-%%==================================================================
-%\begin{figure}[htb]
-%\centering{ \fbox{
-%\begin{minipage}[t]{150mm}
-%\footnotesize 
-%\renewcommand{\baselinestretch}{2.5} 
-%%\resetline
-%\begin{tabbing}
-%aaaaaaa\=aa\=aaaaa\=aa\=\kill ~\\
-%
-%{\bf operation} ${\sf try\_to\_commit}_T()$: \\
-%
-%(\ref{BA18}) \> lock all the objects in $lrs_T \cup lws_T$; \\
-%
-%(\ref{BA19}) \> {\bf for each} $(Y \in lrs_T)$ {\bf do} 
-%    $window\_top_T \leftarrow 
-%     \min\big(window\_top_T,
-%     (lcell(Y).origin\downarrow).\mathit{end} \big)$ {\bf end for};\\
-%
-%(\ref{BA20}.A) \> $\mathit{commit\_set}_T 
-% \leftarrow \{~ ]\mathit{window\_bottom}_T, \mathit{window\_top}_T[~\}$;\\
-%
-%(\ref{BA20}.B) \> {\bf for each} $(X \in lws_T)$ {\bf do}\\
-%
-%(\ref{BA20}.C) \> \> $x\_ptr \leftarrow PT[X]$;
-%                     $\mathit{x\_forbid_T}[X] \leftarrow \emptyset$;\\
-%
-%(\ref{BA20}.D) \> \> 
-%{\bf while} $((x\_ptr \downarrow).\mathit{last\_read} 
-%                > \mathit{window\_bottom}_T)$ {\bf do}\\
-%
-%(\ref{BA20}.E) \> \> \> 
-%$\mathit{x\_forbid_T}[X] \leftarrow \mathit{x\_forbid_T}[X] \cup 
-%      \{~ [(x\_ptr \downarrow).\mathit{begin},
-%                   (x\_ptr \downarrow).\mathit{last\_read}]~ \}$;\\
-%
-%(\ref{BA20}.F) \> \> \> $x\_ptr \leftarrow (x\_ptr \downarrow).prev$\\
-%
-%(\ref{BA20}.G) \> \> {\bf end while}\\
-%
-%(\ref{BA20}.H)  \> {\bf end for};\\
-%
-%(\ref{BA20}.I) \> 
-% $\mathit{commit\_set}_T  \leftarrow \mathit{commit\_set}_T \backslash 
-%              \bigcup_{X\in lws_T}\big(\mathit{x\_forbid_T}[X]\big)$;\\
-%
-%
-%(\ref{BA21}.A) \> {\bf if} $(\mathit{commit\_set}_T = \emptyset)$ {\bf then}
-%      release all locks and disallocate all local cells; 		
-%      ${\sf return}(abort)$ {\bf end if};\\
-%
-%(\ref{BA22}.A) \> $commit\_time_T \leftarrow$ 
-%         select a (random/heuristic) time value
-%         $\in ~\mathit{commit\_set}_T$; \\
-%
-%(\ref{BA23}.A) \> {\bf for each} $(X \in lws_T)$ {\bf do} \\
-%
-%(\ref{BA23}.B) \> \> $x\_ptr \leftarrow PT[X]$;\\
-%
-%(\ref{BA23}.C) \> \> 
-%   {\bf while} $((x\_ptr \downarrow).\mathit{begin} > 
-%        \mathit{commit\_time}_T)$ {\bf do} 
-%        $x\_ptr \leftarrow (x\_ptr \downarrow).prev$ {\bf end while};\\
-%
-%(\ref{BA23}.D) \> \> $(x\_ptr \downarrow).\mathit{end} \leftarrow 
-%    \min((x\_ptr \downarrow).\mathit{end},\mathit{commit\_time}_T)$\\
-%
-%(\ref{BA23}.E) \> {\bf end for};\\
-%
-%
-%(\ref{BA24}.A) \> {\bf for each} $(X \in lws_T)$ 
-%   {\bf such that} $(\mathit{commit\_time}_T > 
-%       (PT[X] \downarrow).\mathit{begin})$ {\bf do}\\
-%
-%(\ref{BA25}) \>\> \> 
-%       allocate in shared memory  a new cell for $X$ denoted $CELL(X)$; \\
-%
-%(\ref{BA26}) \>\>\>  $CELL(X).value \gets lcell(X).value$;
-%                  $CELL(X).last\_read \gets commit\_time_T$;\\
-%
-%(\ref{BA27}) \>\>\>  $CELL(X).begin \gets commit\_time_T$; 
-%                     $CELL(X).end \leftarrow +\infty$; \\
-%
-%(\ref{BA28}.A) \>\>\>   $CELL(X).prev  \leftarrow PT[X]$;
-%                        $PT[X]  \leftarrow  ~ \uparrow CELL(X)$\\
-%
-%(\ref{BA29}.A) \> {\bf end for};\\
-%
-%(\ref{BA30}) \> {\bf for each} $(X \in lrs_T)$ {\bf do} \\
-%
-%
-%(\ref{BA31}) \>\>
-%   $(lcell(X).origin \downarrow).last\_read \leftarrow 
-%     \max((lcell(X).origin \downarrow).last\_read, commit\_time_T)$ \\
-%
-%(\ref{BA32}) \> {\bf end for};\\
-%
-%(\ref{BA33}) \> release all locks and disallocate all  local cells; 
-%               $last\_commit_i \leftarrow commit\_time_T$;\\
-%	
-%(\ref{BA34}) \> ${\sf return}(commit)$. \\
-%
-%\end{tabbing}
-%\normalsize
-%\end{minipage}
-%}
-%\caption{Algorithm for the ${\sf try\_to\_commit()}$ operation of 
-%         the permissive protocol}
-%\label{fig:ttc-V22-protocol}
-%}
-%\end{figure}
-%%=================================================================
-
- 
-\begin{itemize}
-%
-\vspace{-0.2cm}
-\item  Lines \ref{BA20}.A-\ref{BA20}.I  replace  line 
-\ref{BA20} of Figure~\ref{fig:ttc-protocol} that was computing the value of 
-$\mathit{window\_bottom}_T$.
-%
-These new lines compute instead the set of intervals that  
-constitute  $\mathit{commit\_set}_T$. To that end they suppress 
-from the initial interval 
-$]\mathit{window\_bottom}_T, \mathit{window\_top}_T[$, 
-all the time intervals that would invalidate values read by committed 
-transactions.  This is done for each object $X\in lws_T$
-(line~\ref{BA20}.H; see Appendix~\ref{sec:appendix-forbid} for an example). 
-If  $\mathit{commit\_set}_T$ is empty, the transaction $T$ is  aborted
-(line  \ref{BA21}.A).
-%
-\vspace{-0.2cm}
-\item The commit time of a transaction $T$ is now selected from 
-the intervals in  $\mathit{commit\_set}_T$ (line  \ref{BA22}.A).
-%
-\vspace{-0.2cm}
-\item
-Line \ref{BA23} of Figure~\ref{fig:ttc-protocol}
-was assigning, for each $X\in lws_T$, its value to  $(PT[X]\downarrow).end$, 
-namely the value $\mathit{commit\_time}_T$. 
-%
-This is now done by the new lines  \ref{BA23}.A-\ref{BA23}.E.
-Starting from  $PT[X]$, these statements use the pointer $prev$ to find the 
-cell (let us denote it say $CX$)  of  the list implementing $X$ whose field  
-$CX.end$ has to be assigned the value $\mathit{commit\_time}_T$. 
-Let us remember that $CX.end$ 
-defines the end of the lifetime of the value kept in $CX.value$. 
-This cell  $CX$ is the first cell (starting from  $PT[X]$) such that 
-$CX.begin < \mathit{commit\_time}_T$. 
-%
-\vspace{-0.2cm}
-\item Line \ref{BA24} of Figure~\ref{fig:ttc-protocol} 
-assigned its new value to every object $X\in lws_T$. 
-%
-Now such an  object $X$  has  to be assigned its new value  only if 
-$\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$. 
-This is because when 
-$ \mathit{commit\_time}_T  < (PT[X] \downarrow).\mathit{begin}$,  
-the value  $v$ to be written  is not the last one according to the
-serialization order. Let us remember that the serialization order, that 
-is   defined by commit times, is  not required to be real time-compliant
-(which would be required if we wanted to have linearizability instead of 
-serializability, see Section \ref{sec:from-ser-to-lin}). 
-An example is given in Appendix \ref{sec:appendix-example-for-ct}. 
-%
-Finally, the  pointer $prev$  is appropriately updated (line \ref{BA28}.A).
-(Starting from $(PT[X]\downarrow).next$,  these pointers allows  for the 
-traversal of the list implementing $X$.) 
-\end{itemize}
-
-
-%--------------------------------------------------------------------------
-\vspace{-0.3cm}
-\paragraph{Proof of the probabilistic permissiveness property}
-Due to space limitations, the proof is not included here. It can be found in 
-Section \ref{sec:proof-proba} of the Appendix and in \cite{CIR10}.
-
-
-
-%===========================================================================
-\vspace{-0.4cm}
-\section{Conclusion}
-\label{sec:conclusion}
-\vspace{-0.3cm}
-
-
-This paper has investigated the relation linking read invisibility, 
-permissiveness and two consistency conditions, namely, opacity and 
-virtual world consistency. 
-It has shown that  read invisibility, permissiveness and
-virtual world  consistency  are compatible. To that 
-end an appropriate  STM protocol has been designed and proved correct. 
-%It has also been shown that this protocol allows for fast read
-%operations while opacity does not. 
-%
-Interestingly enough, this  new  STM protocol  has additional  noteworthy
-features: (a) it uses only base read/write operations and a lock per object 
-that is  used   at  commit  time   only   and  (b) satisfies  the  disjoint  
-access parallelism property. 
-
-
-The  proposed IR\_VWC\_P  protocol  uses multiple  versions 
-(kept in a list) of each  shared object $X$.
-Multi-version systems for STM systems  have  been  proposed  several years  
-ago \cite{CR06} and have recently received a new interest, e.g., 
-\cite{AH11,PFK10}. In contrast to our work, none of these papers 
-consider virtual wold consistency  as  consistency condition.
-Moreover, both papers consider a different  notion of permissiveness
-called multi-version permissiveness that states that read-only 
-transactions are never aborted  and   an update transaction  can be aborted
-only  when in conflict with other transactions writing the same objects.
-%
-More specifically, paper 
-\cite{PFK10} studies inherent properties of STMs that use multiple 
-versions    to   guarantee    successful   commits    of    all   read-only
-transactions. This paper presents also a  protocol with visible read 
-operations that   recovers useless versions. Paper
-\cite{AH11} shows that  multi-version permissiveness can be obtained from 
-single-version. The STM   protocol it presents satisfies 
-the disjoint access parallelism property,  requires visible read operations
-and uses $k$-Compare\&single-swap operations. 
-
-% \vspace{0.1cm}
-% \paragraph{Acknowledgements}
-% This research  is part of the TRANSFORM project, 
-% a  Marie Curie project funded by the European Community's Seventh 
-% Framework Programme  (grant agreement n° 238639), devoted to the theory of 
-% software transactional memories. 
-% We also thank Hagit  Attiya  and Sandeep Hans for their constructive 
-% comments on a draft of this paper. 
-% %===========================================================================
-% \newpage
-% \section{Figures}
-
-%---------------------------------------------------------------
-\begin{figure}[ht!]
-\centering
-\scalebox{0.30}{\input{VWC-comp/figures/virtual-world-consistency.pdf_t}}
-%\scalebox{0.40}{\input{virtual-world-consistency.pstex_t}}
-\caption{Examples of causal pasts}
-\label{fig:example-linear-extensions}
-\end{figure}
-%---------------------------------------------------------------
-
-\vspace{3cm}
-
-%%
-\begin{figure}[htb!]
-\centering{
-  \scalebox{0.45}{\input{VWC-comp/figures/fig-opacity-impossibility.pdf_t}}
-\caption{Invisible reads, opacity and permissiveness are incompatible}
-%
-\label{fig:opacity-impossibility}
-}
-\end{figure}
-%%
-
-\vspace{3cm}
-
-%%
-\begin{figure}[htb!]
-\centering{
-  \scalebox{0.45}{\input{VWC-comp/figures/fig-implementing-register-X.pdf_t}}
-\caption{List implementing a transaction-level shared object $X$}
-%
-\label{fig:list-implementation-register}
-}
-\end{figure}
-%%
 
 
 %==================================================================
@@ -2008,360 +1260,195 @@ aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
 \end{figure}
 %=================================================================
 
-%---------------------------------------------------------------
-\begin{figure}[ht!]
-\centering
-\scalebox{0.35}{\input{VWC-comp/figures/fig-intervals.pdf_t}}
-%\scalebox{0.4}{\input{fig-intervals.pstex_t}}
-\caption{Commit intervals}
-\label{fig:intervals}
-\end{figure}
-%---------------------------------------------------------------
-    
-%==================================================================
-\begin{figure}[htb!]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-\begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=\kill ~\\
-
-{\bf operation} ${\sf try\_to\_commit}_T()$: \\
-
-(\ref{BA18}) \> lock all the objects in $lrs_T \cup lws_T$; \\
-
-(\ref{BA19}) \> {\bf for each} $(Y \in lrs_T)$ {\bf do} 
-    $window\_top_T \leftarrow 
-     \min\big(window\_top_T,
-     (lcell(Y).origin\downarrow).\mathit{end} \big)$ {\bf end for};\\
-
-(\ref{BA20}.A) \> $\mathit{commit\_set}_T 
- \leftarrow \{~ ]\mathit{window\_bottom}_T, \mathit{window\_top}_T[~\}$;\\
-
-(\ref{BA20}.B) \> {\bf for each} $(X \in lws_T)$ {\bf do}\\
-
-(\ref{BA20}.C) \> \> $x\_ptr \leftarrow PT[X]$;
-                     $\mathit{x\_forbid_T}[X] \leftarrow \emptyset$;\\
-
-(\ref{BA20}.D) \> \> 
-{\bf while} $((x\_ptr \downarrow).\mathit{last\_read} 
-                > \mathit{window\_bottom}_T)$ {\bf do}\\
-
-(\ref{BA20}.E) \> \> \> 
-$\mathit{x\_forbid_T}[X] \leftarrow \mathit{x\_forbid_T}[X] \cup 
-      \{~ [(x\_ptr \downarrow).\mathit{begin},
-                   (x\_ptr \downarrow).\mathit{last\_read}]~ \}$;\\
-
-(\ref{BA20}.F) \> \> \> $x\_ptr \leftarrow (x\_ptr \downarrow).prev$\\
-
-(\ref{BA20}.G) \> \> {\bf end while}\\
-
-(\ref{BA20}.H)  \> {\bf end for};\\
-
-(\ref{BA20}.I) \> 
- $\mathit{commit\_set}_T  \leftarrow \mathit{commit\_set}_T \backslash 
-              \bigcup_{X\in lws_T}\big(\mathit{x\_forbid_T}[X]\big)$;\\
-
-
-(\ref{BA21}.A) \> {\bf if} $(\mathit{commit\_set}_T = \emptyset)$ {\bf then}
-      release all locks and disallocate all local cells; 		
-      ${\sf return}(abort)$ {\bf end if};\\
-
-(\ref{BA22}.A) \> $commit\_time_T \leftarrow$ 
-         select a (random/heuristic) time value
-         $\in ~\mathit{commit\_set}_T$; \\
-
-(\ref{BA23}.A) \> {\bf for each} $(X \in lws_T)$ {\bf do} \\
-
-(\ref{BA23}.B) \> \> $x\_ptr \leftarrow PT[X]$;\\
-
-(\ref{BA23}.C) \> \> 
-   {\bf while} $((x\_ptr \downarrow).\mathit{begin} > 
-        \mathit{commit\_time}_T)$ {\bf do} 
-        $x\_ptr \leftarrow (x\_ptr \downarrow).prev$ {\bf end while};\\
-
-(\ref{BA23}.D) \> \> $(x\_ptr \downarrow).\mathit{end} \leftarrow 
-    \min((x\_ptr \downarrow).\mathit{end},\mathit{commit\_time}_T)$\\
-
-(\ref{BA23}.E) \> {\bf end for};\\
-
-
-(\ref{BA24}.A) \> {\bf for each} $(X \in lws_T)$ 
-   {\bf such that} $(\mathit{commit\_time}_T > 
-       (PT[X] \downarrow).\mathit{begin})$ {\bf do}\\
-
-(\ref{BA25}) \>\> \> 
-       allocate in shared memory  a new cell for $X$ denoted $CELL(X)$; \\
-
-(\ref{BA26}) \>\>\>  $CELL(X).value \gets lcell(X).value$;
-                  $CELL(X).last\_read \gets commit\_time_T$;\\
-
-(\ref{BA27}) \>\>\>  $CELL(X).begin \gets commit\_time_T$; 
-                     $CELL(X).end \leftarrow +\infty$; \\
-
-(\ref{BA28}.A) \>\>\>   $CELL(X).prev  \leftarrow PT[X]$;
-                        $PT[X]  \leftarrow  ~ \uparrow CELL(X)$\\
-
-(\ref{BA29}.A) \> {\bf end for};\\
-
-(\ref{BA30}) \> {\bf for each} $(X \in lrs_T)$ {\bf do} \\
-
-
-(\ref{BA31}) \>\>
-   $(lcell(X).origin \downarrow).last\_read \leftarrow 
-     \max((lcell(X).origin \downarrow).last\_read, commit\_time_T)$ \\
-
-(\ref{BA32}) \> {\bf end for};\\
-
-(\ref{BA33}) \> release all locks and disallocate all  local cells; 
-               $last\_commit_i \leftarrow commit\_time_T$;\\
-	
-(\ref{BA34}) \> ${\sf return}(commit)$. \\
-
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Algorithm for the ${\sf try\_to\_commit()}$ operation of 
-         the permissive protocol}
-\label{fig:ttc-V22-protocol}
-}
-\end{figure}
-%=================================================================
-
-%\newpage
-
-% \cleardoublepage
-% %===========================================================================
-% \begin{thebibliography}{99}
-% \small{
-% 
-% %
-% %\bibitem{AADGMS93} 
-% %Afek Y., Attiya H., Dolev D., Gafni E., Merritt M. and Shavit N., 
-% %Atomic Snapshots of Shared Memory. 
-% %{\em Journal of the ACM}, 40(4):873-890, 1993.
-% 
-% 
-% \bibitem{AH11}
-% Attiya  H. and Hillel E.,
-% Single-version STM Can be Multi-version Permissive. 
-% {\it Proc. 12th Int'l Conference on Distributed Computing and Networking
-% (ICDCN'11)}, Springer-Verlag, LNCS \#6522, pp.~83-94, 2011.
-% 
-% 
-% 
-% \bibitem{BM93}
-% Babao\u{g}lu \"{O}. and Marzullo K., 
-% Consistent Global States of Distributed Systems: Fundamental
-% Concepts and Mechanisms. Chapter~4 in ``Distributed Systems''.  
-% ACM Press, Frontier Series,  pp~55-93, 1993.
-% 
-% 
-% \bibitem{BSW79}
-% Bernstein Ph.A., Shipman D.W. and Wong W.S., 
-% Formal Aspects of Serializability in Database Concurrency Control. 
-% {\it IEEE Transactions on Software Engineering}, SE-5(3):203-216, 1979. 
-% 
-% 
-% 
-% \bibitem{CR06}
-% Cachopo J. and Rito-Silva A., 
-% Versioned Boxes as the Basis for Transactional Memory. 
-% {\it Science of Computer Progr.}, 63(2):172-175, 2006. 
-% 
-% 
-% \bibitem{CIR10}
-% Crain T., Imbs D. and Raynal M.,
-% Read invisibility, virtual world consistency and  permissiveness
-% are compatible.
-% {\it Tech Report \#1958}, IRISA, Univ. de  Rennes 1, France, November 2010. 
-% 
-% 
-% 
-% \bibitem{DSS06}
-% Dice D., Shalev O. and Shavit N.,
-% Transactional Locking II.
-% {\em Proc. 20th Int'l Symposium on Distributed Computing (DISC'06)},
-% Springer-Verlag, LNCS \#4167, pp.~194-208, 2006.
-% 
-% 
-% 
-% \bibitem{FFGH08}
-% Felber P., Fetzer Ch., Guerraoui R. and Harris T., 
-% Transactions are coming Back, but Are They The Same?
-% {\it ACM Sigact News, DC Column}, 39(1):48-58, 2008.
-% 
-% 
-% %\bibitem{FH07}  %  presents the WSTM system (not permissive)
-% %Fraser T. and Harris T.,
-% %Concurrent Programming Without Locks. 
-% %{\it ACM Transactions on Computer Systems}, 25(2), Article 5, 2007. 
-% 
-% 
-% 
-% \bibitem{GHS08}
-% Guerraoui R., Henzinger T.A., Singh V.,
-% Permissiveness  in Transactional Memories. 
-% {\em Proc. 22th Int'l Symposium on Distributed Computing (DISC'08)},
-% Springer-Verlag, LNCS \#5218, pp.~305-318, 2008.
-% 
-% 
-% 
-% \bibitem{GK08}
-% Guerraoui R. and Kapa\l{}ka M., 
-% On the Correctness of Transactional Memory. 
-% {\it Proc. 13th ACM SIGPLAN Symposium on Principles and Practice of 
-% Parallel Programming (PPoPP'08)}, ACM Press, pp. 175-184, 2008. 
-% 
-% 
-% \bibitem{HCUAGSV07}
-% Harris T., Cristal  A., Unsal O.S., Ayguade E., Gagliardi  F., Smith B. and
-% Valero M., 
-% Transactional Memory: an Overview. 
-% {\it IEEE Micro}, 27(3):8-29, 2007. 
-% 
-% 
-% \bibitem{HL08}
-% Herlihy M.P.  and Luchangco V.,
-% Distributed Computing and the Multicore Revolution.
-% {\it ACM SIGACT News, DC Column}, 39(1): 62-72, 2008.
-% 
-% 
-% %\bibitem{HLMS03}  %  presents the DSTM system (not permissive)
-% %Herlihy M.P.,  Luchangco V., Moir M. and Scherer W.N., 
-% %Software Transactional Memory for Dynamic-size Data Structures. 
-% %{\em Proc. 22th ACM  Symposium on Principles of Distributed Computing 
-% %(PODC'03)},  ACM Press,  pp.~92-101, 2003.
-% 
-% 
-% \bibitem{HM93}
-% Herlihy M.P.  and Moss J.E.B., 
-% Transactional Memory: Architectural Support for Lock-free Data Structures. 
-% {\it Proc. 20th ACM Int'l Symposium  on Computer Archictecture (ISCA'93)}, 
-% pp. 289-300, 1993. 
-% 
-% 
-% \bibitem{HW90}
-% Herlihy M.P.  and Wing J.M.,
-% Linearizability: a Correctness Condition for Concurrent Objects. 
-% {\it ACM Transactions on Programming Languages and Systems}, 
-% 12(3):463-492, 1990. 
-% 
-% 
-% 
-% 
-% \bibitem{IR08}
-% Imbs D. and Raynal M.,
-% A Lock-based STM Protocol  that Satisfies Opacity and Progressiveness. 
-% {\it 12th Int'l Conference On Principles Of Distributed Systems
-% (OPODIS'08)},   Springer-Verlag LNCS  \#5401, pp.~226-245, 2008. 
-% 
-% 
-% \bibitem{IR09-a}
-% Imbs D. and Raynal M.,
-% Provable STM Properties: Leveraging Clock and Locks to Favor Commit 
-% and Early Abort.
-% {\it 10th Int'l Conference on Distributed Computing and  Networking
-% (ICDCN'09)},  Springer-Verlag LNCS  \#5408, pp. 67-78, January 2009. 
-% 
-% 
-% %
-% %\bibitem{IR08-1}
-% %Imbs D. and Raynal M., 
-% %Help When Needed, but No More: Efficient Read/Write Partial Snapshots.
-% %{\it Proc. 23th Int'l Symposium on  Distributed Computing
-% %(DISC'09)},  Springer-Verlag LNCS   \#5805, pp. 142-156, 2009. 
-% 
-% \bibitem{IR09} 
-% Imbs D. and Raynal M., 
-% A versatile   STM protocol with Invisible Read Operations
-% that Satisfies  the  Virtual World Consistency Condition.
-% {\it  16th  Colloquium   on  Structural   Information   and  Communication
-% Complexity  (SIROCCO'09)}, Springer Verlag LNCS,  \#5869,  pp. 266-280, 2009. 
-% 
-% \bibitem{L78}
-% Lamport L., 
-% Time, Clocks and the Ordering of Events in a Distributed System.
-% {\em Communications  of the ACM}, 21(7):558-565, 1978.
-% 
-% %\bibitem{L86}
-% %Lamport L., 
-% %On interprocess communication. Part 1: Models, Part 2: Algorithms. 
-% %{\em Distributed Computing}, 1(2):77-101, 1986.
-% 
-% 
-% \bibitem{MSHAESS06}
-% Marathe  V.J.,  Spear M.F., Heriot  C., Acharya A., Eisentatt  D., Scherer
-% III W.N. and Scott M.L.,
-% Lowering the Overhead of Software Transactional Memory. 
-% {\it  Proc 1rt  ACM SIGPLAN  Workshop on  Languages, Compilers  and Hardware
-% Support for Transactional Computing (TRANSACT'06)}, 2006. 
-% 
-% 
-% \bibitem{P79}
-% Papadimitriou Ch.H., 
-% The Serializability of Concurrent Updates. 
-% {\it Journal of the ACM},  26(4):631-653, 1979. 
-% 
-% 
-% \bibitem{PFK10}
-% Perelman D., Fan R. and Keidar I., 
-% On Maintaining Multiple versions in STM. 
-% {\em  Proc.   29th  annual  ACM    Symposium  on Principles  of Distributed
-% Computing (PODC'10)}, ACM Press, pp.~16-25, 2010. 
-% 
-% 
-% 
-% 
-% \bibitem{RFF07}
-% Riegel T., Fetzer C. and Felber P.,
-% Time-based Transactional Memory with Scalable Time Bases.
-% {\em  Proc.   19th  annual  ACM   Symposium  on  Parallel   Algorithms  and
-% Architectures (SPAA'07)}, ACM Press, pp.~221-228, 2007.
-% 
-% 
-% 
-% \bibitem{ST97}
-% Shavit N. and Touitou D., 
-% Software Transactional Memory. 
-% {\it Distributed  Computing}, 10(2):99-116, 1997. 
-% 
-% \bibitem{SM93}
-% Schwarz R. and Mattern F., 
-% Detecting  Causal Relationship in Distributed  Computations: in  Search of
-% the Holy Grail. 
-% {\it Distributed Computing}, 7:149-174, 1993. 
-% 
-% 
-% 
-% }
-% \end{thebibliography}
-
-%=================================================================
-%=================================================================
-\newpage
-
-%\paragraph{Acknowledgements}
-%This research  is part of the TRANSFORM project, 
-%a  Marie Curie project funded by the European Community's Seventh 
-%Framework Programme  (grant agreement n° 238639), devoted to the theory of 
-%software transactional memories. 
-%We also thank Hagit  Attiya  and Sandeep Hans for their constructive 
-%comments on a draft of this paper. 
 
 
 
-% \appendix  
-% \setcounter{page}{1}
-% \pagenumbering{roman}
 
-%\cleardoublepage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsubsection{The ${\sf read}_T()$ and  ${\sf write}_T()$  operations}
+%\vspace{-0.1cm}
+When a process $p_i$ invokes a new transaction $T$,  it first 
+executes the operation ${\sf begin}_T()$ which  initializes the
+appropriate  local variables. 
+
+
+
+\paragraph{The  $X.{\sf read}_T()$ operation}
+The algorithm implementing $X.{\sf read}_T()$ is described in Figure
+\ref{fig:ttc-protocol}.  When $p_i$ invokes this operation, it 
+returns the value locally saved in $lcell(X).value$ if  $lcell(X)$ exists
+(lines  \ref{BA02} and \ref{BA13}). 
+%
+If  $lcell(X)$ has not yet been allocated, $p_i$ does it (line \ref{BA03}) and 
+updates its  fields $value$, $begin$  and  $origin$ with the corresponding 
+values obtained from the shared memory (lines \ref{BA04}-\ref{BA07}).
+%
+Process $p_i$ then updates $window\_bottom_T$ and $window\_top_T$.
+These updates are as follows. 
+\begin{itemize}  
+%
+\vspace{-0.2cm}
+\item 
+The algorithm defines the  commit time of transaction $T$ as a point of the  
+time line such that $T$ could have executed all its read and write operations 
+instantaneously as that time. Hence, $T$ cannot be committed before
+a committed transaction $T'$  that wrote the value of a shared object $X$  
+read by $T$. 
+According to the algorithm implementing the ${\sf try\_to\_commit}_T()$ 
+operation  (see line~\ref{BA27}), 
+the commit point of such a transaction $T'$ is  the time value kept in 
+$lcell(X).begin$. Hence, $p_i$ updates  $window\_bottom_T$ to 
+$\max(window\_bottom_T, lcell(X).begin)$ (line  \ref{BA08}).
+$X$ is then added to $lrst_T$  (line  \ref{BA09}).
+%
+%
+\vspace{-0.2cm}
+\item 
+Then, $p_i$ updates  $window\_top_T$ (the top side of $T$'s  commit window,
+line \ref{BA10}). 
+If there is a shared object $Y$ already read by $T$  (i.e., $Y\in lrs_T$)
+that has been written by some  other transaction $T''$ 
+(where $T''$ is a transaction that  wrote  $Y$ after $T$ read $Y$),   
+then $window\_top_T$ has to be set to  $commit\_time_{T''}$  
+if  $commit\_time_{T''} <window\_top_T$.
+%
+According to the algorithm implementing the ${\sf try\_to\_commit}_T()$ 
+operation,  
+the commit point of such a transaction $T''$ is  the date kept in 
+$(lcell(Y).origin\downarrow).\mathit{end}$. 
+ Hence, for each $Y \in lrs_T$, $p_i$ updates  $window\_bottom_T$ to 
+$\min\big(window\_top_T, (lcell(Y).origin\downarrow).\mathit{end}$
+(line  \ref{BA10}).
+\end{itemize}
+Then, if the window becomes empty, the  $X.{\sf read}_T()$ operation 
+entails the abort of transaction $T$ (line  \ref{BA11}).
+If $T$ is not aborted, the value written  by $T'$ (that is  
+kept in  $lcell(X).value$) is returned (line  \ref{BA13}). 
+
+
+
+
+\paragraph{The  $X.{\sf write}_T(v)$ operation}
+The algorithm implementing this operation is described at lines 
+\ref{BA14}-\ref{BA17} of Figure \ref{fig:ttc-protocol}.
+If there is no local cell associated with $X$, $p_i$ allocates one 
+(line \ref{BA14}) and adds $X$ to $lws_T$ (line \ref{BA15}). 
+Then it locally writes $v$ into $lcell(X).value$   (line \ref{BA16})
+and return $ok$  (line \ref{BA17}).
+%
+Let  us observe  that  no $X.{\sf write}_T()$ operation can  entail 
+the abort of a transaction. 
+
+
+
+
+
+%--------------------------------------------------------------------------
+\subsubsection{The ${\sf try\_to\_commit}_T()$ operation}
+%\vspace{-0.1cm}
+The algorithm implementing this operation is described in Figure 
+\ref{fig:ttc-protocol} (lines \ref{BA18}-\ref{BA34}). 
+A process $p_i$ that invokes ${\sf try\_to\_commit}_T()$ first locks all 
+transaction-level shared objects $X$ that have been accessed by 
+transaction $T$  (line  \ref{BA18}). The locking of shared  objects is done
+in a canonical order in order to prevent deadlocks.
+
+
+Then, process $p_i$  computes the values that define the last commit window 
+of $T$ (lines  \ref{BA19}-\ref{BA20}).
+The update of $\mathit{window\_top}_T$ is the same as
+described in the ${\sf read}_T()$ operation. 
+The update of $\mathit{window\_top}_T$ is as follows.
+For each register $Y$ that $T$ is about to write in the shared 
+memory (if $T$  is not aborted before), $p_i$ computes the date of the last
+read of $Y$, namely the date $(PT[Y]\downarrow).last\_read$. 
+In order not to invalidate this read
+(whose issuing transaction has been committed), $p_i$ updates 
+$window\_bottom_T$ to  $\max((PT[Y]\downarrow).last\_read, window\_bottom_T)$. 
+If the  commit window of $T$ is empty, $T$ is aborted (line \ref{BA21}).
+All locks are then released and all local cells are freed.
+
+If $T$'s commit window is not empty, it can be safely committed. 
+To that end  $p_i$  defines $T$'s commit time as  a finite value randomly
+chosen in the current window $]window\_bottom_T.. window\_top_T[$  
+(let us remind that the  bounds are outside the  window, line \ref{BA22}).  
+This  time function  is such  that no  two processes  obtain the  same time
+value.  
+
+
+
+Then, before committing,  $p_i$ has to (a) apply the writes issued by $T$ 
+to the shared objects and (b) update the ``last read'' dates associated with 
+the shared objects it has read. 
+\begin{itemize}
+\vspace{-0.2cm}
+\item [a.] First, for every shared object $X\in lws_T$, process $p_i$ updates  
+$(PT[X] \downarrow).\mathit{overwrite}$ with $T$'s 
+ commit date (line \ref{BA23}). 
+When all these updates have been done,  for every shared object $X\in lws_T$,
+$p_i$ allocates a new shared memory cell  $CELL(X)$  and fills in the 
+four fields of $CELL(X)$ (lines \ref{BA25}-\ref{BA28}).
+Process $p_i$  also has to update the pointer $PT[X]$ to its new  value
+(namely $\uparrow CELL(X)$)  (line \ref{BA28}). 
+%
+\vspace{-0.2cm}
+\item[b.] For each register $X$ that has been read by $T$, 
+$p_i$ updates the field $last\_read$ to the maximum of its previous value 
+and $commit\_time_T$ (lines \ref{BA30}-\ref{BA32}). 
+(Actually, this base version of the protocol remains correct 
+when   $X \in lrs_T$  is  replaced by  $X \in (lrs_T \setminus  lws_T)$. 
+(As this improvement is no longer valid in the final version of the 
+${\sf try\_to\_commit}_T()$  algorithm described in  
+Figure~\ref{fig:ttc-V22-protocol}, we do not consider it in this
+ base protocol.) 
+
+
+\end{itemize}
+
+Finally, after these updates of the shared memory, $p_i$ releases all its 
+locks, frees the local cells it had previously allocated (line \ref{BA33}) 
+and returns the value $commit$ (line \ref{BA34}). 
+
+
+\paragraph{On the random selection of commit points}
+It is important to notice that, choosing randomly  commit points
+(line \ref{BA22}, Figure \ref{fig:ttc-protocol}),  there might be 
+``best/worst'' commit  points for committed  transactions,  
+where ``best point''  means that it  allows  more  concurrent 
+conflicting  transactions to commit.  Random selection of a commit point 
+can  be seen as  an inexpensive way to amortize the impact of ``worst'' 
+commit points  (inexpensive because  it eliminates the 
+extra overhead of computing which point is the best). 
+
+
 
 %===========================================================================
-\section{Proof of the algorithm for VWC and read invisibility}
+
+
+
+%===========================================================================
+\subsection{Proof of the algorithm for VWC and read invisibility}
 \label{sec:algorithm-V1-proof}
 
 
@@ -2379,7 +1466,7 @@ belongs to the execution".
 
 
 
-\subsection{Proof that $\mathcal{C}$ is serializable}
+\subsubsection{Proof that $\mathcal{C}$ is serializable}
 In order to show that $\mathcal{C}$ is serializable, we have to show that 
 the partial order $\rightarrow_{PO}$ restricted to
 $\mathcal{C}$ accepts a legal linear extension. More precisely, we have 
@@ -2645,7 +1732,7 @@ which completes the proof of the lemma.
 \end{proofL}
 
 %------------------------------------------------------------------
-\subsection{VWC and read invisibility}
+\subsubsection{VWC and read invisibility}
 \begin{theorem}
 \label{theo:vwc}
 The algorithm presented in Figure \ref{fig:ttc-protocol}
@@ -2674,9 +1761,524 @@ there is no write into the shared memory.
 %=========================================================
 
 
+
+
+%===========================================================================
+\subsection{Step 2: adding probabilistic permissiveness to the  protocol}
+\label{sec:algorithm-V2} 
+\label{sec:algo-V2-permissiveness}
+
+This section  presents the final IR\_VWC\_P protocol that  ensures virtual
+world  consistency, read  invisibility and   probabilistic permissiveness. 
+The   first part describes  the protocol  while the  second part  proves 
+its correctness. 
+
+
+
+%\vspace{-0.1cm}
+\subsubsection{The IR\_VWC\_P protocol}
+%\vspace{-0.2cm}
+To   obtain   a  protocol   that   additionally  satisfies    probabilistic
+permissiveness,  only  the operation ${\sf try\_to\_commit}_T()$  has to be
+modified.  
+The algorithms implementing the operations ${\sf begin}_T()$, 
+$X.{\sf read}_T()$ and  $X.{\sf write}_T()$  are exactly the same as  
+the ones described in Figure \ref{fig:ttc-protocol}. 
+The  algorithm implementing  the new version of the operation 
+${\sf try\_to\_commit}_T()$ is described in Figure~\ref{fig:ttc-V22-protocol}. 
+As we are about to see, it is not a new protocol but an appropriate
+enrichment of the previous ${\sf try\_to\_commit}_T()$ protocol. 
+
+%---------------------------------------------------------------
+\begin{figure}[ht!]
+\centering
+\scalebox{0.35}{\input{VWC-comp/figures/fig-intervals.pdf_t}}
+%\scalebox{0.4}{\input{fig-intervals.pstex_t}}
+\caption{Commit intervals}
+\label{fig:intervals}
+\end{figure}
+%---------------------------------------------------------------
+    
+
+
+\paragraph{A set of intervals for each transaction}
+Let us consider the execution depicted in Figure \ref{fig:intervals}
+made up of three transactions: $T1$ that writes $X$, $T2$ that reads $X$ 
+and obtains the value written by $T1$, and  $T3$ that writes $X$. 
+When we consider the base protocol described in Figure 
+\ref{fig:ttc-protocol}, the commit window of $T3$ is 
+$]commit\_time_{T2}..+\infty[$. 
+As the aim is  not to abort a transaction if it can be appropriately 
+serialized, it is easy to see  that associating  this window to $T3$ is not
+the best  choice that can be done.  Actually $T3$ can be  serialized at any
+point of the commit line as long as the  read of $X$ by $Y
+2$ remains
+valid. This  means that the  commit point of  $T3$ can be 
+any point in $]0..commit\_time_{T1}[ ~\cup~]commit\_time_{T2}..+\infty[$.
+
+This simple example shows that,  if one wants to ensure probabilistic 
+permissiveness,   the notion of  continuous commit  window  of a transaction
+is a too restrictive notion.  It has  to be replaced  by  a set  of time
+intervals  in order valid commit times not to be a priori eliminated from 
+random choices.  
+
+
+
+\paragraph{Additional  local variables}
+According to the  previous discussion, two new variables  are introduced at
+each process $p_i$.  
+The set   $\mathit{commit\_set}_T$ is  used to contain  the  intervals
+in which  $T$ will be allowed to  commit. To  compute  its   final  value,  
+the  set $\mathit{forbid}_T$ is used to store  the windows in which $T$ 
+cannot be committed.  
+
+
+\paragraph{The enriched ${\sf try\_to\_commit}_T()$ operation}
+The new  ${\sf try\_to\_commit}_T()$ algorithm
+is described in Figure~\ref{fig:ttc-V22-protocol}.
+In a very interesting way, this  ${\sf try\_to\_commit}_T()$ 
+algorithm has the same structure as the one described in  
+Figure \ref{fig:ttc-protocol}. The lines with the same number are 
+identical in both algorithms, while the number of the lines of 
+Figure \ref{fig:ttc-protocol} that are modified are postfixed by a letter. 
+The new/modified  parts are the followings. 
+
+
+
+%==================================================================
+\begin{figure}[htb!]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=\kill ~\\
+
+{\bf operation} ${\sf try\_to\_commit}_T()$: \\
+
+(\ref{BA18}) \> lock all the objects in $lrs_T \cup lws_T$; \\
+
+(\ref{BA19}) \> {\bf for each} $(Y \in lrs_T)$ {\bf do} 
+    $window\_top_T \leftarrow 
+     \min\big(window\_top_T,
+     (lcell(Y).origin\downarrow).\mathit{end} \big)$ {\bf end for};\\
+
+(\ref{BA20}.A) \> $\mathit{commit\_set}_T 
+ \leftarrow \{~ ]\mathit{window\_bottom}_T, \mathit{window\_top}_T[~\}$;\\
+
+(\ref{BA20}.B) \> {\bf for each} $(X \in lws_T)$ {\bf do}\\
+
+(\ref{BA20}.C) \> \> $x\_ptr \leftarrow PT[X]$;
+                     $\mathit{x\_forbid_T}[X] \leftarrow \emptyset$;\\
+
+(\ref{BA20}.D) \> \> 
+{\bf while} $((x\_ptr \downarrow).\mathit{last\_read} 
+                > \mathit{window\_bottom}_T)$ {\bf do}\\
+
+(\ref{BA20}.E) \> \> \> 
+$\mathit{x\_forbid_T}[X] \leftarrow \mathit{x\_forbid_T}[X] \cup 
+      \{~ [(x\_ptr \downarrow).\mathit{begin},
+                   (x\_ptr \downarrow).\mathit{last\_read}]~ \}$;\\
+
+(\ref{BA20}.F) \> \> \> $x\_ptr \leftarrow (x\_ptr \downarrow).prev$\\
+
+(\ref{BA20}.G) \> \> {\bf end while}\\
+
+(\ref{BA20}.H)  \> {\bf end for};\\
+
+(\ref{BA20}.I) \> 
+ $\mathit{commit\_set}_T  \leftarrow \mathit{commit\_set}_T \backslash 
+              \bigcup_{X\in lws_T}\big(\mathit{x\_forbid_T}[X]\big)$;\\
+
+
+(\ref{BA21}.A) \> {\bf if} $(\mathit{commit\_set}_T = \emptyset)$ {\bf then}
+      release all locks and disallocate all local cells; 		
+      ${\sf return}(abort)$ {\bf end if};\\
+
+(\ref{BA22}.A) \> $commit\_time_T \leftarrow$ 
+         select a (random/heuristic) time value
+         $\in ~\mathit{commit\_set}_T$; \\
+
+(\ref{BA23}.A) \> {\bf for each} $(X \in lws_T)$ {\bf do} \\
+
+(\ref{BA23}.B) \> \> $x\_ptr \leftarrow PT[X]$;\\
+
+(\ref{BA23}.C) \> \> 
+   {\bf while} $((x\_ptr \downarrow).\mathit{begin} > 
+        \mathit{commit\_time}_T)$ {\bf do} 
+        $x\_ptr \leftarrow (x\_ptr \downarrow).prev$ {\bf end while};\\
+
+(\ref{BA23}.D) \> \> $(x\_ptr \downarrow).\mathit{end} \leftarrow 
+    \min((x\_ptr \downarrow).\mathit{end},\mathit{commit\_time}_T)$\\
+
+(\ref{BA23}.E) \> {\bf end for};\\
+
+
+(\ref{BA24}.A) \> {\bf for each} $(X \in lws_T)$ 
+   {\bf such that} $(\mathit{commit\_time}_T > 
+       (PT[X] \downarrow).\mathit{begin})$ {\bf do}\\
+
+(\ref{BA25}) \>\> \> 
+       allocate in shared memory  a new cell for $X$ denoted $CELL(X)$; \\
+
+(\ref{BA26}) \>\>\>  $CELL(X).value \gets lcell(X).value$;
+                  $CELL(X).last\_read \gets commit\_time_T$;\\
+
+(\ref{BA27}) \>\>\>  $CELL(X).begin \gets commit\_time_T$; 
+                     $CELL(X).end \leftarrow +\infty$; \\
+
+(\ref{BA28}.A) \>\>\>   $CELL(X).prev  \leftarrow PT[X]$;
+                        $PT[X]  \leftarrow  ~ \uparrow CELL(X)$\\
+
+(\ref{BA29}.A) \> {\bf end for};\\
+
+(\ref{BA30}) \> {\bf for each} $(X \in lrs_T)$ {\bf do} \\
+
+
+(\ref{BA31}) \>\>
+   $(lcell(X).origin \downarrow).last\_read \leftarrow 
+     \max((lcell(X).origin \downarrow).last\_read, commit\_time_T)$ \\
+
+(\ref{BA32}) \> {\bf end for};\\
+
+(\ref{BA33}) \> release all locks and disallocate all  local cells; 
+               $last\_commit_i \leftarrow commit\_time_T$;\\
+	
+(\ref{BA34}) \> ${\sf return}(commit)$. \\
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Algorithm for the ${\sf try\_to\_commit()}$ operation of 
+         the permissive protocol}
+\label{fig:ttc-V22-protocol}
+}
+\end{figure}
+ 
+\begin{itemize}
+%
+\vspace{-0.2cm}
+\item  Lines \ref{BA20}.A-\ref{BA20}.I  replace  line 
+\ref{BA20} of Figure~\ref{fig:ttc-protocol} that was computing the value of 
+$\mathit{window\_bottom}_T$.
+%
+These new lines compute instead the set of intervals that  
+constitute  $\mathit{commit\_set}_T$. To that end they suppress 
+from the initial interval 
+$]\mathit{window\_bottom}_T, \mathit{window\_top}_T[$, 
+all the time intervals that would invalidate values read by committed 
+transactions.  This is done for each object $X\in lws_T$
+(line~\ref{BA20}.H; see section~\ref{sec:appendix-forbid} for an example). 
+If  $\mathit{commit\_set}_T$ is empty, the transaction $T$ is  aborted
+(line  \ref{BA21}.A).
+%
+\vspace{-0.2cm}
+\item The commit time of a transaction $T$ is now selected from 
+the intervals in  $\mathit{commit\_set}_T$ (line  \ref{BA22}.A).
+%
+\vspace{-0.2cm}
+\item
+Line \ref{BA23} of Figure~\ref{fig:ttc-protocol}
+was assigning, for each $X\in lws_T$, its value to  $(PT[X]\downarrow).end$, 
+namely the value $\mathit{commit\_time}_T$. 
+%
+This is now done by the new lines  \ref{BA23}.A-\ref{BA23}.E.
+Starting from  $PT[X]$, these statements use the pointer $prev$ to find the 
+cell (let us denote it say $CX$)  of  the list implementing $X$ whose field  
+$CX.end$ has to be assigned the value $\mathit{commit\_time}_T$. 
+Let us remember that $CX.end$ 
+defines the end of the lifetime of the value kept in $CX.value$. 
+This cell  $CX$ is the first cell (starting from  $PT[X]$) such that 
+$CX.begin < \mathit{commit\_time}_T$. 
+%
+\vspace{-0.2cm}
+\item Line \ref{BA24} of Figure~\ref{fig:ttc-protocol} 
+assigned its new value to every object $X\in lws_T$. 
+%
+Now such an  object $X$  has  to be assigned its new value  only if 
+$\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$. 
+This is because when 
+$ \mathit{commit\_time}_T  < (PT[X] \downarrow).\mathit{begin}$,  
+the value  $v$ to be written  is not the last one according to the
+serialization order. Let us remember that the serialization order, that 
+is   defined by commit times, is  not required to be real time-compliant
+(which would be required if we wanted to have linearizability instead of 
+serializability, see Section \ref{sec:from-ser-to-lin}). 
+An example is given in section \ref{sec:appendix-example-for-ct}. 
+%
+Finally, the  pointer $prev$  is appropriately updated (line \ref{BA28}.A).
+(Starting from $(PT[X]\downarrow).next$,  these pointers allows  for the 
+traversal of the list implementing $X$.) 
+\end{itemize}
+
+
+
+
+%=================================================================
+\subsubsection{Substraction on sets of  intervals (line \ref{BA20}.H of 
+Figure~\ref{fig:ttc-V22-protocol})}
+\label{sec:appendix-forbid}
+
+The subtraction  operation on sets of intervals of real numbers 
+$\mathit{commit\_set}_T \backslash \mathit{x\_forbid_T}[X]$ 
+has the usual meaning, which is explained with an example in Figure 
+\ref{fig:substraction-on-intervals}.
+
+%---------------------------------------------------------------
+\begin{figure}[ht]
+\centering
+\scalebox{0.35}{\input{VWC-comp/figures/fig-intervals-forbidden.pdf_t}}
+\caption{Subtraction on sets of intervals}
+\label{fig:substraction-on-intervals}
+\end{figure}
+%---------------------------------------------------------------
+
+The top line represents the value of $commit\_time_T$  that is made 
+up of 4 intervals, $commit\_time_T= \{~]a..b[,~]c..d[,~]e..f[, ~]g..h[~\}$. 
+The  black intervals  denote  the time  intervals  in which  $T$ cannot  be
+committed.  The set  $x\_forbid_T[X]$ is the set of  intervals in which $T$
+cannot commit due  to the access to $X$ issued by $T$ and other transactions. 
+This set  is depicted in the second line of the  
+where we have  $x\_forbid_T[X]=  \{~[0..a'],~[b'..c'],[d'..+\infty[~\}$.
+%
+The last line of the figure, show that we  have 
+ $commit\_time_T \backslash  x\_forbid_T[X]
+                       = \{~]a'..b[,~]c..b'[, ~]g..d'[~\}$. 
+
+
+
+
+
+%=================================================================
+\subsubsection{About the predicate of line \ref{BA24}.A 
+of Figure~\ref{fig:ttc-V22-protocol}}
+\label{sec:appendix-example-for-ct} 
+
+This section explains the  meaning of the predicate used at line \ref{BA24}.A: 
+$\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$. 
+This predicate controls the physical write in a  shared memory cell
+of the  value $v$ that $T$ wants to write into $X$
+(meaning that not every item in a transactions write set will
+be phyiscally written to memory). 
+It states that the value is written only if 
+$\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$. 
+This is due to the following reason. 
+
+%------------------------------------------------------------
+\begin{figure}[ht]
+\centering
+\scalebox{0.35}{\input{VWC-comp/figures/fig-constraint-commit-time.pdf_t}}
+\caption{Predicate of line~\ref{BA24}.A of Figure~\ref{fig:ttc-V22-protocol}}
+\label{fig:predicate-line-BA24A}
+\end{figure}
+%---------------------------------------------------------------
+
+
+
+Let us remember that a transaction is serialized at a random point that 
+belongs to its current set of intervals $current\_set_T$. Moreover as 
+we are looking for serializable transactions, the serialization points 
+of two transactions $T1$ and $T2$ are not necessarily real time-compliant, 
+they depend only of their sets $current\_set_{T1}$ and $current\_set_{T1}$,
+respectively. 
+
+ 
+An example is described in Figure~\ref{fig:predicate-line-BA24A}.
+Transaction $T1$, that invokes $X.{\sf write}_{T1}()$,  
+executes first (in real time), commits and  is serialized 
+at (logical) time $commit\_time_{T1}$ as indicated on the
+Figure. 
+Then  (according to real time) transaction $T2$, that invokes 
+also $X.{\sf write}_{T2}()$,   is invoked and then commits. 
+Moreover, its commit set and the random selection of its commit time 
+are such that  $commit\_time_{T2} <commit\_time_{T1}$. It follows 
+that $T2$ is serialized before $T1$. 
+Consequently, the last value of $X$ (according to commit times) 
+is the one written by $T1$, that has overwritten the one written by $T2$. 
+The predicate $\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$
+prevents the committed transaction $T2$ to write its value into $X$ 
+in order write and  read operations on $X$ issued by other transactions 
+be in agreement with the serialization order defined  by commit times. 
+
+%=================================================================
+
+
+
+
+%--------------------------------------------------------------------------
+
+%===================================================
+\subsection{Proof of the probabilistic permissiveness property}
+\label{sec:proof-proba}
+
+In order  to show  that the protocol  is probabilistically  permissive with
+respect to virtual world consistency, we have to show the following. 
+Given a  transaction history that contains only committed transactions,
+if the partial order $\widehat{PO} = (PO,\rightarrow_{PO})$ accepts a legal
+linear extension  
+(as defined in Section \ref{sec:opacity-and-VWC}),  
+then the history is accepted 
+(no operation returns abort) with positive probability.
+As in \cite{GHS08}, we consider that operations are executed in isolation. 
+It is important to notice here that only operations,  
+not transactions, are isolated. 
+Different transactions can still be interlaced.
+
+Let $\rightarrow_{S}$ be the order on transactions defined by the protocol
+according to the $\mathit{commit\_time}_T$ variable of each transaction $T$
+(this order has already been defined in Section \ref{sec:algorithm-V1-proof}).
+
+\begin{lemma}
+\label{lemma:proba-order}
+Let $T$ and $T'$ be two committed transactions 
+such that $T \not\rightarrow_{PO} T'$ and
+$T' \not\rightarrow_{PO} T$. If there is a legal linear extension of 
+$\widehat{PO}$ in which $T$ precedes $T'$, then
+there is a positive probability that $T \rightarrow_S T'$.
+\end{lemma}
+\begin{proofL}
+Because $T \not\rightarrow_{PO} T'$,
+the set $past(T) \backslash past(T')$ is not empty
+($past(T)$ does not contain $T'$).
+% and
+%$T' \not\rightarrow_{PO} T$, both sets $past(T) \backslash past(T')$ and
+%$past(T') \backslash past(T)$ are not empty ($past(T)$ does not contain
+%$T'$ and $past(T')$ does not contain $T$).
+Let    $biggest\_ct_{T,T'}$     be    the    biggest     value    of    the
+$\mathit{commit\_time}$ variables (chosen at line \ref{BA22}.A) of the  
+transactions in the set $past(T) \cap past(T')$ if it is not empty, or $0$ 
+otherwise. Suppose that every transaction in $past(T) \backslash past(T')$ 
+chooses the smallest value possible for its $\mathit{commit\_time}$ 
+variable.
+These values cannot be  constrained (for their lower bound) 
+ by a value bigger than $biggest\_ct_{T,T'}$, 
+thus they can all be smaller
+than $biggest\_ct_{T,T'} + \epsilon$ for any given $\epsilon$.
+
+Suppose now  that $T'$
+%every transaction in $past(T') \backslash past(T)$ 
+chooses a  value bigger than $biggest\_ct_{T,T'} + \epsilon$ for its 
+$\mathit{commit\_time}$ variable.
+This is possible because, for a given transaction $T1$, 
+the upper bound on 
+the value of $\mathit{commit\_time}_{T1}$ can only be fixed by 
+a transaction $T2$ that overwrites 
+a value read by $T1$ (lines \ref{BA10} and \ref{BA19}).
+Suppose now that $T1$ is $T'$.
+%a transaction in $past(T') \backslash past(T)$.
+If there was such a transaction $T2$ in $past(T)$, 
+then there would be no legal linear extension of 
+$\rightarrow_{PO}$ in which $T$ precedes $T'$. 
+Thus if there is a legal linear extension of 
+$\rightarrow_{PO}$ in which $T$ precedes $T'$, then
+there is a positive probability that $T \rightarrow_S T'$.
+\renewcommand{\toto}{lemma:proba-order}
+\end{proofL}
+
+
+  
+
+\begin{lemma}
+\label{lemma:proba-succeed}
+Let $\widehat{PO} = (PO,\rightarrow_{PO})$ be a partial order that
+accepts a legal linear extension. Every operation   
+of each transaction in $PO$
+does not return $abort$ with positive probability. 
+\end{lemma}
+\begin{proofL}
+$X.{\sf write}_T()$  operations cannot return $abort$. Therefore,  
+we  will  only  consider   the  operations  $X.{\sf  read}_T()$   and  ${\sf
+try\_to\_commit}_T()$.
+
+Let $\rightarrow_{legal}$ be a legal linear extension of $\rightarrow_{PO}$.
+Let $\sf op$ be an operation executed by a transaction.
+Let $\mathcal{C}_{op}$ be the set of transactions that have ended their 
+$\sf try\_to\_commit()$ 
+operation before operation $\sf op$ is executed (because we consider 
+that the operations
+are executed in isolation, this set is well defined).  Let $\rightarrow_{op}$
+be the total order on these transactions defined by the protocol.
+
+From Lemma \ref{lemma:proba-order}, 
+two transactions that are not causally related can be totally ordered in any 
+way that allows a legal linear extension of $\rightarrow_{PO}$.
+There is then  a positive probability that 
+ $\rightarrow_{op}~ \subset ~\rightarrow_{legal}$.
+Suppose that it is true. Let $T$ be the transaction executing $\sf op$.
+Let $T1$ and $T2$ be the transactions directly preceding and following $T$ 
+in $\rightarrow_{legal}$ restricted to $\mathcal{C}_{op} \cup \{T\}$ 
+if they exist.
+If $T1$ does not exist, then $window\_bottom_T = 0$ at the time of all the 
+operation of $T$, and thus $T$ can execute successfully all its operations.
+Similarly, if $T2$ does not exist, then $window\_top_T = +\infty$ 
+at the time of all the 
+operation of $T$, and thus $T$ can execute successfully all its operations.
+We will then consider that both $T1$ and $T2$ exist.
+
+
+Because $\rightarrow_{legal}$ is a legal linear extension of 
+$\rightarrow_{PO}$, any transaction from which $T$ reads a value is 
+either $T1$ or a transaction preceding $T1$ in 
+$\rightarrow_{op}$ (line \ref{BA08})
+resulting in a value for $window\_bottom_T$ that is at most $commit\_time_{T1}$. 
+Similarly, any transaction that 
+overwrote a value  read by $T$
+at the time of $\sf op$ is either $T2$ or a transaction following 
+$T2$ in $\rightarrow_{op}$ (line \ref{BA10})
+resulting in a value for $window\_top_T$ that is at least $commit\_time_{T2}$. 
+All the read operations 
+of $T$ will then succeed (line \ref{BA11}).
+
+Let us now consider the case of the $\sf try\_to\_commit()$ operation.
+Because all read operations have succeeded, 
+the  set  $\mathit{commit\_set}_T  =  ~]window\_bottom_T.. window\_top_T[$
+(line \ref{BA20}.A)  is not empty
+and must contain the set $~]commit\_time_{T1}.. commit\_time_{T2}[$.
+Because   $\rightarrow_{legal}$   is    a   legal   linear   extension   of
+$\rightarrow_{PO}$, if $T$ writes to an object $X$ then $T$
+ cannot be  placed between two transactions $T3$ and
+$T4$ such that $T3$ reads a value of object $X$  written by $T4$. 
+ 
+Because  these intervals  (represented by  $\mathit{x\_forbid_T}[X]$, lines
+\ref{BA20}.B to \ref{BA20}.H)
+are the only ones removed from $\mathit{commit\_set}_T$ (line \ref{BA20}.I)
+and because there is  a legal linear extension of 
+$\rightarrow_{PO}$ which includes $T$,
+ $\mathit{commit\_set}_T$  is  not empty  and  the  transaction can  commit
+successfully,   which ends the proof of the lemma.
+\renewcommand{\toto}{lemma:proba-succeed}
+\end{proofL}
+
+
+\begin{theorem}
+\label{theo:permissive}
+The algorithm presented in Figure \ref{fig:ttc-protocol}, where the 
+$\sf try\_to\_commit()$ operation has been replaced by the one presented in 
+Figure \ref{fig:ttc-V22-protocol}, is probabilistically permissive 
+with respect to virtual world consistency.
+\end{theorem}
+\begin{proofT}
+From Lemma \ref{lemma:proba-succeed}, all transactions of a history can commit 
+with positive probability if the history is virtual world consistent, which 
+proves the theorem.
+\renewcommand{\toto}{theo:permissive}
+\end{proofT}
+
+
+
+
+
+
+
+
 \section{Improving the  base protocol described in Figure 
 \ref{fig:ttc-protocol}}
 \label{sec:improving-base-protocol}
+
+INTRO!!!!!!!!!!!!!!!!!!!
+
 
 
 This section considers three improvements of the base protocol 
@@ -2903,162 +2505,9 @@ transaction to  lie   between  its starting  time and its end time.
 Let us  observe that  now the disjoint access  parallelism property  
 remains to be  satisfied  but for  the accesses to the common clock. 
 
-%===================================================
-\section{Proof of the probabilistic permissiveness property}
-\label{sec:proof-proba}
-
-In order  to show  that the protocol  is probabilistically  permissive with
-respect to virtual world consistency, we have to show the following. 
-Given a  transaction history that contains only committed transactions,
-if the partial order $\widehat{PO} = (PO,\rightarrow_{PO})$ accepts a legal
-linear extension  
-(as defined in Section \ref{sec:opacity-and-VWC}),  
-then the history is accepted 
-(no operation returns abort) with positive probability.
-As in \cite{GHS08}, we consider that operations are executed in isolation. 
-It is important to notice here that only operations,  
-not transactions, are isolated. 
-Different transactions can still be interlaced.
-
-Let $\rightarrow_{S}$ be the order on transactions defined by the protocol
-according to the $\mathit{commit\_time}_T$ variable of each transaction $T$
-(this order has already been defined in Section \ref{sec:algorithm-V1-proof}).
-
-\begin{lemma}
-\label{lemma:proba-order}
-Let $T$ and $T'$ be two committed transactions 
-such that $T \not\rightarrow_{PO} T'$ and
-$T' \not\rightarrow_{PO} T$. If there is a legal linear extension of 
-$\widehat{PO}$ in which $T$ precedes $T'$, then
-there is a positive probability that $T \rightarrow_S T'$.
-\end{lemma}
-\begin{proofL}
-Because $T \not\rightarrow_{PO} T'$,
-the set $past(T) \backslash past(T')$ is not empty
-($past(T)$ does not contain $T'$).
-% and
-%$T' \not\rightarrow_{PO} T$, both sets $past(T) \backslash past(T')$ and
-%$past(T') \backslash past(T)$ are not empty ($past(T)$ does not contain
-%$T'$ and $past(T')$ does not contain $T$).
-Let    $biggest\_ct_{T,T'}$     be    the    biggest     value    of    the
-$\mathit{commit\_time}$ variables (chosen at line \ref{BA22}.A) of the  
-transactions in the set $past(T) \cap past(T')$ if it is not empty, or $0$ 
-otherwise. Suppose that every transaction in $past(T) \backslash past(T')$ 
-chooses the smallest value possible for its $\mathit{commit\_time}$ 
-variable.
-These values cannot be  constrained (for their lower bound) 
- by a value bigger than $biggest\_ct_{T,T'}$, 
-thus they can all be smaller
-than $biggest\_ct_{T,T'} + \epsilon$ for any given $\epsilon$.
-
-Suppose now  that $T'$
-%every transaction in $past(T') \backslash past(T)$ 
-chooses a  value bigger than $biggest\_ct_{T,T'} + \epsilon$ for its 
-$\mathit{commit\_time}$ variable.
-This is possible because, for a given transaction $T1$, 
-the upper bound on 
-the value of $\mathit{commit\_time}_{T1}$ can only be fixed by 
-a transaction $T2$ that overwrites 
-a value read by $T1$ (lines \ref{BA10} and \ref{BA19}).
-Suppose now that $T1$ is $T'$.
-%a transaction in $past(T') \backslash past(T)$.
-If there was such a transaction $T2$ in $past(T)$, 
-then there would be no legal linear extension of 
-$\rightarrow_{PO}$ in which $T$ precedes $T'$. 
-Thus if there is a legal linear extension of 
-$\rightarrow_{PO}$ in which $T$ precedes $T'$, then
-there is a positive probability that $T \rightarrow_S T'$.
-\renewcommand{\toto}{lemma:proba-order}
-\end{proofL}
 
 
-  
 
-\begin{lemma}
-\label{lemma:proba-succeed}
-Let $\widehat{PO} = (PO,\rightarrow_{PO})$ be a partial order that
-accepts a legal linear extension. Every operation   
-of each transaction in $PO$
-does not return $abort$ with positive probability. 
-\end{lemma}
-\begin{proofL}
-$X.{\sf write}_T()$  operations cannot return $abort$. Therefore,  
-we  will  only  consider   the  operations  $X.{\sf  read}_T()$   and  ${\sf
-try\_to\_commit}_T()$.
-
-Let $\rightarrow_{legal}$ be a legal linear extension of $\rightarrow_{PO}$.
-Let $\sf op$ be an operation executed by a transaction.
-Let $\mathcal{C}_{op}$ be the set of transactions that have ended their 
-$\sf try\_to\_commit()$ 
-operation before operation $\sf op$ is executed (because we consider 
-that the operations
-are executed in isolation, this set is well defined).  Let $\rightarrow_{op}$
-be the total order on these transactions defined by the protocol.
-
-From Lemma \ref{lemma:proba-order}, 
-two transactions that are not causally related can be totally ordered in any 
-way that allows a legal linear extension of $\rightarrow_{PO}$.
-There is then  a positive probability that 
- $\rightarrow_{op}~ \subset ~\rightarrow_{legal}$.
-Suppose that it is true. Let $T$ be the transaction executing $\sf op$.
-Let $T1$ and $T2$ be the transactions directly preceding and following $T$ 
-in $\rightarrow_{legal}$ restricted to $\mathcal{C}_{op} \cup \{T\}$ 
-if they exist.
-If $T1$ does not exist, then $window\_bottom_T = 0$ at the time of all the 
-operation of $T$, and thus $T$ can execute successfully all its operations.
-Similarly, if $T2$ does not exist, then $window\_top_T = +\infty$ 
-at the time of all the 
-operation of $T$, and thus $T$ can execute successfully all its operations.
-We will then consider that both $T1$ and $T2$ exist.
-
-
-Because $\rightarrow_{legal}$ is a legal linear extension of 
-$\rightarrow_{PO}$, any transaction from which $T$ reads a value is 
-either $T1$ or a transaction preceding $T1$ in 
-$\rightarrow_{op}$ (line \ref{BA08})
-resulting in a value for $window\_bottom_T$ that is at most $commit\_time_{T1}$. 
-Similarly, any transaction that 
-overwrote a value  read by $T$
-at the time of $\sf op$ is either $T2$ or a transaction following 
-$T2$ in $\rightarrow_{op}$ (line \ref{BA10})
-resulting in a value for $window\_top_T$ that is at least $commit\_time_{T2}$. 
-All the read operations 
-of $T$ will then succeed (line \ref{BA11}).
-
-Let us now consider the case of the $\sf try\_to\_commit()$ operation.
-Because all read operations have succeeded, 
-the  set  $\mathit{commit\_set}_T  =  ~]window\_bottom_T.. window\_top_T[$
-(line \ref{BA20}.A)  is not empty
-and must contain the set $~]commit\_time_{T1}.. commit\_time_{T2}[$.
-Because   $\rightarrow_{legal}$   is    a   legal   linear   extension   of
-$\rightarrow_{PO}$, if $T$ writes to an object $X$ then $T$
- cannot be  placed between two transactions $T3$ and
-$T4$ such that $T3$ reads a value of object $X$  written by $T4$. 
- 
-Because  these intervals  (represented by  $\mathit{x\_forbid_T}[X]$, lines
-\ref{BA20}.B to \ref{BA20}.H)
-are the only ones removed from $\mathit{commit\_set}_T$ (line \ref{BA20}.I)
-and because there is  a legal linear extension of 
-$\rightarrow_{PO}$ which includes $T$,
- $\mathit{commit\_set}_T$  is  not empty  and  the  transaction can  commit
-successfully,   which ends the proof of the lemma.
-\renewcommand{\toto}{lemma:proba-succeed}
-\end{proofL}
-
-
-\begin{theorem}
-\label{theo:permissive}
-The algorithm presented in Figure \ref{fig:ttc-protocol}, where the 
-$\sf try\_to\_commit()$ operation has been replaced by the one presented in 
-Figure \ref{fig:ttc-V22-protocol}, is probabilistically permissive 
-with respect to virtual world consistency.
-\end{theorem}
-\begin{proofT}
-From Lemma \ref{lemma:proba-succeed}, all transactions of a history can commit 
-with positive probability if the history is virtual world consistent, which 
-proves the theorem.
-\renewcommand{\toto}{theo:permissive}
-\end{proofT}
 
 %===================================================
 
@@ -3353,92 +2802,60 @@ fast reads as described  in Appendix \ref{appendix-fast-reads}).
 
 
 
-%=================================================================
-\section{Substraction on sets of  intervals (line \ref{BA20}.H of 
-Figure~\ref{fig:ttc-V22-protocol})}
-\label{sec:appendix-forbid}
 
-The subtraction  operation on sets of intervals of real numbers 
-$\mathit{commit\_set}_T \backslash \mathit{x\_forbid_T}[X]$ 
-has the usual meaning, which is explained with an example in Figure 
-\ref{fig:substraction-on-intervals}.
 
-%---------------------------------------------------------------
-\begin{figure}[ht]
-\centering
-\scalebox{0.35}{\input{VWC-comp/figures/fig-intervals-forbidden.pdf_t}}
-\caption{Subtraction on sets of intervals}
-\label{fig:substraction-on-intervals}
-\end{figure}
-%---------------------------------------------------------------
+%===========================================================================
+\section{Conclusion}
+\label{sec:conclusion}
 
-The top line represents the value of $commit\_time_T$  that is made 
-up of 4 intervals, $commit\_time_T= \{~]a..b[,~]c..d[,~]e..f[, ~]g..h[~\}$. 
-The  black intervals  denote  the time  intervals  in which  $T$ cannot  be
-committed.  The set  $x\_forbid_T[X]$ is the set of  intervals in which $T$
-cannot commit due  to the access to $X$ issued by $T$ and other transactions. 
-This set  is depicted in the second line of the  
-where we have  $x\_forbid_T[X]=  \{~[0..a'],~[b'..c'],[d'..+\infty[~\}$.
+
+This paper has investigated the relation linking read invisibility, 
+permissiveness and two consistency conditions, namely, opacity and 
+virtual world consistency. 
+It has shown that  read invisibility, permissiveness and
+virtual world  consistency  are compatible. To that 
+end an appropriate  STM protocol has been designed and proved correct. 
+%It has also been shown that this protocol allows for fast read
+%operations while opacity does not. 
 %
-The last line of the figure, show that we  have 
- $commit\_time_T \backslash  x\_forbid_T[X]
-                       = \{~]a'..b[,~]c..b'[, ~]g..d'[~\}$. 
+Interestingly enough, this  new  STM protocol  has additional  noteworthy
+features: (a) it uses only base read/write operations and a lock per object 
+that is  used   at  commit  time   only   and  (b) satisfies  the  disjoint  
+access parallelism property. 
 
 
+The  proposed IR\_VWC\_P  protocol  uses multiple  versions 
+(kept in a list) of each  shared object $X$.
+Multi-version systems for STM systems  have  been  proposed  several years  
+ago \cite{CR06} and have recently received a new interest, e.g., 
+\cite{AH11,PFK10}. In contrast to our work, none of these papers 
+consider virtual wold consistency  as  consistency condition.
+Moreover, both papers consider a different  notion of permissiveness
+called multi-version permissiveness that states that read-only 
+transactions are never aborted  and   an update transaction  can be aborted
+only  when in conflict with other transactions writing the same objects.
+%
+More specifically, paper 
+\cite{PFK10} studies inherent properties of STMs that use multiple 
+versions    to   guarantee    successful   commits    of    all   read-only
+transactions. This paper presents also a  protocol with visible read 
+operations that   recovers useless versions. Paper
+\cite{AH11} shows that  multi-version permissiveness can be obtained from 
+single-version. The STM   protocol it presents satisfies 
+the disjoint access parallelism property,  requires visible read operations
+and uses $k$-Compare\&single-swap operations. 
 
-
-
-%=================================================================
-\section{About the predicate of line \ref{BA24}.A 
-of Figure~\ref{fig:ttc-V22-protocol}}
-\label{sec:appendix-example-for-ct} 
-
-This section explains the  meaning of the predicate used at line \ref{BA24}.A: 
-$\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$. 
-This predicate controls the physical write in a  shared memory cell
-of the  value $v$ that $T$ wants to write into $X$. 
-It states that the value is written only if 
-$\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$. 
-This is due to the following reason. 
-
-%------------------------------------------------------------
-\begin{figure}[ht]
-\centering
-\scalebox{0.35}{\input{VWC-comp/figures/fig-constraint-commit-time.pdf_t}}
-\caption{Predicate of line~\ref{BA24}.A of Figure~\ref{fig:ttc-V22-protocol}}
-\label{fig:predicate-line-BA24A}
-\end{figure}
-%---------------------------------------------------------------
-
-
-
-Let us remember that a transaction is serialized at a random point that 
-belongs to its current set of intervals $current\_set_T$. Moreover as 
-we are looking for serializable transactions, the serialization points 
-of two transactions $T1$ and $T2$ are not necessarily real time-compliant, 
-they depend only of their sets $current\_set_{T1}$ and $current\_set_{T1}$,
-respectively. 
-
- 
-An example is described in Figure~\ref{fig:predicate-line-BA24A}.
-Transaction $T1$, that invokes $X.{\sf write}_{T1}()$,  
-executes first (in real time), commits and  is serialized 
-at (logical) time $commit\_time_{T1}$ as indicated on the
-Figure. 
-Then  (according to real time) transaction $T2$, that invokes 
-also $X.{\sf write}_{T2}()$,   is invoked and then commits. 
-Moreover, its commit set and the random selection of its commit time 
-are such that  $commit\_time_{T2} <commit\_time_{T1}$. It follows 
-that $T2$ is serialized before $T1$. 
-Consequently, the last value of $X$ (according to commit times) 
-is the one written by $T1$, that has overwritten the one written by $T2$. 
-The predicate $\mathit{commit\_time}_T > (PT[X] \downarrow).\mathit{begin}$
-prevents the committed transaction $T2$ to write its value into $X$ 
-in order write and  read operations on $X$ issued by other transactions 
-be in agreement with the serialization order defined  by commit times. 
-
-%=================================================================
-
+% \vspace{0.1cm}
+% \paragraph{Acknowledgements}
+% This research  is part of the TRANSFORM project, 
+% a  Marie Curie project funded by the European Community's Seventh 
+% Framework Programme  (grant agreement n° 238639), devoted to the theory of 
+% software transactional memories. 
+% We also thank Hagit  Attiya  and Sandeep Hans for their constructive 
+% comments on a draft of this paper. 
+% %===========================================================================
+% \newpage
+% \section{Figures}
 
 
 
