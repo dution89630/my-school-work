@@ -161,106 +161,48 @@
 
 \section{Introduction}
 
+The previous chapter focused on a few contributions to an area of transactional
+memory research that takes a fixed view of the semantics of a transaction for the programmer
+and studies what can be done in an STM protocol without changing the semantics.
+This type of STM research puts first the ease-of-use for the programmer using the STM protocol
+before considering secondary intrestes (usually performance).
+In most cases this research area focuses on desinging protocols that satisfy the consistency
+condition opacity (and in some cases virtual world consistency as it does not change
+how the programmer views a transaction) as generally it is viewed that opacity is strong enough
+to ensure the ease-of-use.
+This chapter takes a differnt appproach to STM research as it suggest that transactional
+memory might be more usable to a programmer if it satisfied more then just opacity.
 
-\paragraph{Lock-based concurrent programming}
-A   {\it concurrent  object} is  an   object that can be   concurrently  
-accessed by different processes of a  multiprocess program. 
-%
-It is well known  that the design of a concurrent program is not an easy
-task. To that end, base synchronization objects have been defined to help 
-the programmer solve  concurrency and process cooperation  issues. 
-A  major step in that direction has been 
-(more than forty years  ago!) the concept of {\it mutual exclusion} \cite{D68}
-that has given rise  to  the  notion of  a  {\it  lock} object.    Such an
-object provides the processes with two operations (lock and unlock)
-that  allows a single process at a time to access a concurrent object. 
-Hence, from a  concurrent object point of view,   the  lock associated with
-an object allows transforming  concurrent  accesses on  that object  
-into sequential accesses.  Interestingly, all the books on synchronization 
-and operating systems  have chapters on lock-based
-synchronization. In addition, according to the abstraction level
-supplied to the programmer,  a lock may be encapsulated into a linguistic 
-construct such as a {\it monitor} \cite{H74} or a {\it serializer} \cite{HA79}.
+Opacity and other consistency criteron are generally considered to be safety properties.
+Informally this is because they ensure a protocol that implements them will not produce any weird behavoir.
+For example opacity prevents a transaction from executing on invalid states of memory, preventing
+things such as divide by zero exceptions in correct code.
+What they do not consider, among other things, is how often transactions commit.
+A protcol could satisfy opacity by just aborting every transaction before it performs
+any action, but of course this protocol would be completly useless.
+In order to avoid this, certain STM protocols satisfy liveness (or progress) properties
+These properties, not limited to transactional memory, ensure the operations of a process
+will make some sort of progress sometimes depending on the ammount of contention in the system.
+Let us now look at some of these properties.
 
-
-
-Unfortunately locks have drawbacks. One is related to the  granularity
-of the object protected by a lock. More precisely, if several data items 
-are encapsulated  in a single  concurrent  object, the
-inherent parallelism  the object can provide 
-can be drastically reduced. This  is for example the case of a queue 
-object for which concurrent executions of enqueue and dequeue operations 
-should be possible as long as they are not on the same item.
-Of  course  a   solution  could  consist of  considering  each item of the
-queue as  a concurrent object, but in that case, the  operations  enqueue  
-and  dequeue  can  become very   difficult  to  design and implement. 
-More severe  drawbacks associated with locks lie in the fact that 
-lock-based operations are deadlock-prone and cannot be easily composed. 
-
-Hence  the question:  how to  ease  the  job of  the programmer  of
-concurrent applications?
-A (partial)  solution consists of providing her/him with an appropriate 
-library where  (s)he  can  find  correct  and  efficient  implementations  of  
-the most popular concurrent data structures (e.g., \cite{HS08,MS96}). 
-Albeit very attractive, this approach does not solve entirely the problem  
-as it does not allow the programmer to define  specific concurrent objects 
-that take into account  her/his particular  synchronization issues. 
+\subsection{Progress properties}
 
 
-\paragraph{The Software Transactional Memory approach}
-The concept of {\it Software Transactional  Memory}   (STM)  is  an answer  
-to   the  previous  challenge.   The notion  of   transactional  memory  was
-first   proposed  (nearly twenty years ago!) by Herlihy  and Moss to 
-implement concurrent  data structures  \cite{HM93}.  It  has  then  been 
-implemented in software  by Shavit  and  Touitou   \cite{ST97} and  has
-recently gained great  momentum as  a promising alternative  to locks in
-concurrent programming  \cite{FFGH08,H07,LK08,R08}. Interestingly  enough,  
-it is important to also observe that the recent advent of multicore 
-architectures has  given rise to what is called the {\it multicore  
-revolution} \cite{HL08} that has  rang the revival of concurrent programming. 
+\subsubsection{Blocking properties}
+\paragraph{Deadlock freedom}
+\paragraph{Livelock freedom}
+\paragraph{Starvation freedom}
 
 
-
-Transactional  memory   abstracts away the  complexity associated with 
-concurrent programming    by  replacing locking  with  atomic
-execution units. In  that way, the programmer has to focus on  where 
-atomicity is required and  not on the  way it must be realized. The aim of
-an STM system is consequently  to  discharge the programmer from the direct 
-management of the synchronization that is entailed by  accesses  to concurrent  objects. 
-
-More generally,  STM  is a middleware approach that provides the 
-programmers  with the {\it transaction} concept (this concept 
-is close but different from the notion of transactions encountered in 
-database systems \cite{FFGH08}). A process is designed as 
-(or decomposed into)  a sequence of transactions, with each transaction 
-being a piece  of code that, while  accessing  concurrent  objects, 
-always  appears as if it was  executed atomically\footnote{Actually,  
-while the word {``\it transaction}'' has historical roots, it seems that 
-{``\it atomic procedure}'' would be more appropriate because 
-``transactions''  of STM systems are  computer science objects 
-that are different  from database transactions.  We nevertheless 
-continue using the word  {``\it transaction}'' for historical reasons.}.
-The job of the programmer is only to state which  units of computation
-have  to be atomic.  He does not have to worry about the fact that the 
-objects accessed by  a transaction can be concurrently accessed. 
-The programmer is not concerned by synchronization
-except when (s)he defines the beginning and the end of a  transaction.
-It  is then the job of the 
-STM system to ensure that transactions are executed as if they were atomic. 
+\subsubsection{Non-blocking properties}
+\paragraph{Non-blocking}
+\paragraph{Lock-freedom}
+\paragraph{Wait-freedom}
 
 
+\subsection{Universal Constructions}
 
-Let us observe that  the ``spirit/design philosophy'' that has given 
-rise to  STM systems is not new: it is related to the notion of 
-{\it abstraction level}.   
-More precisely,  the  aim  is   to allow  the programmer  to  focus and
-concentrate only  on the problem  (s)he has to
-solve and not on the base machinery needed to solve it. 
-As we can see, this is the approach  that  has   replaced assembly languages  
-by  high level languages and programmer-defined garbage collection 
-by automatic garbage collection.   STM can  be seen as a  new concept
-that takes  up  this challenge when considering synchronization issues. 
-
+NOTE: That most STM don't ensure progress just for speed's sake.
 
 %\vspace{-0.1cm}
 \paragraph{The state of affairs and  related works}
@@ -423,23 +365,6 @@ process $p_i$ that it owns. As we can see, from a global point of view,
 the  $m$ processors have to    cooperate in order to ensure a correct
 execution/simulation of the $n$  processes. 
   
-
-\paragraph{Roadmap}
-The paper is made up of \ref{sec:conclusion} sections. 
-Section \ref{sec:related-work} presents related works.
-Section \ref{sec:models}  presents the model offered to  the programmer and
-the underlying multiprocessor model on which the STM system is built. 
-Section \ref{sec:construction} presents the universal construction 
-(STM system) for transaction-based concurrent programs.   
-Section  \ref{sec:proof} addresses  correctness.  
-%Section \ref{sec:discussion} discusses additional features 
-%of the proposed construction (those are mainly related to the net 
-%effect of  asynchrony and failures, etc.).
-Section \ref{sec:bounded-tries}
-shows that the number of times a transaction can be executed before being committed is bounded.
-Finally, Section \ref{sec:conclusion} concludes the paper
-by discussing  additional features of the proposed construction.
-%(those are mainly related to the net effect of asynchrony and failures, etc.).
 
 
 %----------------------------------------------------------
