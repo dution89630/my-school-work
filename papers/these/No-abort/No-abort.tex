@@ -166,20 +166,23 @@ memory research that takes a fixed view of the semantics of a transaction for th
 and studies what can be done in an STM protocol without changing the semantics.
 This type of STM research puts first the ease-of-use for the programmer using the STM protocol
 before considering secondary intrestes (usually performance).
-In most cases this research area focuses on desinging protocols that satisfy the consistency
-condition opacity (and in some cases virtual world consistency as it does not change
-how the programmer views a transaction) as generally it is viewed that opacity is strong enough
-to ensure the ease-of-use.
-This chapter takes a differnt appproach to STM research as it suggest that transactional
+In most cases this ease-of-use is ensured by having the protocol satisfy opacity.
+Opacity is used because generally it is considered
+to ensure the ammount of safety a programmer would expect from an atomic block without having
+to worry about inconsistencies of aborted transactions
+(Note that in some cases virtual world consistency is used as it does not change
+how the programmer views a transaction).
+This chapter takes a slightly differnt appproach to STM research as it suggest that transactional
 memory might be more usable to a programmer if it satisfied more then just opacity.
 
 Opacity and other consistency criteron are generally considered to be safety properties.
-Informally this is because they ensure a protocol that implements them will not produce any weird behavoir.
-For example opacity prevents a transaction from executing on invalid states of memory, preventing
+Informally this is because they ensure a protocol that implements them will
+act in a way that a user would expect and not produce any weird behavoir.
+For example opacity prevents any transaction from executing on invalid states of memory, preventing
 things such as divide by zero exceptions in correct code.
-What they do not consider, among other things, is how often transactions commit.
-A protcol could satisfy opacity by just aborting every transaction before it performs
-any action, but of course this protocol would be completly useless.
+What such consistency criteron do not consider (among other things) is how often transactions commit.
+For example a protocol could satisfy opacity by just aborting every transaction before it performs
+any action, but of course this protocol would be useless.
 In order to avoid this, certain STM protocols satisfy liveness (or progress) properties
 These properties, not limited to transactional memory, ensure the operations of a process
 will make some sort of progress sometimes depending on the ammount of contention in the system.
@@ -191,14 +194,64 @@ for concurrent algorithms.
 They are arranged into two categories, blocking and non-blocking.
 
 \subsubsection{Blocking properties}
-The most 
+The most common way to write concurrent programs is by using locks,
+generally lock based programs satisfy blocking progress properties.
+A property is blocking when a thread's progress can be blocked because it is waiting
+for another thread to perform some actaion.
+For example thread $A$ might want to accquire lock $l$, but thread $B$ currently owns lock $l$
+so then thread $A$ waits for thread $B$ to release lock $l$.
+In this case thread $A$ is blocked by thread $B$.
+The three most common blocking properties are (from weakest to
+strongest) \emph{deadlock freedom}, \emph{livelock freedom},
+and \emph{starvation freedom}.
+They are described breifly in the following paragraphs.
 
 \paragraph{Deadlock freedom}
+Deadlock freedom is the weakest blocking property, it prevents the implementing protocol
+form entering a state of deadlock.
+Deadlock occurs when at least two threads are preventing eachother from progressing
+due to eachother holding a lock (or resourse) that the other wants to accquire.
+A simple example of deadlock would be the following:
+thread $A$ owns lock $l1$ and wants to accquire lock $l2$, concurrently
+thread $B$ owns lock $l2$ and wants to accquire lock $l1$.
+In this case thread $A$ and $B$ will be stuck infinately, wating to accquire the lock that the other
+already owns creating a state of deadlock.
+It is generally considered that every correct concurrent protocol should at least satisfy deadlock
+freedom.
+A common way to avoid deadlock freedom is by ensuring threads accquire locks in a fixed global order.
 \paragraph{Livelock freedom}
+Stronger then deadlock freedom, livelock freedom prevents a state of livelock in which threads
+can never progress due to their progess depending on a shared state that is created by another thread.
+Consider the follwing simple example:
+in order to progress a thread must own locks $l1$ and $l2$ concurrently.
+Thread $A$ runs a protocol that first acquires $l1$ and then $l2$, while thread
+$B$ runs a protocol that first acquires $l2$ then $l1$.
+In order to avoid deadlock when a thread noticies that another thread owns a lock it wants, it
+relases all the locks it owns and starts the locking protocol over.
+Consider the events of thread $A$ and $B$ happen in the following order:
+$A.acquire(l1) = success$, $B.acquire(l2) = success$, $A.is\_owned(l2) = true$, $B.is\_owned(l1) = true$,
+$A.release(l1)$, $B.release(l2)$.
+
+
+
+\anote{NEED TO DEFINE THIS HISTORY STRUCTURE}
+
+
+If such an order of events is continually reapeted then livelock is observed.
+It should be noted that by definition livelock freedom also ensure deadlock freedom.
 \paragraph{Starvation freedom}
+The strongest blocking property, starvation freedom ensure that no threads starve.
+A thread is starved when it requires access to some shared resourses in a certain state to progress, but
+it is never able to such gain access to them due to one or more concurrent ``greedy'' threads
+that consistantly own the needed resources.
+Starvation freedom prevents both deadlock and livelock from happening.
 
 
 \subsubsection{Non-blocking properties}
+
+\paragraph{The problem with blocking}
+
+
 \paragraph{Non-blocking}
 \paragraph{Lock-freedom}
 \paragraph{Wait-freedom}
