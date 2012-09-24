@@ -304,187 +304,28 @@ is only dependent on itself and not other threads for making progress.
 
 
 
-\subsection{Universal Constructions}
-
+\subsection{Progress properties and transactional memory}
 NOTE: That most STM don't ensure progress just for speed's sake.
 
+These properties were defined for concurrent code in general
+and do not concern the specifics of transactional memory.
+What makes transactional memory different then traditional concurrent
+code is that transactions can abort and restart.
+Does an aborted transaction entitle progress?
+If we are just considering that code being executed entitles
+progress then yes, but when considering the ease-of-use of transactional
+memory it is more intersting to consider that only committed transactions
+create progress.
 
-\paragraph{Universal construction for concurrent objects}
-The notion of a universal construction for concurrent objects (or 
-concurrent data  structures) has been introduced by Herlihy \cite{H91}.
-Since then, several  universal constructions have been proposed. 
-(e.g., \cite{ADT95,AM99,FK09}).  
-The concurrent objects suited to such   constructions are 
-the objects that are  defined by a sequential specification
-on total operations (i.e., operations that, when executed alone, 
-always return a result). 
+\subsection{Previous approaches}
 
-%
-%  MOVED IN THE DISCUSSION IN FIRST PART OF THE CONCLUSION    
-%There is an important and fundamental difference
-% between an operation on a concurrent 
-%object (e.g., a shared queue) and a transaction. 
-%Albeit the operations on a queue can have many different implementations, 
-%their semantics is  defined once for all. 
-%Differently, each transaction is a specific  atomic procedure whose 
-%code can be  seen as being any dynamically  defined code.
-%
-
-
-A universal construction for wait-free {\it transaction friendly} 
-concurrent objects is presented in \cite{CER10}. The words 
-``transaction friendly'' means here that a process that has invoked an
-operation on an object can abort it during its execution. Hence, 
-a `transaction friendly'' concurrent object is a kind of  
-abortable object.  It is important to notice  that  this  abortion 
-notion is different from  the notion of  transaction abortion. 
-In the first case, the abort of an operation is a programming level notion
-that  the construction has to implement. 
-Differently, in the second case,  a transaction abort is  due 
-the implementation itself. More precisely, 
-transaction abortion is then a system level mechanism used to  prevent  
-global inconsistency when  the system allows concurrent transactions 
-to be  executed
-optimistically (differently, albeit very inefficient,  using a single 
-global lock for  all transactions would allow any  transaction to executed
-without being aborted).  (A main issue solved in  \cite{CER10}
-lies in ensuring that, without violating wait-freedom,  an  operation $op$ 
-issued by a process $p_i$  is not committed in the back of $p_i$ by another  
-process $p_j$  which is  helping it to execute that  operation.) 
-
-
-
-
-
-
-
-
-
-\subsection{Progress properties and transactional memory}
-
-
-
-\section{Introduction}
-
-\paragraph{Lock-based concurrent programming}
-A   {\it concurrent  object} is  an   object that can be   concurrently  
-accessed by different processes of a  multiprocess program. 
-%
-It is well known  that the design of a concurrent program is not an easy
-task. To that end, base synchronization objects have been defined to help 
-the programmer solve  concurrency and process cooperation  issues. 
-A  major step in that direction has been 
-(more than forty years  ago!) the concept of {\it mutual exclusion} \cite{D68}
-that has given rise  to  the  notion of  a  {\it  lock} object.    Such an
-object provides the processes with two operations (lock and unlock)
-that  allow a single process at a time to access a concurrent object. 
-Hence, from a  concurrent object point of view,   the  lock associated with
-an object allows transforming  concurrent  accesses on  that object  
-into sequential accesses.  Interestingly, all the books on synchronization 
-and operating systems  have chapters on lock-based
-synchronization. In addition, according to the abstraction level
-supplied to the programmer,  a lock may be encapsulated into a linguistic 
-construct such as a {\it monitor} \cite{H74} or a {\it serializer} \cite{HA79}.
-
-
-
-Unfortunately locks have drawbacks. One is related to the  granularity
-of the object protected by a lock. More precisely, if several data items 
-are encapsulated  in a single  concurrent  object, the
-inherent parallelism  the object can provide 
-can be drastically reduced. This  is for example the case of a queue 
-object for which concurrent executions of enqueue and dequeue operations 
-should be possible as long as they are not on the same item.
-Of  course  a   solution  could  consist of  considering  each item of the
-queue as  a concurrent object, but in that case, the  operations  enqueue  
-and  dequeue  can  become very   difficult  to  design and implement. 
-More severe  drawbacks associated with locks lie in the fact that 
-lock-based operations are deadlock-prone and cannot be easily composed. 
-
-Hence  the question:  how to  ease  the  job of  the programmer  of
-concurrent applications?
-A (partial)  solution consists of providing her/him with an appropriate 
-library where  (s)he  can  find  correct  and  efficient  implementations  of  
-the most popular concurrent data structures (e.g., \cite{HS08,MS96}). 
-Albeit very attractive, this approach does not solve entirely the problem  
-as it does not allow the programmer to define  specific concurrent objects 
-that take into account  her/his particular  synchronization issues. 
-
-
-\paragraph{The Software Transactional Memory approach}
-The concept of {\it Software Transactional  Memory}   (STM)  is  an answer  
-to   the  previous  challenge.   The notion  of   transactional  memory  was
-first   proposed  (nearly twenty years ago!) by Herlihy  and Moss to 
-implement concurrent  data structures  \cite{HM93}.  It  has  then  been 
-implemented in software  by Shavit  and  Touitou   \cite{ST97} and  has
-recently gained great  momentum as  a promising alternative  to locks in
-concurrent programming  \cite{FFGH08,H07,LK08,R08}. Interestingly  enough,  
-it is important to also observe that the recent advent of multicore 
-architectures has  given rise to what is called the {\it multicore  
-revolution} \cite{HL08} that has  rang the revival of concurrent programming. 
-
-
-
-Transactional  memory   abstracts away the  complexity associated with 
-concurrent programming    by  replacing locking  with  atomic
-execution units. In  that way, the programmer has to focus on  where 
-atomicity is required and  not on the  way it must be realized. The aim of
-an STM system is consequently  to  discharge the programmer from the direct 
-management  of  the  synchronization  that  is entailed  by   accesses   to
-concurrent  objects.  
-
-More generally,  STM  is a middleware approach that provides the 
-programmers  with the {\it transaction} concept (this concept 
-is close but different from the notion of transactions encountered in 
-database systems \cite{FFGH08}). A process is designed as 
-(or decomposed into)  a sequence of transactions, with each transaction 
-being a piece  of code that, while  accessing  concurrent  objects, 
-always  appears as if it was  executed atomically\footnote{Actually,  
-while the word {``\it transaction}'' has historical roots, it seems that 
-{``\it atomic procedure}'' would be more appropriate because 
-``transactions''  of STM systems are  computer science objects 
-that are different  from database transactions.  We nevertheless 
-continue using the word  {``\it transaction}'' for historical reasons.}.
-The job of the programmer is only to state which  units of computation
-have  to be atomic.  He does not have to worry about the fact that the 
-objects accessed by  a transaction can be concurrently accessed. 
-The programmer is not concerned by synchronization
-except when (s)he defines the beginning and the end of a  transaction.
-It  is then the job of the 
-STM system to ensure that transactions are executed as if they were atomic. 
-
-
-
-Let us observe that  the ``spirit/design philosophy'' that has given 
-rise to  STM systems is not new: it is related to the notion of 
-{\it abstraction level}.   
-More precisely,  the  aim  is   to allow  the programmer  to  focus and
-concentrate only  on the problem  (s)he has to
-solve and not on the base machinery needed to solve it. 
-As we can see, this is the approach  that  has   replaced assembly languages  
-by  high level languages and programmer-defined garbage collection 
-by automatic garbage collection.   STM can  be seen as a  new concept
-that takes  up  this challenge when considering synchronization issues. 
-
-
-%\vspace{-0.1cm}
-\paragraph{The state of affairs and  related works}
-Of course, a solution in which a single transaction is executed at a time 
-trivially implements transaction atomicity, but is inefficient
-on a multiprocessor system (as it allows only non-transactional code 
- to execute in parallel).   Instead, an STM system has to allow 
-several transactions to execute  concurrently, but then it is possible that
-they access the same concurrent objects in a conflicting manner.
-In that case
-some  of  these  transactions might  have  to   be  aborted. Hence,  in  a
-classical  STM system    there    is  an    {\it   abort/commit}    notion
-associated   with transactions. 
 
 Several approaches have been proposed to cope with  aborted transactions.
 In some systems the  management of aborted transactions
 is left to the application programmer (similarly to  exception handling
 encountered  in  some systems). 
 %
+
 Other systems  offer   ``best effort semantics'' 
 (which  means that there is no provable  strong guarantee),
 an interesting example of this approach is the  technique
@@ -511,134 +352,6 @@ is presented in \cite{WF10}.
 Other related works are presented in Section \ref{sec:related-work}.
 
 
-
-
-
-%\vspace{-0.1cm}
-\paragraph{Aim  of the paper}
-The previous observations show that, contrarily to the initial hope, 
-STM systems proposed so far either do not entirely free
-the  programmer from  the  management of synchronization-related  
-issues  or  require specific adaptation of both the compiler and 
-the underlying  scheduler.
-(Actually,  the  management of aborted transactions can be seen as the
-transactional  counterpart  of the deadlock management techniques 
-- prevention/resolution - encountered in lock-based systems.) 
-Ideally, an STM system should be  such that, from the programmer's point of
-view,  each  transaction invoked by a process  is   executed exactly once.  
-Said differently, this means that, at the programming level,  
-there   should   be  no  notion   of    abort/commit    associated  with  a
-transaction. Hence, the programmer is
-concerned neither by the way synchronization is implemented, nor by the way 
-transactions are executed\footnote{It is nevertheless important to 
-notice that while a transaction can access local variables and 
-concurrent objects, we  assume here that it does not issue inputs/outputs.
-Those are done in the non-transactional code of the corresponding process.
-Hence a transaction is somewhat restricted in what it can do.}.
-
-This paper is a step in that direction.
-From a conceptual point of view,  it  advocates that 
-the abstraction  level  offered to the programmer and  the technicalities   
-needed    at    the    implementation    level    have   to    be   totally
-dissociated\footnote{It 
-is important to notice that such  an approach is adopted
-in some systems where the abort/commit notion is unknown to the programmer
-and  the pair ``compiler +  scheduler'' is  designed  in such a way that 
-every   transaction   is   ``practically   always''   eventually   executed
-\cite{F11}.}:  the programmer does  not need  to be  aware of   the  way the
-underlying STM system works 
-(i.e., similarly to the fact that deadlock management and   parameter 
-passing mechanisms  associated with procedure calls are  hidden to the 
-programmer, abort/commit   is  an  implementation-related notion  that  
-has to remain confined to the transaction implementation level).  
-
-
-
-\paragraph{Content of the paper}
-The paper addresses the previous issue by presenting a construction  
- (STM system) where, at  the programming level, every  transaction
-invocation is  executed  exactly   once. The   notion  of   abort/commit  
-is  relegated to the implementation and not known to the programmer. 
-Then, as  previously indicated,  the  job  of  a  programmer  is  to   write her/his
-concurrent   program in  terms of  cooperating sequential  processes, 
-each process  being made up of a sequence of transactions (plus possibly some 
-non-transactional  code). At  the  programming level,  any  transaction 
-invoked  by  a  process  is  executed  exactly once  (similarly to a
-procedure invocation 
-in sequential computing). Moreover, from a global point of view, 
-any execution of the concurrent program is linearizable \cite{HW90}, meaning 
-that all the transactions appear as if they have been executed one after
-the other in an order compatible with their real-time occurrence order. 
-Hence, from the programmer point of view, the progress condition associated 
-with an execution is a very classical one, namely, {\it starvation-freedom}.  
-
-The proposed construction can be seen as a 
-{\it universal construction} for transaction-based concurrent programs. 
-%
-In addition to providing such a construction, an important aim of the paper  
-is to investigate the design principles this construction relies on
-(efficiency issues are not part of our study). Interestingly, 
-the fact that there is no abort/commit notion at the programming level 
-and the very existence of this construction constitute an interesting feature
-which feeds the debate on the  ``liveness''  of STM systems. Moreover, 
-the proposed construction has a noteworthy feature: it is lock-free 
-(in the sense it uses no lock). 
-%
-It also ensures linearizable X-ability.
-X-ability, or exactly-once ability, was originally defined 
-by Fr{\o}lund and Guerraoui in \cite{FG01}
-as a correctness condition for replicated services such as
-primary-backup.  In this model there are actions, such as
-transactions, that cause some side effect.  For a service to satisfy
-X-ability, every invoked action and its side effect must be observed as
-if it had happened exactly once.  In order to ensure this, actions
-might be executed multiple times by the underlying system.  Given this
-requirement, X-ability concerns both correctness and liveness and can
-complement concurrency correctness conditions. \\
-
-
-In order to build such a construction, the paper assumes an underlying 
-multiprocessor where the processors  communicate through 
-a shared memory that provides them with atomic read/write registers, 
-compare\&swap registers and fetch\&increment registers. 
-
-
-
-
-As we will see, the underlying multiprocessor system  consists of 
-$m$  processors where each processor  in charge  of a  subset of  processes.
-The  multiprocess program, defined  by the  programmer, is  made up  of $n$
-processes  where each process is a separate thread of execution.
-  We say that a processor {\it owns}
-the corresponding processes in the sense that  it has the responsibility 
-of their individual   progress.  Given that at  the implementation level
-a  transaction may abort, the processor $P_x$ owning the corresponding 
-process $p_i$ can  require the help of  the other  processors  
-in order for the transaction to be eventually committed. 
-The  implementation of this  helping mechanism  is at the core of the 
-construction  (similarly to the helping mechanism used  to implement 
-wait-free operations despite any number of process crashes \cite{H91}). 
-As we  will  see, the  main technical difficulties  lie  in   ensuring that 
-(1) the helping  mechanism  allows   a transaction to be committed  exactly
-once and (2) each processor $P_x$ ensures the individual progress  of  each 
-process $p_i$ that it owns. As we can see, from a global point of view,
-the  $m$ processors have to    cooperate in order to ensure a correct
-execution/simulation of the $n$  processes. 
-  
-
-\paragraph{Roadmap}
-The paper is made up of \ref{sec:conclusion} sections. 
-Section \ref{sec:related-work} presents related works.
-Section \ref{sec:models}  presents the model offered to  the programmer and
-the underlying multiprocessor model on which the STM system is built. 
-Section \ref{sec:construction} presents the universal construction 
-(STM system) for transaction-based concurrent programs.   
-Section  \ref{sec:proof} addresses  correctness.  
-Section \ref{sec:bounded-tries}
-shows that the  number of times a transaction can  be executed before being
-committed is bounded. 
-Finally, Section \ref{sec:conclusion} concludes the paper
-by discussing  additional features of the proposed construction.
 
 
 
@@ -800,12 +513,75 @@ technique to deal with  non-terminating transactions.
 
 
 
+\subsection{Universal Constructions for concurrent objects}
+
+
+
+Given the increased progress guarenteed by wait-free protocols
+they are desireable over lock based protocols.
+Unfortunately wait-free protocols are
+known to be extreemly difficult to write and understand.
+
+Two years before the concept of transactional memory 
+was introduced, the notion of a universal construction for concurrent objects (or 
+concurrent data  structures) was introduced by Herlihy \cite{H91}.
+
+Like transactional memory, a universal construction's main concern is
+with making concurrent programming easier.
+A universal construction takes any sequential implementation
+of an object or data structure and makes its operations concurrent, wait-free,
+and linearizable.
+The concurrent objects suited to such   constructions are 
+the objects that are  defined by a sequential specification
+on total operations (i.e., operations that, when executed alone, 
+always return a result).
+For example data structures are the typical example
+of the use of a universal construction.
+
+%
+%  MOVED IN THE DISCUSSION IN FIRST PART OF THE CONCLUSION    
+%There is an important and fundamental difference
+% between an operation on a concurrent 
+%object (e.g., a shared queue) and a transaction. 
+%Albeit the operations on a queue can have many different implementations, 
+%their semantics is  defined once for all. 
+%Differently, each transaction is a specific  atomic procedure whose 
+%code can be  seen as being any dynamically  defined code.
+%
+
+Since the original, several  universal constructions have been proposed
+(e.g., \cite{ADT95,AM99,FK09}) focusing on ensuring different properties
+or increased efficiency.
+
+One intresting example related to the work in this thesis is
+a universal construction for wait-free {\it transaction friendly} 
+concurrent objects presented in \cite{CER10}. The words 
+``transaction friendly'' means here that a process that has invoked an
+operation on an object can abort it during its execution. Hence, 
+a `transaction friendly'' concurrent object is a kind of  
+abortable object.  It is important to notice  that  this  abortion 
+notion is different from  the notion of  transaction abortion. 
+In the first case, the abort of an operation is a programming level notion
+that  the construction has to implement. 
+Differently, in the second case,  a transaction abort is  due 
+the implementation itself. More precisely, 
+transaction abortion is then a system level mechanism used to  prevent  
+global inconsistency when  the system allows concurrent transactions 
+to be  executed
+optimistically (differently, albeit very inefficient,  using a single 
+global lock for  all transactions would allow any  transaction to executed
+without being aborted).
+
+(A main issue solved in  \cite{CER10}
+lies in ensuring that, without violating wait-freedom,  an  operation $op$ 
+issued by a process $p_i$  is not committed in the back of $p_i$ by another  
+process $p_j$  which is  helping it to execute that  operation.) 
 
 
 
 
 
-
+\subsection{Transactional memory and universal constructions}
  
 
 
@@ -820,6 +596,46 @@ technique to deal with  non-terminating transactions.
 This section presents the programming model offered to the programmers
 and  the underlying  multiprocessor model on top of which  the universal STM 
 system is built. 
+
+
+
+
+
+
+In order to build such a construction, the paper assumes an underlying 
+multiprocessor where the processors  communicate through 
+a shared memory that provides them with atomic read/write registers, 
+compare\&swap registers and fetch\&increment registers. 
+
+
+
+
+As we will see, the underlying multiprocessor system  consists of 
+$m$  processors where each processor  in charge  of a  subset of  processes.
+The  multiprocess program, defined  by the  programmer, is  made up  of $n$
+processes  where each process is a separate thread of execution.
+  We say that a processor {\it owns}
+the corresponding processes in the sense that  it has the responsibility 
+of their individual   progress.  Given that at  the implementation level
+a  transaction may abort, the processor $P_x$ owning the corresponding 
+process $p_i$ can  require the help of  the other  processors  
+in order for the transaction to be eventually committed. 
+The  implementation of this  helping mechanism  is at the core of the 
+construction  (similarly to the helping mechanism used  to implement 
+wait-free operations despite any number of process crashes \cite{H91}). 
+As we  will  see, the  main technical difficulties  lie  in   ensuring that 
+(1) the helping  mechanism  allows   a transaction to be committed  exactly
+once and (2) each processor $P_x$ ensures the individual progress  of  each 
+process $p_i$ that it owns. As we can see, from a global point of view,
+the  $m$ processors have to    cooperate in order to ensure a correct
+execution/simulation of the $n$  processes. 
+  
+
+
+
+
+
+
 
 
 
