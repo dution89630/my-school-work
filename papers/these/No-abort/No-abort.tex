@@ -311,7 +311,7 @@ is only dependent on itself and not other threads for making progress.
 
 
 \subsection{Universal Constructions for concurrent objects}
-
+\label{sec:univ-const}
 
 
 Given the increased progress guarenteed by wait-free protocols
@@ -431,9 +431,6 @@ The following sections will discuss how progress properties
 can be considered in transactional memory as well as the relation
 between univeral constructions and transactional memory.
 
-
-
-
 \subsection{Progress properties and transactional memory}
 NOTE: That most STM don't ensure progress just for speed's sake.
 
@@ -494,7 +491,6 @@ also described  a general  lock-free STM system. This  system is
 based on a mechanism similar to the Compare\&Swap used in this paper.
 
 \subsection{Previous approaches}
-
 In order to ensure levels of progress and cope with aborted transactions,
 several solutions have been proposed witch each taking differnt approches
 to progress.
@@ -610,15 +606,19 @@ It is interesting to note that (a) an irrevocable transaction must be run
 exactly  once and (b) only one irrevocable transaction can be executed at 
 a time in the system (unless the shared memory accesses of the transaction 
 are known ahead of time).
-Possible solutions are proposed and discussed  in 
+This priority given to the running irrevocable transaction allows it
+to guarantee to succed, but does so at the cost of preventing other
+transactions from progressing until it finishes.
+STM protocols supporting ireovokable transactions are proposed and discussed  in 
 \cite{SSDMS08}  and   \cite{WSA08}.  Irrevocable  transactions   suited  to
 deadline-aware scheduling are presented  in \cite{MMFLMR11}. 
 
-The STM system proposed in this paper does not support 
-irrevocable transactions.
-Since  an irrevocable   transaction cannot  be executed  more than  once,
-it is obvious that irrevocable  transactions cannot  benefit from  the  
-helping  mechanism  proposed in  the paper. 
+% The STM system proposed in this paper does not support 
+% irrevocable transactions.
+% Since  an irrevocable   transaction cannot  be executed  more than  once,
+% it is obvious that irrevocable  transactions cannot  benefit from  the  
+% helping  mechanism  proposed in  the paper. 
+
 %
 %%suppresed to comply with remark of referee 3 
 %
@@ -628,8 +628,9 @@ helping  mechanism  proposed in  the paper.
 %of the list in order to  prevent any other concurrent  transaction from
 %committing until  it commits itself. Unfortunately,  this  would violate the
 %liveness and progress properties previously guaranteed. 
-That is why in our
-model,  ``irrevocable transactions'' appear as non-transactional code. 
+
+% That is why in our
+% model,  ``irrevocable transactions'' appear as non-transactional code. 
 
 
 
@@ -652,8 +653,6 @@ There have been several proposals for non-blocking STM protocols,
 some of them  are obstruction-free  (e.g., \cite{HLMS03,ST97}),
 while others are lock-free  (in the sense there is no deadlock) \cite{GHS08}.
 
-Unfortunately, none of them  provides the property that every issued 
-transaction is committed.
 In an obstruction-free STM system a transaction that is executed alone 
 must eventually commit. So consider some transaction that is always 
 stalled (before its commit operation) and, while it is stalled, 
@@ -667,6 +666,8 @@ execution in which a transaction is always stalled
 (transactions cannot wait for this stalled transaction because they do not 
 know if it is making progress).
 
+Unfortunately, none of them  provides the property that every issued 
+transaction is committed.
 As described in the previous section,
 in order for the described universal constructions ensure that each operation
 is performed succesfully, threads must help other threads by executing
@@ -686,40 +687,85 @@ so if blocking is not allowed, helping only in the commital phase will not
 ensure the commitial of every transaction.
 
 
-
 \subsection{Ensuring transaction completion}
-As seen in the previous section there are many ways to cope with aborted transactions
-and to deal with progress in transactional memory.
-Unfortunately none of these truly fulfill the promise of ease-of-use for the
-programmer.
+As seen, there are many ways to cope with aborted transactions
+and to ensure progress in transactional memory.
+Unfortunately none of these solutions quite realize to goal of ease-of-use for the
+programmer is still concerned with the idea of abort/commit.
 In some cases the programmer has to deal directly with aborted transactions
 in his code, in others a programmer can prioritize certain transactions
 so they will not abort, others allow transactions to be blocked, while
 other allow transactions to be aborted infinately.
-What is missing here is the case where all transactions are guaranteed to
-commit.
-In such a case the ease-of-use is put under higher prioroity
-given that the programmer does not even have to worry about the concept
-of an aborted transactions.
+Absent from these solutions is the case where all transactions are guaranteed to
+commit where the progress of a transaction does not rely on the
+other processes then the one that issued the transaction.
+Such a solution would prioritize ease-of-use as such a protocol would hide
+the concept of aborted transactions from the programmer.
 
-It should be noted that the presentation is not entirely fair as  the major part of the papers 
-that are cited here are efficiency-oriented while our construction is
-more theory-oriented.
+More precisely we want a non-blocking STM protocol which ensures that every transaction
+issued by a process is eventually committed wheres its progress only depends
+on the issuing process.
+Then, the job of a
+programmer is to write her/his concurrent program in terms of cooperating sequential
+processes, each process being made up of a sequence of transactions (plus possibly
+some non-transactional code). At the programming level, any transaction invoked by
+a process is executed exactly once (similarly to a procedure invocation in sequential
+computing). Moreover, from a global point of view, any execution of the concurrent
+program is linearizable \cite{HW90}, meaning that all the transactions appear as if they have
+been executed one after the other in an order compatible with their real-time occurrence
+order. Hence, from the programmer point of view, the progress condition associated
+with an execution is a very classical one, namely, starvation-freedom.
+
+
+The remainder of this chapter focuses on the design of a such protocol that.
+(As a note it should be said that the presentation of previous approches
+that deal with aborted transactions
+is not entirely fair as they are primarily
+efficiency-oriented while our construction is
+more theory-oriented.)
 
 
 \subsection{A short comparison with object-oriented universal construction}
 \label{sec:comparison-Herlihy}
 
+The first point to notice is that an STM that hides the concept of
+commit/abort from the programmer has objectives similar to that of a
+universal consturction described earier in this chapter.
+A universal construction allows a programmer to turn a sequential
+object into a concurrent one where each operation is linearizable
+and completes successfully, while
+the STM protocol we want here is one that allows a programmer to place transactions
+in his code each of which are executed successfully and are lineariable.
+Although similar, the key difference between these lies in the
+difference between an operation and a transaction.
 
-The proposed universal construction for STM programs borrows ideas from other 
-universal constructions such as the one introduced by M. Herlihy 
-in~\cite{H91}.  This universal  construction (denoted H\_UC in the following) 
-addresses  the  implementation  of linearizable concurrent objects in 
-presence  of process crashes. 
+% This universal  construction (denoted H\_UC in the following) 
+% addresses  the  implementation  of linearizable concurrent objects in 
+% presence  of process crashes. 
 
+%As indicated in Section~\ref{sec:related-work},
+There is an important and fundamental difference between an operation on 
+a concurrent object (e.g.,  a shared queue) and a transaction performed
+by an STM protocol. 
+Albeit the operations on a queue can have many different implementations, 
+their semantics is  defined once for all. 
+Differently, each transaction is a specific  atomic procedure whose 
+code can be  seen as being any dynamically  defined code.
+What is significant here is that any transaction is  able to read and
+write to  any location in shared  memory while an operation  in a universal
+construction is fixed to a predefined set, which is often a single instance
+of a  data structure.
+Simply put, a programmer might want to use a universal construction when
+he has an object with predefined self-contained operations that
+he wants to use concurrently (such as a data structure) while transactions
+might be more suitable when the programmer wants to perform general
+atomic operations within his code.
 
-H\_UC could be used for STM programs   by
-piecing together  all the $t$-objects in a single concurrent object 
+To briefly examine how these differences can effect the implementation
+of a protocol we will look at the universal construction proposed
+by Herlihy in \cite{H91} (denoted H\_UC in the following).
+Interestingly H\_UC could be used for STM programs simply  by
+piecing together  all the shared objects objects into a single concurrent object 
 $\mathit{TO}$,  and  considering   all  the   transactions   as  operations
 on this   object 
 $\mathit{TO}$.  This  brute force approach is not conceptually satisfying.  
@@ -728,60 +774,62 @@ on  the single  ``big'' object $\mathit{TO}$, instead of a lock per object.
 Moreover, as it  requires each operation on an object to make a copy of 
 this object   (before  accessing it),  H\_UC would force each  operation to
 copy the whole  shared memory, even it  it works on a very  small subset of
-its  content.  This is not the case in the proposed  construction, where
-only  the $t$-objects accessed by a transaction needs to be copied. 
+its  content.  This is not the case in the construction proposed
+in this chapter, where
+only  the specific locations accesed by a transaction needs to be copied. 
 The space granularities required by  H\_UC (when applied to STM)  and 
 the proposed construction do not belong to the same magnitude order.
+Traditionally STM protocols commonly use a read and write set
+with the pourpose of tracking the  locations the STM  has read so far as well as those
+that will be modified upon commit, validating these sets
+in order to ensure correctness.
+In the case of the STM protocol presented in this chapter these read
+and write sets have the additional benifit of saving us from making copies of
+the entire shared memory.
 
-
-
-%As indicated in Section~\ref{sec:related-work},
-There is an important and fundamental difference between an operation on 
-a concurrent object (e.g.,  a shared queue) and a transaction. 
-Albeit the operations on a queue can have many different implementations, 
-their semantics is  defined once for all. 
-Differently, each transaction is a specific  atomic procedure whose 
-code can be  seen as being any dynamically  defined code.
-What is significant here is that any transaction is  able to read and
-write to  any location in shared  memory while an operation  in a universal
-construction is fixed to a predefined set, which is often a single instance
-of a  data structure.  In order  for STM to  be able to access 
- any location while executing speculatively,  a read and write set  will be
-kept, keeping   track of the  locations  the STM  has read so far  and  the
-locations that will be modified by  its commit.  
-Importantly, these read  and write sets allows
-any number of transactions to  execute concurrently (and successfully if no
-conflict is  found) by performing  validations on their read  sets, while
-traditional  universal constructions only  allow a  single operation  to be
-completed  successfully at a  time.  The  memory cost  of keeping  read and
-write sets and the computation cost of performing validation can be seen as
-trade offs in order to allow for higher concurrency.   
+Even given the differences,
+the proposed STM protocol in this chapter borrows key ideas from previous
+universal constructions such as helping and using a shared global pointer
+that is modififed using a compare-and-swap in order to ensure
+progress and correctness.
 
 Another interesting feature of  the proposed construction
 (which is specifically designed for STM programs)  
-is the  systematic use of  speculative execution.  
+is the  systematic use of  speculative execution.
 Even  if  efficiency is   not a  first class  requirement addressed  in our
 work, the notion of a  speculative  execution  can  be  a  basis  for  future
 work  on  universal construction  that will focus on efficiency. 
-
-
-
-
-
+As discussed in section \ref{sec:univ-const}, a traditional universal construction can expect best
+case performance to be equal to that of a sequental implementation.
+While in the case of the STM's speculative execution
+any number of transactions are able to execute concurrently (and successfully if no
+conflict is  found) by performing  validations on their read  sets.
+In some ways, the computation cost of performing validation can be seen as
+a trade off in order to allow for higher concurrency.
 
 \section{A universal construction for transaction based programs}
 
-As mentioned previously, the paper   presents a  new STM construction  that
-ensures that every  
+The following secations  present a  new STM construction  that,
+in order to hide the notion of abort/commit from the programmer, ensures every  
 transaction issued by a process is necessarily committed and  each process 
-makes progress. To  our knowledge,  this  is the  first STM  system 
-we  know of  to combine  these
-concepts, but much work has been done previously on these two 
-``liveness''-related concepts when 
-implemented separately. This  section gives  a short  overview of that work.
+makes progress.
+More specifcally it ensures linearizable X-ability.
+X-ability, or exactly-once ability, was originally defined 
+by Fr{\o}lund and Guerraoui in \cite{FG01}
+as a correctness condition for replicated services such as
+primary-backup.  In this model there are actions, such as
+transactions, that cause some side effect.  For a service to satisfy
+X-ability, every invoked action and its side effect must be observed as
+if it had happened exactly once.  In order to ensure this, actions
+might be executed multiple times by the underlying system.  Given this
+requirement, X-ability concerns both correctness and liveness and can
+complement concurrency correctness conditions.
 
-
-
+To  our knowledge,  this  is the  first STM  system 
+we  know of  to combine  these concepts in a realistic protocol.
+Given the similarities between this STM based construction and universal
+constructions as well as the differences between transactions and operations on objects
+we define this protocol as a ``universal construction for transaction based programs''.
 
 
 %=========================================================================
@@ -792,24 +840,16 @@ This section presents the programming model offered to the programmers
 and  the underlying  multiprocessor model on top of which  the universal STM 
 system is built. 
 
-
-
-
-
-
 In order to build such a construction, the paper assumes an underlying 
 multiprocessor where the processors  communicate through 
 a shared memory that provides them with atomic read/write registers, 
 compare\&swap registers and fetch\&increment registers. 
 
-
-
-
 As we will see, the underlying multiprocessor system  consists of 
-$m$  processors where each processor  in charge  of a  subset of  processes.
+$m$  processors where each processor is in charge  of a  subset of  processes.
 The  multiprocess program, defined  by the  programmer, is  made up  of $n$
 processes  where each process is a separate thread of execution.
-  We say that a processor {\it owns}
+ We say that a processor {\it owns}
 the corresponding processes in the sense that  it has the responsibility 
 of their individual   progress.  Given that at  the implementation level
 a  transaction may abort, the processor $P_x$ owning the corresponding 
@@ -824,14 +864,6 @@ once and (2) each processor $P_x$ ensures the individual progress  of  each
 process $p_i$ that it owns. As we can see, from a global point of view,
 the  $m$ processors have to    cooperate in order to ensure a correct
 execution/simulation of the $n$  processes. 
-  
-
-
-
-
-
-
-
 
 
 %------------------------------------------------------------------
@@ -2416,9 +2448,8 @@ So we have $1+1+2+3+\ldots+(m-1)+m$ trials of $T$ which is  $O(m^2)$.
 
 %=============================================================================
 
-\subsection{A short discussion  to conclude}
+\subsection{A short discussion}
 \label{sec:discussion} 
-
 
 The aim of the universal construction that has been presented 
 was to demonstrate and investigate this type of construction for
@@ -2465,7 +2496,10 @@ in our model, inputs/outputs appear in non-transactional code).
 We have considered a failure-free system. It is easy to see that, in a
  crash-prone system, the crash of a processor entails only the
 crash of the processes it owns.  The processes owned by the processors that
-do not crash are not prevented from executing.  
+do not crash are not prevented from executing.
+Furthermore due to the helping mechanism, once a process has asked
+for help with a transaction that transaction is guaranteed to commit
+as long as there exsits at least one live failure free process.
 \end{itemize}
 
 In addition to the previous properties, 
@@ -2480,3 +2514,25 @@ objects \cite{H91} (where an underlying list of consensus objects
 used to represent the state of the constructed object lies at the 
 core of the construction). The study of these  similarities would 
 deserve a  deeper investigation.
+
+The previous chapter explored an area of transactional memory
+research that focuses on improving STM protocols without effecting
+how the user interacts with the STM, that is by ensure some lower
+level properties or by increasing performance.
+While similiar to the previous chapter in suggesting propertes
+to implement and showing how a protocol can implement them,
+this chapter, on the other hand, also takes a more visible approch
+that directly effect the interaction between the programmer and
+the STM.
+Abstractly, it examines how the semantics are defined between
+the programmer and the STM protocol and suggests they be tightened
+or, more specifically, it looks at the semantics of aborted transactions
+and suggest they should be changed.
+While previous research has expected some level of interaction
+between the programmer and aborted transactions, this
+chapter suggests the notion of commit/abort be completely abstracted
+away from the programmer level left to be soely an implemntation
+concern.
+This frees the programmer from having to consider if his transacion
+might not commit and to eiter try to prevent such a situation, or to 
+come up with ways to deal with it when it does.
