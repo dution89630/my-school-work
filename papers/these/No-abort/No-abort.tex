@@ -282,8 +282,8 @@ Given that fault detection and recovery is a difficult problem especially in mas
 systems this is an obvious advantage of non-blocking algorithms.
 
 \paragraph{Non-blocking}
-The first non-blocking property is simply \emph{non-blocking}.
-A protocol that is non-blocking ensures that any thread will eventually make progress
+The first non-blocking property is \emph{obstruction-freedom}.
+A protocol that is obstruction-free ensures that any thread will eventually make progress
 as long as it is able to run by itself for long enough.
 This property ensure that no thread is ever stuck wating for another thread, but only guarantees
 progress in the absence of contention.
@@ -467,10 +467,10 @@ For example we might want a lock-free transactional memory protocol
 to ensure that at least one of the live transactions in the system will
 eventually commit.
 A more detailed analysis of non-blocking progress properties and
-transactional memory has been exaimned in \cite{}.
+transactional memory has been performed in \cite{}.
 In this work they define the non-blocking properties
 \emph{solo-progress}
-as a equivalent to the non-blocking property
+as a equivalent to the obstruction-freedom property
 for transactional memory and
 \emph{local-progress} as a equivalent
 of wait-freedome for transactional memory.
@@ -488,62 +488,34 @@ in faulty and faut-free systems with or without parisitic transactions
 tries to commit).
 They show that local-progess is impossible in a faulty system
 where each transaction is fixed to a certain process.
+An extended discussion on the possible/impossible liveness properties 
+of a STM system is presented by the same authors in \cite{GK10} where it is 
+also described  a general  lock-free STM system. This  system is 
+based on a mechanism similar to the Compare\&Swap used in this paper.
 
 \subsection{Previous approaches}
 
+In order to ensure levels of progress and cope with aborted transactions,
+several solutions have been proposed witch each taking differnt approches
+to progress.
+A whole range of solutions has been proposed.
+Some do not directly confront the problem of progress,
+focusing mainly on the performance of the protcols, while
+others  offer   ``best effort semantics'' 
+(which  means that there is no provable  strong guarantee)
+and others offer provable guarantess of progress.
 
-Several approaches have been proposed to cope with  aborted transactions.
-In some systems the  management of aborted transactions
-is left to the application programmer (similarly to  exception handling
-encountered  in  some systems). 
-%
-
-Other systems  offer   ``best effort semantics'' 
-(which  means that there is no provable  strong guarantee),
-an interesting example of this approach is the  technique
-called  {\it steal-on-abort} \cite{ALKJKW09}. 
- Its  base principle is the  following one.  If  a transaction $T1$
-is  aborted  due to  a  conflict with a transaction  $T2$,  $T1$ is
-assigned to  the processor  that executed  $T2$ in order  to prevent  
-a new conflict between   $T1$ and  $T2$. 
-
-Another approach consists in designing  schedulers that perform 
-particularly well in appropriate workloads, for example the case of
-read-dominated workloads is deeply investigated in \cite{AM09}.
-%
-Yet another approach consists of enriching the system with a 
-contention manager whose aim is to  improve performance and
-ensure (best effort or provable) progress guarantees. 
-An associated theory is described in \cite{GHP05}. 
-Failure detector-based contention managers (and corresponding 
-lower bounds) are described in \cite{GKK08}. 
-A construction to execute  parallel programs made up of {\it atomic blocks} 
-that have to be dispatched to queues accessed by threads (logical processors) 
-is presented in \cite{WF10}. 
-%
-Other related works are presented in Section \ref{sec:related-work}.
-
-
-
-
-
-%----------------------------------------------------------
-
-\section{Related work}
-\label{sec:related-work}
-
-As mentioned previously, the paper   presents a  new STM construction  that
-ensures that every  
-transaction issued by a process is necessarily committed and  each process 
-makes progress. To  our knowledge,  this  is the  first STM  system 
-we  know of  to combine  these
-concepts, but much work has been done previously on these two 
-``liveness''-related concepts when 
-implemented separately. This  section gives  a short  overview of that work.
-The presentation is not entirely fair as  the major part of the papers 
-that are cited here are efficiency-oriented while our construction is
-more theory-oriented.  
-
+\paragraph{Programmer's task}
+The least complex solution simply leaves the  management of aborted transactions
+to the application programmer (similarly to  exception handling
+encountered  in  some systems).
+In such systems the programmer has the choice to have the protocol execute 
+a chosen set of code when a transaction
+is aborted one or several times.
+This can be a powerful option for an experience programmer who knows the details
+of an transactional memory implemntation, but this thesis takes the view
+that the promary goal of transactional memory is ease-of-use and having programmers
+have to manage aborted transactions themselves goes against this goal.
 
 
 \paragraph{Contention Management} The idea is here to keep
@@ -554,6 +526,16 @@ transactions, stalling one of the transactions, or doing nothing.
 The idea  was  first (as far as we know) proposed  in  the dynamic 
 STM system (called DSTM) \cite{HLMS03} and much research has been done on the
 topic since then. 
+
+In some cases the contention manager's goal is to improve performance
+while others
+ensure (best effort or provable) progress guarantees or a combination. 
+An associated theory is described in \cite{GHP05}. 
+Failure detector-based contention managers (and corresponding 
+lower bounds) are described in \cite{GKK08}. 
+A construction to execute  parallel programs made up of {\it atomic blocks} 
+that have to be dispatched to queues accessed by threads (logical processors) 
+is presented in \cite{WF10}. 
 
 An overview  of different contention managers and their performance is
 presented  in \cite{GHP05}. Interestingly the authors find that there is no 
@@ -567,63 +549,49 @@ abort.  Similarly to  the ``Wait/Die''  or ``Wound/Wait''
 strategies used to solve deadlocks in some database systems  \cite{RSL78}, 
 preventing  transactions from committing is  achieved by either
 aborting them or directing them to wait. 
-By  doing  this   it  is  obvious  that  processes  with  conflicting
-transactions  make progress. Their progress  depends on the  process that
-issued the transaction  with the oldest time-stamp to commit. 
+By  doing  this it  is  obvious  that  processes  with  conflicting
+transactions  make progress.
+In these blocking solutions, a transaction's eventual commit depends
+on both on the  process that issued this transaction as well as the process
+that issued the transaction  with the oldest time-stamp.
 
-As discussed  in this paper,  committing every issued transaction  should be
-ensured by an STM. 
-Unfortunately,  using the  greedy contention  manager 
-to  ensure these  properties  is too expensive.  
-%
-To  get around  this,  some modern  STM's (e.g., for example  
+Unfortunately even though such contention managers exist that ensure
+all transactions commit, most
+STM implementations do not use them in the interest of performance
+and as a result provide less strong progress guarentees.
+As a solution to avoid these performance problems while still
+eventually providing strong progress,  some modern  STM's (e.g., for example  
 TinySTM  \cite{FFR08}   or  SwissSTM   \cite{DGK09})  use   less  expensive
-contention  management  until  a transaction  has been   aborted a  certain
+contention  management  until  a transaction  has been  aborted a  certain
 number  of times  at  which point greedy contention management is used. 
 
-\paragraph{Transactional Scheduling}  
-As we have seen, in order to help a transaction commit,  
-the proposed construction allows a transaction to be executed and committed
+\paragraph{Transactional Scheduling}
+Another approach to dealing with aborts consists in designing  schedulers that decide
+when and how transactions are executed in the system base on certain
+properties.
+One approach is to design schedules that perform 
+particularly well in appropriate workloads, for example the case of
+read-dominated workloads is deeply investigated in \cite{AM09}.
+
+Another interesting approach is
+called  {\it steal-on-abort} \cite{ALKJKW09}. 
+Its  base principle is the  following one.  If  a transaction $T1$
+is  aborted  due to  a  conflict with a transaction  $T2$,  $T1$ is
+assigned to  the processor  that executed  $T2$ in order  to prevent  
+a new conflict between   $T1$ and  $T2$. 
+Interestingly in order to help a transaction commit,  
+this scheduler allows a transaction to be executed and committed
 by a processor different  the one it originated from. 
-The idea  to execute  a transaction on   a different processor  has already
-been proposed  in \cite{ALKJKW09} and  \cite{AM09} where this idea is used
-to   provide processes with  a   type  of
-contention management refereed to as {\it transactional scheduling}. 
-A very short description of these papers has been given in  the introduction.
+%The idea  to execute  a transaction on   a different processor  has already
+%been proposed  in \cite{ALKJKW09} and  \cite{AM09} where this idea is used
+%to   provide processes with  a   type  of
+%contention management refereed to as {\it transactional scheduling}. 
 Like  contention  managers, these  schedulers  can  provide
 progress,  but  none of  them  ensure  the progress  of  a  process with  a
 transaction that conflicts with some  other transaction which has reached a
 point at which it  must not be aborted. This means that  the  progress of a
 process still  depends on the progress  of another process. 
 
-
-\paragraph{Obstruction-Freedom, Lock-Freedom} 
-Many STM systems have been proposed that do not use locks.
-Some of them  are obstruction-free  (e.g., \cite{HLMS03,ST97})
-or lock-free  (in the sense there is no deadlock) \cite{GHS08}.
-Unfortunately, none of them  provides the property that every issued 
-transaction is committed. At most, the transactions that are helped 
-in these papers are the ones in the process of committing.
-It can easily be seen that, with only this type of help,  some transaction 
-can be aborted indefinitely.
-
-In an obstruction-free STM system a transaction that is executed alone 
-must eventually commit. So consider some transaction that is always 
-stalled (before its commit operation) and, while it is stalled, 
-some conflicting transaction commits. It is easy to build an execution 
-in which this stalled transaction never commits.
-
-In a lock-free STM system, infinitely many transaction invocations must 
-commit   in  an infinite  execution.  Again it  is  possible  to build   an
-execution in which a transaction is always stalled  
-(before its commit operation) and is aborted by a concurrent transaction  
-(transactions cannot wait for this stalled transaction because they do not 
-know if it is making progress).
-
-An interesting discussion on the possible/impossible liveness properties 
-of a STM system is presented in \cite{GK10} where is 
-also described  a general  lock-free STM system. This  system is 
-based on a mechanism similar to the Compare\&Swap used in this paper.
 
 \paragraph{Irrevocable Transactions} 
 The  aim  of  the  concept   of  {\it  irrevocable}  (or  {\it  inevitable})
@@ -679,6 +647,45 @@ technique to deal with  non-terminating transactions.
 %completes while in isolation it is then  retried in the normal mode.  
 
 
+\paragraph{Obstruction-Freedom, Lock-Freedom} 
+There have been several proposals for non-blocking STM protocols,
+some of them  are obstruction-free  (e.g., \cite{HLMS03,ST97}),
+while others are lock-free  (in the sense there is no deadlock) \cite{GHS08}.
+
+Unfortunately, none of them  provides the property that every issued 
+transaction is committed.
+In an obstruction-free STM system a transaction that is executed alone 
+must eventually commit. So consider some transaction that is always 
+stalled (before its commit operation) and, while it is stalled, 
+some conflicting transaction commits. It is easy to build an execution 
+in which this stalled transaction never commits.
+
+In a lock-free STM system, infinitely many transaction invocations must 
+commit   in  an infinite  execution.  Again it  is  possible  to build   an
+execution in which a transaction is always stalled  
+(before its commit operation) and is aborted by a concurrent transaction  
+(transactions cannot wait for this stalled transaction because they do not 
+know if it is making progress).
+
+As described in the previous section,
+in order for the described universal constructions ensure that each operation
+is performed succesfully, threads must help other threads by executing
+eachother's operations.
+In previously proposed non-blocking STM, helping only occurs
+with transactions that are in the process of committing.
+With only this type of help,  some transaction 
+can be aborted indefinitely without violating safety.
+Consider for example a thread $T1$ transaction $t1$
+and a seperate thread $T2$ that executes an infinate sequence of the
+same transaction $t2$.
+Now simply consider a history as follows that is repeated infiantely, $t2$ starts executing,
+$t1$ starts executing, $t2$ commits, $t1$ noticies that it conflicts with
+$t2$ so it must abort.
+In such a history $t1$ will always abort before it reaches the commitial phase
+so if blocking is not allowed, helping only in the commital phase will not
+ensure the commitial of every transaction.
+
+
 
 \subsection{Ensuring transaction completion}
 As seen in the previous section there are many ways to cope with aborted transactions
@@ -694,6 +701,11 @@ commit.
 In such a case the ease-of-use is put under higher prioroity
 given that the programmer does not even have to worry about the concept
 of an aborted transactions.
+
+It should be noted that the presentation is not entirely fair as  the major part of the papers 
+that are cited here are efficiency-oriented while our construction is
+more theory-oriented.
+
 
 \subsection{A short comparison with object-oriented universal construction}
 \label{sec:comparison-Herlihy}
@@ -751,6 +763,22 @@ is the  systematic use of  speculative execution.
 Even  if  efficiency is   not a  first class  requirement addressed  in our
 work, the notion of a  speculative  execution  can  be  a  basis  for  future
 work  on  universal construction  that will focus on efficiency. 
+
+
+
+
+
+
+\section{A universal construction for transaction based programs}
+
+As mentioned previously, the paper   presents a  new STM construction  that
+ensures that every  
+transaction issued by a process is necessarily committed and  each process 
+makes progress. To  our knowledge,  this  is the  first STM  system 
+we  know of  to combine  these
+concepts, but much work has been done previously on these two 
+``liveness''-related concepts when 
+implemented separately. This  section gives  a short  overview of that work.
 
 
 
