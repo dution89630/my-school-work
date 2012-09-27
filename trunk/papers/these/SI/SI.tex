@@ -192,14 +192,68 @@ At this point we will go back to the discussion of the previous chapter
 on the difference between an operation on a concurrent object
 and a transaction.
 Let us try to motivate the difference by using an example.
-The most studied and used concurrent objects are shared data structures
-like a tree object implementing a set abstraction.
-This abstraction might provide the operations $insert(K)$
-which adds $K$ to the set if it does not already exist, returning $true$
+For a concurrent object let us look at the common example of a tree
+data structure implementing the set abstraction.
+This abstraction might provide the following operations:
+$insert(K)$ which adds $K$ to the set if it does not already exist, returning $true$
 on success, $delete(K)$ which removes $K$, if it exists, from the set
 returning $true$ on success, and $contains(K)$ returning $true$ if $K$
 exists in the set.
+There are two importnat things to notice, first is that these operations
+are contained to their data structre implementation, the status of shared
+memory outside of the data structure has no affect on these operations.
+Second is that these operations fully implemnt the desired abstraction,
+a user chooses to use this specific implementation because he needs
+the $insert$, $delete$, and $contains$ operations.
+If he wanted addtional functionality such as in-order iteration, then
+he would have to choose a different implemntation providing the appropriate
+abstraction.
+In a way the data structure is a seperate entity from that of the program
+created by the user where the user has access to this entity through
+the interface given by the abstraction.
 
+Transactions on the other hand are integreated into the users program
+rather then compromising some seperate entity.
+When a user places a trasaction in his code it is because he requires
+synchronization between the processes of his program, this synchronization
+does not have to be based on some predefined abstraction or only access
+some contained structure.
+The concept of the transaction allows the programmer to be free to
+perform any sort of operation, performing reads and write to any
+location in the shared memory.
+In this sense the transaction is a different type of mechanism
+then a concurrent object as transactions are contained within
+a user's program instead of being separate entities behind
+a fixed interface.
+
+At a low level the difference between a transaction and an operation
+on a shared object might imply certain protocol design chocies.
+For example the previous chapter highlighted some of the implementation
+differences between a traditional universal construction and a
+universal construction for transaction based programs.
+But before we consider implementation details we must consider how
+the differences can be considered at an abstraction level.
+Following the example of the previous chapter, this introduction
+has expressed the view that transactions exsits as an integrated part of
+a users program.
+The pricipal concept of transactional memory is that within a transaction
+the programmer calls $transaction\_read$ and $transaction\_write$ opertaions.
+These operations are performed on the shared memory locations that a
+programmer wants to access from within a transacion and the STM protocol
+takes care of the difficult synchronization in order to ensure these opperations
+appear as if they happen atomically.
+At this point we have an important choice to consider dealing with the
+shared memory that is accessed from within a transaction.
+Should the shared memory that is accessed from within a transaction
+be only safely accessable from within transactions, or should it be
+safe to access memory inside and outside of transactions at any time,
+or should it be something inbetween.
+The follwoing section will discuss previous solutions on how to deal
+with concurrent accesses to shared memory inside and outside of transactions,
+followed by a discussion of where we think these solutions fall short
+when considering ease-of-use before presenting a possible solution.
+
+\subsection{Dealing with transactional and non-transactional memory accesses}
 
 \paragraph{Strong vs Weak Isolation.}
 TM has to guarantee that transactions will be isolated from each other, but
