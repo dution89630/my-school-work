@@ -164,15 +164,41 @@
 
 \section{Introduction}
 
+By satisfying a consistency condition a concurrent protocol allows the
+user of that protocl to reason about how that protocl will perform in
+a concurrent setting.
+For example a concurrent data structure that satisfies linearizability
+means that the operations of a data strcuture will have a global order
+base on real time.
+This allows, for example, the programmer to use reasoning such as the follwing
+when programming some network based service, if user $A$ who
+is being serviced by thread $T_A$ changes his status to online (adding him
+to the set of online users backed by a linearizable concurrent data structure)
+then a query that is performed after the completion of the status change
+on this set by user $B$ serviced by thread $T_B$ is guaranteed to contain
+user $A$.
+Without linearizability the programmer can use this reasoning, he might then
+have to consider that the query by thread $T_B$ might or might not include $A$
+leaving the programmer to have to come up with a solution for this.
 
-\paragraph{STM Systems.}
-Transactional Memory (TM) \cite{herlihy93,shavit95} has  emerged  as  an  attempt  to allow  concurrent  programming  based  
-on sequential reasoning:  By  using  TM,  a  user  should  be able  to  write  a  correct  concurrent application, provided she can  
-create a correct  sequential program. The underlying TM  system takes care of  the correct  implementation of  concurrency.  
-However,  while most existing  TM algorithms consider applications  where  shared  memory  will  be  accessed  solely by  code  
-enclosed  in a transaction,  it still seems   imperative to  examine the  possibility that memory is accessed both inside and outside 
-of transactions.
+Likewise in transactional memory, a correctness condition helps the
+programmer reason about how he can use transactions in his programs.
+For example opacity ensures that all transactions have a global order
+and each transaction appears to have happened instantly at some point
+in time between its invocation and commital.
+This allows the programmer ....
 
+At this point we will go back to the discussion of the previous chapter
+on the difference between an operation on a concurrent object
+and a transaction.
+Let us try to motivate the difference by using an example.
+The most studied and used concurrent objects are shared data structures
+like a tree object implementing a set abstraction.
+This abstraction might provide the operations $insert(K)$
+which adds $K$ to the set if it does not already exist, returning $true$
+on success, $delete(K)$ which removes $K$, if it exists, from the set
+returning $true$ on success, and $contains(K)$ returning $true$ if $K$
+exists in the set.
 
 
 \paragraph{Strong vs Weak Isolation.}

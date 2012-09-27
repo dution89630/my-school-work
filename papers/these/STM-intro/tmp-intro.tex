@@ -284,6 +284,13 @@ associated   with transactions.
 
 
 
+\paragraph{STM Systems.}
+Transactional Memory (TM) \cite{herlihy93,shavit95} has  emerged  as  an  attempt  to allow  concurrent  programming  based  
+on sequential reasoning:  By  using  TM,  a  user  should  be able  to  write  a  correct  concurrent application, provided she can  
+create a correct  sequential program. The underlying TM  system takes care of  the correct  implementation of  concurrency.  
+However,  while most existing  TM algorithms consider applications  where  shared  memory  will  be  accessed  solely by  code  
+enclosed  in a transaction,  it still seems   imperative to  examine the  possibility that memory is accessed both inside and outside 
+of transactions.
 
 
 
