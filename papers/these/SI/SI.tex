@@ -259,6 +259,18 @@ with concurrent memory accesses inside and outside of transactions each
 with different implication on how the programmer uses STM.
 
 \paragraph{Weak isolation}
+Transactional memories implementing \emph{weak isolation} make no guarantee
+about concurrent transactional and non-transactional memory accesses.
+Most current high performance STM protocols implement weak isolation
+as providing stronger guarantees tend to have an impact on performance.
+
+While weak isolation  violates the isolation principle of
+the  transaction abstraction, it could nevertheless be anticipated and used
+appropriately by the  
+programmer,  still resulting  in correctly  functioning  applications. This
+would require the programmer 
+to  be conscious  of  eventual race  conditions  between transactional  and
+non-transactional code that can change depending on the STM system used.  
 
 
 \paragraph{Privitization}
@@ -281,13 +293,6 @@ isolation}.  (This  distinction  of   guarantees  was  originally  made  in
 \cite{blundell06},  where   reference  was  made   to  {}``weak
 atomicity'' versus {}``strong atomicity''.) 
 
-While weak isolation  violates the isolation principle of
-the  transaction abstraction, it could nevertheless be anticipated and used
-appropriately by the  
-programmer,  still resulting  in correctly  functioning  applications. This
-would require the programmer 
-to  be conscious  of  eventual race  conditions  between transactional  and
-non-transactional code that can change depending on the STM system used.  
 
 
 \paragraph{Desirable Properties.}
