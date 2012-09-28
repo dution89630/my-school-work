@@ -254,8 +254,21 @@ followed by a discussion of where we think these solutions fall short
 when considering ease-of-use before presenting a possible solution.
 
 \subsection{Dealing with transactional and non-transactional memory accesses}
+Like dealing with aborted transactions there are several ways to deal
+with concurrent memory accesses inside and outside of transactions each
+with different implication on how the programmer uses STM.
 
-\paragraph{Strong vs Weak Isolation.}
+\paragraph{Weak isolation}
+
+
+\paragraph{Privitization}
+
+
+\paragraph{Solution from scott}
+
+
+\paragraph{Strong isolation}
+
 TM has to guarantee that transactions will be isolated from each other, but
 when it  comes to transactions and non-transactional  operations, there are
 two  paths a  TM system  can follow:  it may  either act  oblivious  to the
