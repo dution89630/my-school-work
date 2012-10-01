@@ -164,20 +164,28 @@
 
 \section{Introduction}
 
+In this chapter we will look at how a programmer might use transactions
+within his code
+in order to suggest a change to the traditional semantics of a transaction.
+Following the example of the previous chapter we will promote our change
+of semantics by contransting transactions to concurrent objects.
+
+A discussion on semantics the of concurrent protocols is meaningless without
+first considering consistency conditions.
 By satisfying a consistency condition a concurrent protocol allows the
-user of that protocl to reason about how that protocl will perform in
-a concurrent setting.
+user of that protocol to reason about how he can use it in his program
+in a concurrent setting.
 For example a concurrent data structure that satisfies linearizability
 means that the operations of a data strcuture will have a global order
-base on real time.
-This allows, for example, the programmer to use reasoning such as the follwing
-when programming some network based service, if user $A$ who
+based on the invocation and completion time of operations.
+This allows, for example, a programmer who is coding some user based service
+to use reasoning such as: if user $A$ who
 is being serviced by thread $T_A$ changes his status to online (adding him
 to the set of online users backed by a linearizable concurrent data structure)
-then a query that is performed after the completion of the status change
-on this set by user $B$ serviced by thread $T_B$ is guaranteed to contain
+then a following query for the names of online users
+by user $B$ serviced by a different thread $T_B$ is guaranteed to contain
 user $A$.
-Without linearizability the programmer can use this reasoning, he might then
+Without linearizability the programmer cannot necessarily use this reasoning, he might then
 have to consider that the query by thread $T_B$ might or might not include $A$
 leaving the programmer to have to come up with a solution for this.
 
@@ -188,29 +196,32 @@ and each transaction appears to have happened instantly at some point
 in time between its invocation and commital.
 This allows the programmer ....
 
-At this point we will go back to the discussion of the previous chapter
+At this point we will add
+the discussion of the previous chapter
 on the difference between an operation on a concurrent object
-and a transaction.
-Let us try to motivate the difference by using an example.
-For a concurrent object let us look at the common example of a tree
+and a transaction to the current discussion of correctness conditions.
+Let us start by tring to motivate the difference between transactions
+and operations by using an example.
+For a concurrent object consider the common example of a tree
 data structure implementing the set abstraction.
-This abstraction might provide the following operations:
+This abstraction might provide the following lineariable operations:
 $insert(K)$ which adds $K$ to the set if it does not already exist, returning $true$
 on success, $delete(K)$ which removes $K$, if it exists, from the set
 returning $true$ on success, and $contains(K)$ returning $true$ if $K$
-exists in the set.
-There are two importnat things to notice, first is that these operations
+exists in the set, $false$ otherwise.
+Here there are two importnat things to point out, first is that these operations
 are contained to their data structre implementation, the status of shared
 memory outside of the data structure has no affect on these operations.
-Second is that these operations fully implemnt the desired abstraction,
+Second is that these operations fully implemnt the desired abstraction
+(in this case a set),
 a user chooses to use this specific implementation because he needs
 the $insert$, $delete$, and $contains$ operations.
 If he wanted addtional functionality such as in-order iteration, then
 he would have to choose a different implemntation providing the appropriate
 abstraction.
-In a way the data structure is a seperate entity from that of the program
-created by the user where the user has access to this entity through
-the interface given by the abstraction.
+This might lead the programmer to consider data structure as a seperate entity
+from that of thit program where this entity is accessable through some fixed
+interface, he need not be aware of the implementation below the interface.
 
 Transactions on the other hand are integreated into the users program
 rather then compromising some seperate entity.
@@ -222,64 +233,155 @@ The concept of the transaction allows the programmer to be free to
 perform any sort of operation, performing reads and write to any
 location in the shared memory.
 In this sense the transaction is a different type of mechanism
-then a concurrent object as transactions are contained within
+then a concurrent object as transactions are integreated and contained within
 a user's program instead of being separate entities behind
 a fixed interface.
 
+So we have concurrent objects whose operations follow some correctness condition
+allowing them to be accessed as something interesting to the programmer as
+a seperate entity.
+And transactions which appear as atomic blocks (thanks to the STM protocol
+satisfying a correctness condition) built into a users program.
 At a low level the difference between a transaction and an operation
-on a shared object might imply certain protocol design chocies.
+on a shared object might imply separate protocol design chocies.
 For example the previous chapter highlighted some of the implementation
 differences between a traditional universal construction and a
 universal construction for transaction based programs.
-But before we consider implementation details we must consider how
-the differences can be considered at an abstraction level.
-Following the example of the previous chapter, this introduction
-has expressed the view that transactions exsits as an integrated part of
+
+But, let us step backwards for a moment and look at a higher level.
+Before we consider implementation details we must consider how
+how the programmer interacts with a transaction is considered at an abstraction level.
+The previous discussion
+has expressed the view that transactions exsit as an integrated part of
 a users program.
-The pricipal concept of transactional memory is that within a transaction
-the programmer calls $transaction\_read$ and $transaction\_write$ opertaions.
-These operations are performed on the shared memory locations that a
-programmer wants to access from within a transacion and the STM protocol
-takes care of the difficult synchronization in order to ensure these opperations
+This happens when the programmer places a group of reads and writes
+inside a block of code bouded by the keywords $transaction\_begin$ and
+$transaction\_end$.
+Inside this block of code reads and writes to shared memory are then
+treated by the STM protocol as calls to the operations
+$transaction\_read$ and $transaction\_write$.
+The STM protocol then
+takes care of the difficult synchronization in order to ensure these transactions
 appear as if they happen atomically.
-At this point we have an important choice to consider dealing with the
-shared memory that is accessed from within a transaction.
-Should the shared memory that is accessed from within a transaction
+At this point we have an important choice to make dealing with the
+semantics of a transaction when considering shared memory.
+Should the transactions appear to be atomic only with other transactions, or should
+concurrent non-transactional shared memory accesses also be considered?
+More precisely, should the shared memory that is accessed from within a transaction
 be only safely accessable from within transactions, or should it be
 safe to access memory inside and outside of transactions at any time,
-or should it be something inbetween.
-The follwoing section will discuss previous solutions on how to deal
-with concurrent accesses to shared memory inside and outside of transactions,
-followed by a discussion of where we think these solutions fall short
-when considering ease-of-use before presenting a possible solution.
+or should it be something inbetween?
+
+When putting ease-of-use as the primary requirement of transactional memory
+as well considering the discussion on transactions vs operations on concurrent objects
+the answer seems clear.
+If within a program there are two sets of shared memory, one set for accessing inside
+transactions, and another set for accessing outside of transactions, then we loose a
+bit of the integration concept for a bit more of the seperated object concept.
+One way to think of it is that the transactions represent at programmer defined
+interface to one large discrete shared object.
+Transactions are still defined and placed by the programmers, but they are limited
+in what memory they can access.
+On the other hand if the programmer can access shared memory both inside and outside
+of transactions while the system is still ensurubg the atomicity of the transactions then
+we have a more straightforward integrated system.
+
+Before giving a more precise defininition on what we mean by this,
+th next section will discuss previous solutions on how to deal
+with concurrent accesses to shared memory inside and outside of transactions
+and where we think they fall short on the ease-of-use objective.
 
 \subsection{Dealing with transactional and non-transactional memory accesses}
-Like dealing with aborted transactions there are several ways to deal
-with concurrent memory accesses inside and outside of transactions each
-with different implication on how the programmer uses STM.
+% Like dealing with aborted transactions there are several ways to deal
+% with concurrent memory accesses inside and outside of transactions each
+% with different implication on how the programmer uses STM.
 
 \paragraph{Weak isolation}
 Transactional memories implementing \emph{weak isolation} make no guarantee
 about concurrent transactional and non-transactional memory accesses.
-Most current high performance STM protocols implement weak isolation
+Interestingly most current high performance STM protocols implement weak isolation
 as providing stronger guarantees tend to have an impact on performance.
+Normally an STM protocol that implemnts weak isolation expects users to avoid
+any concurrent interaction between the shared memory outside and inside of
+transactions.
+In most cases this is because the type of consistency guaranteed is undefined
+and in fact usually differes based on the implementation.
+Again we avoid this solution as we believe making the user have one section
+of memory reserved for his transaction and another section for other shared
+operations is not only more of a challenge, but is not consistent with
+the concpet of transactions being integrated within a program.
 
-While weak isolation  violates the isolation principle of
-the  transaction abstraction, it could nevertheless be anticipated and used
-appropriately by the  
+Nevertheless be anticipated and used
+appropriately by the 
 programmer,  still resulting  in correctly  functioning  applications. This
 would require the programmer 
 to  be conscious  of  eventual race  conditions  between transactional  and
-non-transactional code that can change depending on the STM system used.  
+non-transactional code that can change depending on the STM system used.
+Not only can this make transactional code extreemly difficult to write
+and understand, but a simple change in the STM protocol could render the
+program useless.
 
+
+\pargraph{Specialized transactions}
+The previous paragraph mentioned that in some cases a programmer using
+an STM that satisfies
+weak isolation can deal with concurrency issues between transactional
+and non-transactional accesses himself.
+In such circumstances the programmer is likely concerning himself
+with these issues in the intrest of performance.
+
+In the interest of performance over ease-of-use some solutions
+have been proposed allowing the programmer to weaken the atomicity of his transactions.
+Usually this involves marking certain reads within a transaction
+to not be treated as normal transactional reads.
+DSTM \cite{HLMS03} introduced the concept of \emph{early-release}, giving a programmer
+the ability to remove locations from the read set of a transaction,
+in the hope of improving performance by lessening the likelyhood of a
+transactional abort.
+\emph{Elastic} transactions \cite{FGG09} allow a programmer to mark transactions that
+satisfy a weaker consistency condition then opacity allowing for efficient
+implementations of search data structures.
+While this chapter focuses on the interaction between shared memory accesses
+inside and outside of transactions, we felt it was interesting to mention
+these solutions as in a way they allow a sort of non-transactional read
+to be preformed from within a transaction.
 
 \paragraph{Privitization}
+Privitization is an interesting solution problem to the splitting of memory
+between transactions and non-transactional accesses.
+As the name implies, privitization gives the programmer the ability
+to privitize sections memory that was previously shared to a specific process.
+The programmer does this through the use of what is called a privitizing transaction
+within which he makes some memory unaccessable from other processes' transactions.
+Once a process has privitized some memory then is safe
+to access it outside of transactions.
+After privitizaion, memory can then be publicized to be accessed
+from within transactions again
+by using a publication transaction.
+\anote{Need to put in citations for these}
+Several protocols implementing privitization have been proposed,
+ranging from solutions where a programmer uses a special keyword to mark
+which transactions are privitizing, to others that ensure safety by having
+a privtizing transaction block until all other concurrent transactions
+have finished, to more complex non-blocking solutions.
 
+A main advatage of privitizaion is in the case of performance, as when
+a thread privitizes some memory, it can then access it without overhead.
+While privitization is an interesting solution, we feel that is does not
+fit in our model of ease-of-use for two main reasons.
+Firstly the seperation between the memory safe to access by transactions
+and that safe to access outside of transactions is still separated, privitization/
+publication just gives the user the abitiy to dynamically move sections of memory
+from one part to another.
+Secondly it adds an extra layer of complication to the transactional memory
+abstraction, if the programmer wants to takes advatage of privitization he
+has to decide when and what to privitize and publicize.
 
 \paragraph{Solution from scott}
-
+\anote{Need to read and cite}
 
 \paragraph{Strong isolation}
+
 
 TM has to guarantee that transactions will be isolated from each other, but
 when it  comes to transactions and non-transactional  operations, there are
@@ -337,12 +439,12 @@ conventional  read  or write operations that have to be performed  outside  of  
 %The  possible ``bad  scenarios''  of  running
 %transactional and non-transactional code in  
 %the absence of strong isolation 
-Possible violations of correctness under strong isolation are reviewed in Sect. 
-\ref{sec:badthings}. The TL2 algorithm is described in Sect. \ref{sec:tl2}. 
-Section \ref{sec:protocol} describes  the proposed algorithm that implements
-strong isolation for TL2, while  
-Sect. \ref{sec:conclusions}  concludes the paper by  summarizing the work
-and examining possible applications.  
+% Possible violations of correctness under strong isolation are reviewed in Sect. 
+% \ref{sec:badthings}. The TL2 algorithm is described in Sect. \ref{sec:tl2}. 
+% Section \ref{sec:protocol} describes  the proposed algorithm that implements
+% strong isolation for TL2, while  
+% Sect. \ref{sec:conclusions}  concludes the paper by  summarizing the work
+% and examining possible applications.  
 
 
 
