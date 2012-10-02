@@ -164,9 +164,17 @@
 
 \section{Introduction}
 
-In this chapter we will look at how a programmer might use transactions
-within his code
-in order to suggest a change to the traditional semantics of a transaction.
+Simplified transaction semantics may not be enough.
+In the interest of ease-of-use, each chapter in this thesis has had
+a primary focus on transaction semantics.
+The first chapert suggested improving STM
+protocols without changing the semantics of a transaction, the second
+chapter suggested simplifying the semantics of a transaction,
+and this chapter will suggest expanding the semantics.
+It will look at how a programmer might use transactions
+within his code in order to suggest the expansion of transactional
+semantics again in the interest of ease-of-use.
+
 Following the example of the previous chapter we will promote our change
 of semantics by contransting transactions to concurrent objects.
 
@@ -175,7 +183,7 @@ first considering consistency conditions.
 By satisfying a consistency condition a concurrent protocol allows the
 user of that protocol to reason about how he can use it in his program
 in a concurrent setting.
-For example a concurrent data structure that satisfies linearizability
+For example having a concurrent data structure that satisfies linearizability
 means that the operations of a data strcuture will have a global order
 based on the invocation and completion time of operations.
 This allows, for example, a programmer who is coding some user based service
@@ -196,12 +204,22 @@ and each transaction appears to have happened instantly at some point
 in time between its invocation and commital.
 This allows the programmer ....
 
-At this point we will add
-the discussion of the previous chapter
-on the difference between an operation on a concurrent object
-and a transaction to the current discussion of correctness conditions.
-Let us start by tring to motivate the difference between transactions
-and operations by using an example.
+As the above examples illustrate, it is necessary for a concurrent protocol
+to satisfy a clear and straightforward consistency condition in order
+for a programmer to reason about how to use it.
+% The previous chapter used the example of a universal construction for
+% concurrent objects in order to movivate the design of a STM protocol
+% with similar guarantees of progress.
+% It also highlighted the diffrenece between an operation on a concurrent object
+% and a transaction to show how the protocols differ in design.
+% This chapter will use these difference to motivate an addition to the
+% semantics of transactions.
+Now we will suggest that due to the way transactions are used in a program
+an STM protocol must satisfy more then a correctness condition
+such as opacity that is only coconcerend with transactions.
+The reason for this is best seen by going back to the comparison of
+a transaction and an operation on a concurrent object.
+
 For a concurrent object consider the common example of a tree
 data structure implementing the set abstraction.
 This abstraction might provide the following lineariable operations:
@@ -264,7 +282,7 @@ The STM protocol then
 takes care of the difficult synchronization in order to ensure these transactions
 appear as if they happen atomically.
 At this point we have an important choice to make dealing with the
-semantics of a transaction when considering shared memory.
+semantics and correctness of a transaction when considering shared memory.
 Should the transactions appear to be atomic only with other transactions, or should
 concurrent non-transactional shared memory accesses also be considered?
 More precisely, should the shared memory that is accessed from within a transaction
@@ -297,16 +315,14 @@ and where we think they fall short on the ease-of-use objective.
 % with different implication on how the programmer uses STM.
 
 \paragraph{Weak isolation}
-Transactional memories implementing \emph{weak isolation} make no guarantee
+STM protocols implementing \emph{weak isolation} make no guarantee
 about concurrent transactional and non-transactional memory accesses.
-Interestingly most current high performance STM protocols implement weak isolation
-as providing stronger guarantees tend to have an impact on performance.
 Normally an STM protocol that implemnts weak isolation expects users to avoid
 any concurrent interaction between the shared memory outside and inside of
 transactions.
 In most cases this is because the type of consistency guaranteed is undefined
 and in fact usually differes based on the implementation.
-Again we avoid this solution as we believe making the user have one section
+In this thesis we do not accept this solution as we believe making the user have one section
 of memory reserved for his transaction and another section for other shared
 operations is not only more of a challenge, but is not consistent with
 the concpet of transactions being integrated within a program.
@@ -321,19 +337,21 @@ Not only can this make transactional code extreemly difficult to write
 and understand, but a simple change in the STM protocol could render the
 program useless.
 
+It is important to note that most current high performance STM protocols implement weak isolation
+as providing stronger guarantees tend to have an impact on performance.
 
 \pargraph{Specialized transactions}
 The previous paragraph mentioned that in some cases a programmer using
 an STM that satisfies
 weak isolation can deal with concurrency issues between transactional
 and non-transactional accesses himself.
-In such circumstances the programmer is likely concerning himself
-with these issues in the intrest of performance.
-
-In the interest of performance over ease-of-use some solutions
-have been proposed allowing the programmer to weaken the atomicity of his transactions.
-Usually this involves marking certain reads within a transaction
-to not be treated as normal transactional reads.
+Usually a programmer will porpously subject himself to these
+difficulties in the interest of performance.
+Examining some of these performance over ease-of-use concepts, serveral
+STM protocols have been proposed allowing the existance of transactions
+that might not apper as being atomic.
+These protcols often focus on ways to give the programmer the power to weaken the semantics
+of certain transactions or even specific reads within transactions.
 DSTM \cite{HLMS03} introduced the concept of \emph{early-release}, giving a programmer
 the ability to remove locations from the read set of a transaction,
 in the hope of improving performance by lessening the likelyhood of a

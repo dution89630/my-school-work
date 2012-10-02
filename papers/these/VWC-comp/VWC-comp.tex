@@ -2899,15 +2899,18 @@ desinged to satisfy them, and how trade-offs in these proterties can be made for
 Hopefully these contributions have convinced the reader that studing such combinations is important for understanding
 transactional memory and will help inspire similar research on the many combinations
 left unexamined.
+Importantly this suggests that weakening the transactional model in the interest
+of improving performance might not be necessary, as much of what is possible under the current
+model has yet to be exaimed.
 
-As a final note on ease-of use, it should be said that the STM protocols introduced in this chapter are similar to
-the majority of published work on transactional memory in that they concern
-designing an efficient protcol satisfying without modifying the idea of a transaction.
-What is important to realize is that all this work has no impact on how the programmer
-understands the transaction, it puts ease-of-use first.
-In the following chapters we will examine some of what we consider shortcomings
-of the commonly used transactional model and how to improve them.
-
+As a final note on ease-of use, it should be said that the research direction suggested in
+this chapter is also similar in a way to that of
+the majority of published work on transactional memory in that it concerns itself with
+designing an efficient protcol without modifying the idea of a transaction.
+Each of the protocols presented in these various works have no impact on how the programmer
+understands the transaction which, in a way, puts ease-of-use first.
+The following chapters will take a different direction, examing some of what we consider shortcomings
+of the commonly used transactional model and how to improve it.
 
  
 % This chapter has investigated the relation linking read invisibility, 

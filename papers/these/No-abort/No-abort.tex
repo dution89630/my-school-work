@@ -2518,22 +2518,46 @@ deserve a  deeper investigation.
 
 The previous chapter explored an area of transactional memory
 research that focuses on improving STM protocols without effecting
-how the user interacts with the STM, that is by ensure some lower
+how the user interacts with the STM, that is by ensuring some implementation
 level properties or by increasing performance.
-While similiar to the previous chapter in suggesting propertes
-to implement and showing how a protocol can implement them,
-this chapter, on the other hand, also takes a more visible approch
+This chapter, while similiar to the previous chapter in suggesting propertes
+and showing how a protocol can implement them,
+takes a more visible approch
 that directly effect the interaction between the programmer and
 the STM.
 Abstractly, it examines how the semantics are defined between
-the programmer and the STM protocol and suggests they be tightened
-or, more specifically, it looks at the semantics of aborted transactions
-and suggest they should be changed.
-While previous research has expected some level of interaction
-between the programmer and aborted transactions, this
+the programmer and the STM protocol and suggests they be simplified.
+Previous research has expected some level of interaction
+between the programmer and aborted transactions, while this
 chapter suggests the notion of commit/abort be completely abstracted
 away from the programmer level left to be soely an implemntation
 concern.
 This frees the programmer from having to consider if his transacion
 might not commit and to eiter try to prevent such a situation, or to 
 come up with ways to deal with it when it does.
+
+As a final motivation for thse simplifited semantics, let us consider how it compares
+to the consistency condition of opacity.
+Opacity differs from linearizability or serializibility in that
+it frees the programmer from having to worry about consistency
+issuses that could arrise in aborted transactions.
+This liveness suggessted in this chapter for STM protocols differes
+from previous suggestions in that it frees the programmer from
+having to worry that his transaction might not commit.
+In a way it can be considered the equivalent to opacity except
+opacity considers correctness (bad things happening in aborted transactions),
+while this chapter considers liveness (a transaction that is only aborted).
+
+Without opacity the programmer has to come up with solutions in order
+to prevent things like such as invalid pointers, infinate loops, or divide by $0$ errors
+from happening in aborted transactions.
+Without the liveness suggested in this chapter a programmer has to come
+up with solutions in the case that a transaction is not able to progress
+due to the actions of some other process in the system.
+
+Further research is still needed on how the semantics of a transaction
+can be simplified.
+For example currently transactions are only able to contain reads
+and writes, while things that input and output are not allowed,
+and the interaction between transactions and other synchronization
+methods is undefined or prohibited.
