@@ -348,10 +348,10 @@ the  transaction{}'s   execution.
 % acceptable for an application, then the responsibility to prevent it is  
 % delegated   to  the   programmer  of   concurrent  applications   for  this
 % system.
-Nevertheless, this can be anticipated and used
+Nevertheless, these concurrecny issuses can be anticipated and used
 appropriately by the 
 programmer,  still resulting  in correctly  functioning  applications.
-Ways of how a programmer might consider weak isolation in his code
+Ways of how a programmer might consider to use weak isolation in his code
 is presented in \cite{blundell06}.
 This requires the programmer 
 to  be conscious  of  eventual race  conditions  between transactional  and
@@ -359,28 +359,30 @@ non-transactional code that can change depending on the STM system used.
 Not only can this make transactional code extreemly difficult to write
 and understand, but a simple change in the STM protocol could render the
 program useless.
+Obviously this is not a good solution to concurrent transactional and non-transactional
+access when considering ease-of-use.
 
 More commonly, an STM protocol that implemnts weak isolation expects users to avoid
 any concurrent interaction between the shared memory outside and inside of
 transactions.
 This is because the type of consistency guaranteed is usually undefined
 and depends on the implementation of the STM protocol used.
-In this thesis we do not accept this solution as we believe making the user have one section
-of memory reserved for his transaction and another section for other shared
-operations is not only more of a challenge, but is not consistent with
+A programmer already has to consider different types of memory such as thread local
+process local and shared memory so having him decide what memory should be transactional
+and what should not be just adds an additional burden to the programmer.
+Along with this, having a seperate section of memory for transactions is also not consistent with
 the concpet of transactions being integrated within a program.
-
+It is for these reasons that when considering transactional and non-transactional accesses
+we want something stronger then weak isolation in order to keep things
+as simple as possible for the programmer.
 
 It is important to note that most current high performance STM protocols implement weak isolation
 as providing stronger guarantees tend to have an impact on performance.
 
 
 
-
 % Under weak isolation, transactional and non-transactional operations can be
 % concurrent, but the programmer has to be aware of how to handle these.
-
-
 
 
 
@@ -411,38 +413,30 @@ to be preformed from within a transaction.
 Privitization is an interesting solution problem to the splitting of memory
 between transactions and non-transactional accesses.
 As the name implies, privitization gives the programmer the ability
-to privitize sections memory to a specific process that were previously shared.
+to privitize sections memory to a specific process giving it exclusive access to
+memory that was previously shared.
 The programmer does this through the use of what is called a privitizing transaction
 within which he makes some memory unaccessable from other processes' transactions.
 Once a process has privitized some memory then is safe
-to access it outside of transactions.
+to access it outside of transaction within the privitizing thread.
 After privitizaion, memory can then be publicized to be accessed
 from within transactions again
 by using a publication transaction.
 
 A typical  example of privatization would  be the manipulation  of a shared
-linked list. The  removal of a node by a  transaction $T_i$, for private
-use, through  non-transactional  code,  by  the process  that  invoked $T_i$,  
+linked list. The  removal of a node $n$ by a  transaction $T_i$, for private
+use, through  non-transactional  code,  by  the process $p$ that  invoked $T_i$,  
 constitutes  privatization. Then, $T_i$  is called privatizing transaction. 
-While the privatization is not visible to all processes, inconsistencies may arise, given 
-that for $T_i${}'s process the node is private but for other processes, the node is 
-still seen as shared. 
-
-
-\anote{Need to put in citations for these, update this paragraph}
-Several solutions have been proposed for the privatization problem 
-such as using visible reads, conventional means of 
-synchronization such as fences, sandboxing, partitioning by consensus 
-\cite{scott07}, the use of lock-free reference   counters   \cite{afek10}  or   
-by  using private transactions \cite{dice10}, to name a few. 
-Several protocols implementing privitization have been proposed,
-ranging from solutions where a programmer uses a special keyword to mark
-which transactions are privitizing, to others that ensure safety by having
-a privtizing transaction block until all other concurrent transactions
-have finished, to more complex non-blocking solutions.
-
-
-As shown in \cite{spear07}, prviding privitization safety is not as
+Obviously after the transaction commits future transactions will no longer
+be observe $n$ in the list, but unless the STM protocol is privitization safe
+$p$ cannot safely access $n$ non-transactionally.
+Normally this is due to the fact that there could be live transactions
+that started before $T_i$ committed who have concurrently accessed $n$.
+% While the privatization is not visible to all processes, inconsistencies may arise, given 
+% that for $T_i${}'s process the node is private but for other processes, the node is 
+% still seen as shared. 
+These problems are closely examined in \cite{spear07}.
+Here they show that prviding privitization safety is not as
 simple as just implemnting an STM protcol that provides opacity as incorrect results due to
 privatization can occur regardless of the update policy
 (redo log or undo log)  that a  transactional memory algorithm implements. 
@@ -468,6 +462,19 @@ performed by $t_1$. However, when $t_1$ resumes and attempts to commit,
 its validation will fail and it will abort. $p_2$ will be left privately 
 accessing data that are no longer valid.
 \end{itemize}
+
+
+\anote{Need to put in citations for these, update this paragraph}
+Several solutions have been proposed for the privatization problem 
+such as using visible reads, conventional means of 
+synchronization such as fences, sandboxing, partitioning by consensus 
+\cite{scott07}, the use of lock-free reference   counters   \cite{afek10}  or   
+by  using private transactions \cite{dice10}, to name a few. 
+Several protocols implementing privitization have been proposed,
+ranging from solutions where a programmer uses a special keyword to mark
+which transactions are privitizing, to others that ensure safety by having
+a privtizing transaction block until all other concurrent transactions
+have finished, to more complex non-blocking solutions.
 
 
 A main advatage of privitizaion is in the case of performance, as when
@@ -511,37 +518,31 @@ has to decide when and what to privitize and publicize.
 
 
 
-
-
-
-
-
-
-
-
-\paragraph{Solution from scott}
+\paragraph{Solution from scott/spear}
 \anote{Need to read and cite}
 
 \paragraph{Strong isolation}
 
-However, in order to spare the programmer this responsibility,  
-both the  transactional memory algorithm  as well as  the non-transactional
-read and write operations must be implemented in a way  
-that  takes their co-existence  into account.  Such an  implementation that
-provides synchronization  between transactional and  non-transactional code
-is said to provide strong isolation.  
+\emph{Strong isolation}, in order to spare the programmer from the responsibilities
+raised by weak isolation or privitizaion, ensures that  
+both the  transactions  and  the non-transactional
+read and write operations are be implemented in a way  
+that  takes their co-existence  into account.
+% Such an  implementation that
+% provides synchronization  between transactional and  non-transactional code
+% is said to provide strong isolation.
+Strong isolation ensures that the non-transactional accesses to shared memory
+do not violate the atomicity of the transactions.
+As a result,
+the aforementioned scenarios described in the paragraphs about weak isolation
+and privitization  where non-transactional operations  violate
+transaction isolation, are not be allowed to happen.  
+In fact strong isolation
+inherently also solves the privatization problem as it
+imposes synchronization between transactional and non-transactional code.
 
 
-
-TM has to guarantee that transactions will be isolated from each other, but
-when it  comes to transactions and non-transactional  operations, there are
-two  paths a  TM system  can follow:  it may  either act  oblivious  to the
-concurrency between transactions and non-transactional 
-operations, or  it may  take this concurrency  into account and  attempt to
-provide     isolation    guarantees    even   between    transactional   and
-non-transactional operations. The first  case is  referred to as \emph{weak
-isolation} while the second case is referred to as \emph{strong  
-isolation}.  This  distinction  of   guarantees  was  originally  made  in
+This  distinction  of   guarantees  was  originally  made  in
 \cite{blundell06},  where   reference  was  made   to  {}``weak
 atomicity'' versus {}``strong atomicity''.
 Interestingly this paper also presents examples of code that a programmer
@@ -553,40 +554,66 @@ protocols.
 
 
 
-\paragraph{Desirable Properties.}
 In order  to keep consistent with  the spirit of TM  principles, however, a
 system should prevent unexpected   results  from   occurring  
 in presence of  race conditions. 
 Furthermore, concurrency   control should  ideally be implicit  
-and never be delegated to  the programmer~\cite{CIR12,MS12}.  These are the  
-reasons for  which strong isolation  is desirable. Under  strong isolation,
-the aforementioned scenarios,   where non-transactional operations  violate
-transaction isolation, would not be allowed to happen.  
-An  intuitive approach  to  achieving  strong isolation  is  to treat  each
-non-transactional operation that 
-accesses shared data  as a ``mini-transaction'', i.e., one  that contains a
-single operation. In that case,  transactions  will have to  be  
+and never be delegated to  the programmer~\cite{CIR12,MS12}.
+
+
+In order to better understand strong isolation guarantees, consider
+the follwoing simple intuitive extention that can be applied to an STM protocol
+in order to ensure strong isolation.
+In order to provide this extention, any non-transactional operation that 
+accesses shared data is simply treated as a ``mini-transaction'', i.e., a transaction  that contains a
+single read/write operation. In that case,  transactions  will have to  be  
 consistent (see Sect.~\ref{sec:badthings})  not only with 
 respect to each other, but 
-also with respect to the  non-transactional operations. However, while the
-concept of the memory  transaction includes the possibility of abort,
-the concept of the non-transactional operation does not.  This means that a
+also with respect to the  non-transactional operations.
+Obviously in this solution there is no seperate section of memory for transactions
+and their atomicity is preserved resulting in a simplier framework for
+the programmer then privitization or weak isolation.
+While this solution is simple, it is not necessarily optimal performance wise.
+As such, several more efficient approaches to implementing strong isolation have been proposed,
+in \cite{shpeis07} a blocking implementation to strong isolation
+is described by placing barriers in transactions to ensure safety.
+In the intrest of improving performance, this paper also proposes ways of performing dynamic
+and static analysis in order to remove certain barriers
+while still ensuring safety.
+Further dynamic optimizations proposed in \cite{SMSA08}, but
+even considering the most efficient implementations, strong isolation has been suggested to be too costly \cite{DS09}.
+Other work has considered strong isolation in hardware transactional memory \cite{MTCM07}.
+% TM has to guarantee that transactions will be isolated from each other, but
+% when it  comes to transactions and non-transactional  operations, there are
+% two  paths a  TM system  can follow:  it may  either act  oblivious  to the
+% concurrency between transactions and non-transactional 
+% operations, or  it may  take this concurrency  into account and  attempt to
+% provide     isolation    guarantees    even   between    transactional   and
+% non-transactional operations. The first  case is  referred to as \emph{weak
+% isolation} while the second case is referred to as \emph{strong  
+% isolation}.
+
+
+
+
+
+%========================================================================
+\subsection{Terminating Strong  Isolation}
+\label{sec:protocol}
+
+However one must consider that a transaction does not have the same semantics
+as a simple read or write operation.
+While the concept of the memory  transaction includes the possibility of abort,
+the concept of the non-transactional read/write operation does not.  This means that a
 programmer expects  that a transaction  
 might fail,  either by blocking or by  aborting. Non-transactional accesses
 to shared data, though,  
 will usually be  read or write operations, which  the programmer expects to
 be  atomic. While executing, a  read  or write  operation   is  not 
 expected  to  be de-scheduled, blocked or aborted.  
-
-A blocking implementation of strong isolation presented and performance examined
-in \cite{shpeis07} by placing barriers in transactions.
-Ways of performing dynamic and static analysis in order to remove certain barriers
-while still ensuring strong isolation are proposed in the interest of improving
-performance.
-
-%========================================================================
-\subsection{Terminating Strong  Isolation}
-\label{sec:protocol}
+For this reason we believe that an STM protocol just implementing srong
+isolation is not enough, the progress of non-transactional operations
+should also be considered.
 
 A possible  solution to  the problem of  ensuring isolation   in the
 presence of  non-transactional code consists in using  locks: Each shared
@@ -616,10 +643,6 @@ the   algorithm presented  in this  section  provides  a solution  for adding
 strong isolation which is not based on locks for the execution 
 of non-transactional  operations.
 
-
-A system that provides {\it strong isolation} has the advantage of
-inherently also solving the privatization problem, because it inherently 
-imposes synchronization between transactional and non-transactional code.
 
 %Strong isolation always imposes synchronization between 
 %transactional and non-transactional code that access memory areas that 
