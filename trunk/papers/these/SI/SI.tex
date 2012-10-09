@@ -163,6 +163,7 @@
 % \makeRR
 
 \section{Introduction}
+\label{sec:SIintro}
 
 Simplified transaction semantics may not be enough.
 In the interest of ease-of-use, each chapter in this thesis has had
@@ -324,7 +325,8 @@ On the other hand if the programmer can access shared memory both inside and out
 of transactions while the system is still ensurubg the atomicity of the transactions then
 we have a more straightforward integrated system.
 
-\paragraph{Transaction vs Non-transactional Code.}
+\subsection{Transaction vs Non-transactional Code.}
+\label{sec:TvNT}
 Let us now define precisely what we mean by trasactional vs, non-transactional
 accesses.
 In a  concurrent environment,  shared memory  may  be
@@ -344,6 +346,7 @@ with concurrent accesses to shared memory inside and outside of transactions
 and where we think they fall short on the ease-of-use objective.
 
 \subsection{Dealing with transactional and non-transactional memory accesses}
+\label{sec:SIsolutions}
 % Like dealing with aborted transactions there are several ways to deal
 % with concurrent memory accesses inside and outside of transactions each
 % with different implication on how the programmer uses STM.
@@ -589,6 +592,16 @@ Other work has considered strong isolation in hardware transactional memory \cit
 % isolation} while the second case is referred to as \emph{strong  
 % isolation}.
 
+When implementing strong isolation in order to ensure the safety of non transactional reads and writes
+(weather they are implemeted as mini-tranactions or by using memory barriers)
+they become more then just a single load or store operation when actually being executed on the processor.
+In order not to increase the complexity of using transactional memory we want the programmer to be
+able to perform non-transactional operations in his code just as he would a normal read and write.
+This means at some point after the programmer has written the code and before it is executed
+the additional operations must be added.
+For example in \cite{shpeis07,SMSA08} memory barriers are added before non-transactional reads and writes
+by the compiler.
+This can also be done dynamically at runtime.
 
 \paragraph{Precisely Defining Strong Isolation.}
 
@@ -825,14 +838,6 @@ that ensures terminating strong isolation.
 % % Sect. \ref{sec:conclusions}  concludes the paper by  summarizing the work
 % % and examining possible applications.  
 
-
-
-
-
-%=======================================================================
-\section{Formalizing the problem}
-\label{sec:badthings}
-
 % \paragraph{Consistency Issues.}
 % 
 % % \ignore{When it comes  to environments where shared memory  is 
@@ -875,9 +880,6 @@ that ensures terminating strong isolation.
 
 %\vspace{-0.2cm}
 
-As previously described, an additional feature of strong isolation, as implemented in this paper, 
-is that non-transactional read and write operations never block or abort. 
-For this reason, it is termed {\it terminating strong isolation}.
 
 
 % Traditionally, however, transactions
@@ -906,20 +908,58 @@ For this reason, it is termed {\it terminating strong isolation}.
 %another means of achieving synchronization,  
 %along with  locks, fences  and other traditional methods.  
 
-This  algorithm builds on  the base  of TM
-algorithm  TL2 and  extends it in  order to account for  non-transactional 
-operations. While read   and write operations that appear inside a 
+%=======================================================================
+\section{Implementing terminating strong isolation}
+\label{sec:badthings}
+
+As previously described, the goal is to design a protocol in which
+non-transactional read and write operations never block or abort
+i.e. {\it terminating strong isolation}.
+Before diving into the design of a new protocol, let us consider how
+this relates to the protocol described in the previousl chapter.
+The previous chapter introduced an STM protocol in which every transaction
+is guaranteed to commit where the progress of a transaction only depends on
+its issuing process.
+This helps hide the notion of abort for the programmer, but does
+not prevent aborts from happeneing at all.
+In fact any transaction is allowed to abort, but only a finite number
+of times.
+When implementing terminating strong isolation on the other hand we
+want to compeltely avoid non-transactional operations from aborting.
+The most obvious reason for this is because we want non-transactional reads and write
+to behave the same as simple atomic reads and writes.
+
+The second, less theoretically intersting, but just as important reason
+is performance.
+To the programmer the non-transactional operations as simple reads and
+writes, he should be able to assume that they are efficient.
+In fact, the primary concern of previous research on strong isolation
+is performance, it has even been suggested that 
+
+In the previous chapter we were more interested in showing that a concept was
+possible, while in this chapter performace is a just as important concern.
+Given this we cannot simply implement non-transactional
+operations as we did transactions in the previous chapter's protocol.
+
+Still it is not necessary to design a completely new protocol, instead we
+choose to take the base design of an efficient state-of-the-art STM protocol
+that provides weak isolation and extend it to provide terminating strong isolation.
+The TL2 protocol was choosen for this as it is fairly straightforward
+and can be considered as one of the fastest STM implementations.
+In the redesigned TL2 protocol presented in this chapter
+ read   and write operations that appear inside a 
 transaction follow the original TL2 algorithm rather closely (cheap read 
 only transactions, commit-time locking, write-back), 
-the proposed algorithm 
-specifies non-transactional read and  write operations 
+with the addition of non-transactional read and  write operations 
 that are to be used 
 by the programmer, substituting conventional
-shared memory read and write operations. 
-TM with strong isolation has also been proposed in
-software \cite{SMSA08,shpeis07} in hardware \cite{MTCM07}, and has been suggested to be too costly \cite{DS09}.
-This work differs from other implementations in that it is terminating and
-is implemented on top of a state-of-the-art STM in order to avoid too much extra cost.
+shared memory read and write operations in order to provide
+terminating strong isolation. 
+
+% TM with strong isolation has also been proposed in
+% software \cite{SMSA08,shpeis07} in hardware \cite{MTCM07}, and has been suggested to be too costly \cite{DS09}.
+% This work differs from other implementations in that it is terminating and
+% is implemented on top of a state-of-the-art STM in order to avoid too much extra cost.
 
 
 
@@ -942,6 +982,12 @@ The word-based version of the algorithm is used, %which means that the shared va
 %words and that the operations issued by a transaction are simply read and write operations. 
 %For the sake of brevity, implementation details of the algorithm are omitted in the following description. 
 where transactional reads and writes are to single memory words.
+Instead of presenting the detailed alorithm we will only present the main concepts of the algorithm
+that are used in the protocol presented in this chapter.
+The safety condition ensure by TL2 for transactions is opacity.
+It should be noted that the original version of TL2 takes no consideration into non-transactional memory
+accesses taking the view that transactions should be relegated to their own separate section of memory.
+Extended versions of TL2 that are privitizaion safe have also been exaimed \cite{DSS10}.
 %\vspace{-0.25cm}
 %---------------------------------------------------------------------
 %\subsection{Main Features of TL2}
@@ -952,9 +998,13 @@ variable,  there is no indication of the read to other transactions.  Write oper
 {\it deferred}, meaning that  TL2 does not perform the updates  as soon as  it {}``encounters'' 
 the shared  variables that  it has to write to. Instead, the 
 updates it has to perform are logged into a local list (also called {\it redo log}) and   are  applied 
-to the shared  memory only once the transaction is certain  to commit. 
-Read-only transactions in TL2 are considered efficient, because they don{}'t need to maintain 
-local copies of a read or write set  and because they need no final read set  validation in order to commit.
+to the shared  memory only once the transaction is certain  to commit.
+
+One of the key features of TL2 is that read-only transactions are considered efficient.
+This is because they do not need to maintain 
+local copies of a read or write set  and because if they reach the $try\_to\_commit$
+operation before aborting then they can commit immediately as they are guaranteed
+to be consistend.
 To control transaction synchronization, TL2 employs locks and logical dates. 
 %The variables  that a  transaction has to read form its read
 %set, while the variable it has to update, form its write set.  
@@ -966,47 +1016,58 @@ To control transaction synchronization, TL2 employs locks and logical dates.
 %snapshot of shared memory.  
 
 
-%\paragraph{Locks.}
-%TL2 locks  are stored in  a shared lock  table. Each shared memory  word is
-%mapped to a lock through a  
-%hash function\footnote{The  hash function is one-to-many,  resulting in one
-%lock covering several shared  
-%memory locations. This  partitions the memory into  so-called stripes.}. A
-%lock is a memory word where  
-%one of the  bits acts as lock  bit, indicating whether the lock  is free or
-%not. The rest of the bits form the  
-%logical date field.  The logical date of the lock  also serves as the 
-%logical date of the
-%memory  locations that  the lock  maps to.  Whenever a  shared  variable is
-%modified, its logical date is also updated. Due to the way the  
-%logical dates are assigned, they increment monotonically. 
-
 
 \paragraph{Locks and Logical Date.}
-A lock is associated with each shared variable.  
-When a transaction attempts to commit it  first  has to  obtain  the  locks  of the
-variables of its write set, before it can  
+A lock and a logical date is associated with each shared variable.  
+TL2 implements logical time as an integer counter denoted $\mathit{GVC}$.
+%$\mathit{GVC}$ is incremented by update transactions when they attempt to commit. 
+When a transaction starts it reads the current value of $\mathit{GVC}$ into local variable, $\mathit{rv}$. 
+This value is used in order to ensure the transaction views a consistent state of memory.
+
+When a transaction attempts to commit it  first  has to  obtain  the  locks  of all the
+variables in its write set, before it can  
 update them.
 Furthermore, a  transaction has to  check the logical dates  of the
 variables in its read set in  
 order to  ensure that  the values  it has read  correspond to  a consistent
-snapshot of shared memory.  TL2 implements logical time as an integer counter denoted $\mathit{GVC}$.
-%$\mathit{GVC}$ is incremented by update transactions when they attempt to commit. 
-When a transaction starts it reads the current value of $\mathit{GVC}$ into local variable, $\mathit{rv}$. 
-When a transaction attempts to commit, it performs an increment-and-fetch on $\mathit{GVC}$, and stores the 
+snapshot of shared memory.
+Its read set is valid if the logical date of every  item in the set is less than the transaction{}'s $\mathit{rv}$  value. 
+If, on the  contrary, the logical date of a read set  item is larger than the $\mathit{rv}$ 
+of the transaction,  then  a concurrent  transaction 
+has updated this item, invalidating the read.
+A transaction must abort if its read set is not valid.  
+Once the read set it varified to be consistent the commit operation performs an increment-and-fetch on $\mathit{GVC}$, and stores the 
 return value in local variable $\mathit{wv}$ (which can be seen as a write version number  or a version timestamp). 
-Should the transaction commit, it will assign its $\mathit{wv}$ as the new logical date of the shared variables in its write set. 
+Should the transaction commit, it will assign its $\mathit{wv}$ as the new logical date of the shared variables in its write set.
+Finally the locks are realeased completing the commit operation.
+
+A read operation must check both the lock and the logical time of the variable it is reading.
+If it is either locked, or the value of the logical time is greater then $\mathit{rv}$ then the transaction must abort,
+otherwise the read is consistent and the value can be returned.
+Additionally, if the transaction is an update transaction then the variable is also added to the read set.
+Importantly, thanks to the use of the logical clocks the read operations take constant time
+and do not require validating the locations previously read in order to ensure opacity.
+
+% \paragraph{Locks.}
+In order to implemnt the locks and logical time, they  are stored in  a shared array
+of words.
+Each shared memory  word accessed by the STM protocol is
+mapped to a location in the lock array through a  
+one-to-many hash function,  resulting in one
+lock covering several shared  
+memory locations. This  partitions the memory into  so-called stripes. 
+For each memory word in the array
+the first bit acts as lock  bit, indicating whether the lock  is free or
+not. The rest of the bits form the  
+logical time of the variables assoiated to that location by the hash function.
+
+
 %Timestamping with logical dates facilitates read set validation for a transaction. 
 %When the read set of a transaction is not valid,  the transaction  cannot commit. 
 %The  read set of  a transaction $T_A$ will be  invalidated  if another,  concurrent 
 %transaction $T_B$ modifies shared  variable $x$ and commits, after $T_A$  has 
 %read $x$  but while $T_A$ is  still active. 
-A transaction must abort if its read set is not valid.  
 %In TL2, it  can be detected that a transaction{}'s read  set is valid if 
-Its read set is valid if the logical date of every  item in the set is less than the transaction{}'s $\mathit{rv}$  value. 
-If, on the  contrary, the logical date of a read set  item is larger than the $\mathit{rv}$ 
-of the transaction,  then  a concurrent  transaction 
-has updated this item, invalidating the read.
 %has performed  an   increment-and-fetch    of   $\mathit{GVC}$,   updated   the item  and  
 %committed,  by  writing  the  new $\mathit{GVC}$ value into the item{}'s  logical date field.
 
@@ -1137,7 +1198,7 @@ has updated this item, invalidating the read.
 
 \section{The Protocol}
 
-
+The following sections will describe the protocol.
 %===================================================================
 \subsection{Memory Set-up and Data Structures.}
 
@@ -1175,7 +1236,7 @@ the (strict) serialization of operations is not violated.
 % therefore incremented
 % both during transactional and non-transactional operations.
 
-In TL2 a  shared array of locks is maintained and each
+As described in section \ref{sec:tl2}, in TL2 a  shared array of locks is maintained and each
 shared memory word  
 is associated with a lock in this array by some function. Given this, a memory
 word directly contains  
@@ -1336,7 +1397,7 @@ non-transactional operations.
 \subsection{Description of the Algorithm.}
 
 The main goal of the algorithm is to provide strong isolation 
-in such a way that  the non-transactional  operations are never blocked. 
+in such a way that  the non-transactional  operations are never blocked or aborted. 
 In order  to achieve this,  the algorithm delegates most of its
 concurrency   control   and  consistency   checks   to  the   transactional
 code. Non-transactional  
@@ -1349,7 +1410,11 @@ result, this algorithm gives high  priority   to non-transactional code.
 \subsection{Non-transactional Operations.}
 Algorithm-specific  read  and write operations
 shown in Fig. \ref{fig:ntops} must be used when a shared variable is accessed
-accessed outside of a transaction.  This be done by hand or applied by a complier. 
+accessed outside of a transaction.
+As described in section \ref{sec:SIsolutions} this can be done by hand by the programmer,
+but more appropriately a programmer will write normal shared reads and writes which will then
+be automatically converted to non-transactional read (resp. write) operations by
+the compiler or dynamically at runtime.
 
 \begin{figure}[htb]
 \centering{ \fbox{
@@ -1795,6 +1860,22 @@ the status of the current transaction is set to ABORTED (line \ref{AB01}) and
 it is immediately restarted as a new transaction.
 
 %========================================================================
+
+
+
+
+\section{Proof of correctness}
+\anote{Need to do this}
+
+
+
+
+
+
+
+
+
+
 
 \section{Conclusion}
 \label{sec:conclusions}
