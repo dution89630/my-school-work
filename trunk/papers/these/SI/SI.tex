@@ -304,16 +304,15 @@ be only safely accessable from within transactions, or should it be
 safe to access memory inside and outside of transactions at any time,
 or should it be something inbetween?
 
-Interestingly, this possibility of {\it co-existence of two different paradigms}
-between strong and weak isolation reveals 
+Interestingly, this possibility of the {\it existence of two different paradigms} reveals
+%between strong and weak isolation reveals 
 two different interpretations of transactional memory: On one hand considering TM as an implementation
 of shared memory, and, on the other hand, considering TM as an additional way of achieving synchronization, 
 to be used alongside with locks, fences, and other traditional methods.
 
-
 When putting ease-of-use as the primary requirement of transactional memory
 as well considering the discussion on transactions vs operations on concurrent objects
-the answer seems clear.
+the choice of paradigm seems clear.
 If within a program there are two sets of shared memory, one set for accessing inside
 transactions, and another set for accessing outside of transactions, then we loose a
 bit of the integration concept for a bit more of the seperated object concept.
@@ -325,8 +324,22 @@ On the other hand if the programmer can access shared memory both inside and out
 of transactions while the system is still ensurubg the atomicity of the transactions then
 we have a more straightforward integrated system.
 
-Before giving a more precise defininition on what we mean by this,
-th next section will discuss previous solutions on how to deal
+\paragraph{Transaction vs Non-transactional Code.}
+Let us now define precisely what we mean by trasactional vs, non-transactional
+accesses.
+In a  concurrent environment,  shared memory  may  be
+accessed by both transactions as well as  
+non-transactional operations. %This  is mostly brought about by  the need to
+%continue using legacy code that existed before  
+%transactional memory was  implemented.
+In this work we consider that shared memory can be accessed through
+reads and writes either inside or outside of transactions.
+A read (respectively write) performed inside a transaction is consider
+a transactional read (transactional write) while a read (resp. write)
+performed outside a transaction is considered a non-transactional read
+(non-transactional write).
+
+The next section will discuss previous solutions on how to deal
 with concurrent accesses to shared memory inside and outside of transactions
 and where we think they fall short on the ease-of-use objective.
 
@@ -372,6 +385,12 @@ process local and shared memory so having him decide what memory should be trans
 and what should not be just adds an additional burden to the programmer.
 Along with this, having a seperate section of memory for transactions is also not consistent with
 the concpet of transactions being integrated within a program.
+
+Therefore, in order  to keep consistent with  the spirit of TM  principles a
+system should prevent unexpected   results  from   occurring  
+in presence of  race conditions. 
+Furthermore, concurrency   control should  ideally be implicit  
+and never be delegated to  the programmer~\cite{CIR12,MS12}.
 It is for these reasons that when considering transactional and non-transactional accesses
 we want something stronger then weak isolation in order to keep things
 as simple as possible for the programmer.
@@ -379,11 +398,8 @@ as simple as possible for the programmer.
 It is important to note that most current high performance STM protocols implement weak isolation
 as providing stronger guarantees tend to have an impact on performance.
 
-
-
 % Under weak isolation, transactional and non-transactional operations can be
 % concurrent, but the programmer has to be aware of how to handle these.
-
 
 
 \paragraph{Specialized transactions}
@@ -519,7 +535,7 @@ has to decide when and what to privitize and publicize.
 
 
 \paragraph{Solution from scott/spear}
-\anote{Need to read and cite}
+\anote{Need to write and cite}
 
 \paragraph{Strong isolation}
 
@@ -540,26 +556,6 @@ transaction isolation, are not be allowed to happen.
 In fact strong isolation
 inherently also solves the privatization problem as it
 imposes synchronization between transactional and non-transactional code.
-
-
-This  distinction  of   guarantees  was  originally  made  in
-\cite{blundell06},  where   reference  was  made   to  {}``weak
-atomicity'' versus {}``strong atomicity''.
-Interestingly this paper also presents examples of code that a programmer
-might write to run along with an STM protocol that provides some type of weak
-isolation which would not run using an STM protocol that provides strong isolation,
-further suggesting that a standard should be proposed so that the programmer
-is not stuck having to uderstand the intracacies provided by different STM
-protocols.
-
-
-
-In order  to keep consistent with  the spirit of TM  principles, however, a
-system should prevent unexpected   results  from   occurring  
-in presence of  race conditions. 
-Furthermore, concurrency   control should  ideally be implicit  
-and never be delegated to  the programmer~\cite{CIR12,MS12}.
-
 
 In order to better understand strong isolation guarantees, consider
 the follwoing simple intuitive extention that can be applied to an STM protocol
@@ -594,192 +590,19 @@ Other work has considered strong isolation in hardware transactional memory \cit
 % isolation}.
 
 
+\paragraph{Precisely Defining Strong Isolation.}
 
+The  distinction  of isolation guarantees  was  originally  made  in
+\cite{blundell06},  where   reference  was  made   to  {}``weak
+atomicity'' versus {}``strong atomicity''.
+Interestingly this paper also presents examples of code that a programmer
+might write to run along with an STM protocol that provides some type of weak
+isolation which would not run using an STM protocol that provides strong isolation,
+further suggesting that a standard should be proposed so that the programmer
+is not stuck having to uderstand the intracacies provided by different STM
+protocols.
 
-
-%========================================================================
-\subsection{Terminating Strong  Isolation}
-\label{sec:protocol}
-
-However one must consider that a transaction does not have the same semantics
-as a simple read or write operation.
-While the concept of the memory  transaction includes the possibility of abort,
-the concept of the non-transactional read/write operation does not.  This means that a
-programmer expects  that a transaction  
-might fail,  either by blocking or by  aborting. Non-transactional accesses
-to shared data, though,  
-will usually be  read or write operations, which  the programmer expects to
-be  atomic. While executing, a  read  or write  operation   is  not 
-expected  to  be de-scheduled, blocked or aborted.  
-For this reason we believe that an STM protocol just implementing srong
-isolation is not enough, the progress of non-transactional operations
-should also be considered.
-
-A possible  solution to  the problem of  ensuring isolation   in the
-presence of  non-transactional code consists in using  locks: Each shared
-variable would then  
-be associated with a lock and both transactions as well as non-transactional 
-operations would have to access the lock before accessing the variable.
-
-Locks are already used  in TM algorithms - such as TL2  itself - where it is
-however     assumed   that  shared   memory   is   only  accessed   through
-transactions. The use  of locks  in a TM algorithm  entails blocking and may
-even lead a process to starvation. However,  
-it can be argued that  these characteristics are acceptable, given that the
-programmer  accepts the fact that a  transaction has a duration and that it
-may  even  fail: The  fact  that   there is  always  a  possibility that  a
-transaction will abort means that the eventuality of  
-failure to complete can be considered a part of the transaction concept.  
-
-On  the contrary,  when it  comes to single read or  write accesses  to  a shared
-variable, a  non-transactional operation is  understood  as an
-event  that  happens   atomically  and   completes.  Unfortunately   strong
-isolation  implemented with  locks  entails the blocking  
-of non-transactional read and write operations and would not provide termination.
-
-Given that this approach would be rather counter-intuitive for the 
-programmer (as well as possibly detrimental for program efficiency), 
-the   algorithm presented  in this  section  provides  a solution  for adding
-strong isolation which is not based on locks for the execution 
-of non-transactional  operations.
-
-
-%Strong isolation always imposes synchronization between 
-%transactional and non-transactional code that access memory areas that 
-%are potentially shared, which means that a system that guarantees strong 
-%isolation is inherently privatization safe.
-
-
-
-
-
-
-
-\paragraph{Content of the Paper.}
-This paper presents  a TM  algorithm which takes the
-previous issues into account. It is built on top of 
-TM algorithm TL2 \cite{dice06},  a  word-based  TM algorithm  that  uses locks. 
-More precisely,  TL2 is modified to provide strong isolation with non-transactional read 
-and write operations.  However,  
-the algorithm  is designed  without the use  of locks  for non-transactional
-code, in order to guarantee that their execution will always terminate.  
-To achieve  this,    two    additional     functions are specified, which substitute 
-%${\sf non\_transactional\_read()}$ and ${\sf non\_transactional\_write()}$,  
-%which  the programmer  has to  use instead  of 
-conventional  read  or write operations that have to be performed  outside  of  a  transaction.  
-%The  possible ``bad  scenarios''  of  running
-%transactional and non-transactional code in  
-%the absence of strong isolation 
-% Possible violations of correctness under strong isolation are reviewed in Sect. 
-% \ref{sec:badthings}. The TL2 algorithm is described in Sect. \ref{sec:tl2}. 
-% Section \ref{sec:protocol} describes  the proposed algorithm that implements
-% strong isolation for TL2, while  
-% Sect. \ref{sec:conclusions}  concludes the paper by  summarizing the work
-% and examining possible applications.  
-
-
-
-
-
-%=======================================================================
-\section{Formalizing the problem}
-\label{sec:badthings}
-
-% \paragraph{Consistency Issues.}
-% 
-% % \ignore{When it comes  to environments where shared memory  is 
-% % accessed exclusively through transactions, then most accepted  
-% % consistency   conditions    build   on   the idea of  {\it serializability}
-% % \cite{P79}, a condition first  established  for  the study  of  database  transactions.}
-% 
-% Commonly, consistency conditions for TM build on the concept of 
-% {\it serializability} \cite{P79}, a condition first  established  for  the 
-% study  of  database  transactions.
-% 
-% % \ignore{For a  concurrent
-% % execution of transactions to be serializable, it must be  
-% % possible to find a serialization for it, i.e., a legal sequential execution
-% % that is equivalent to it. }
-% 
-% A concurrent execution of transactions is serializable, 
-% if there exists a serialization, i.e., a legal sequential execution equivalent to it.
-% Serializability refers only to committed  transactions,  however, and fails to take into 
-% account the possible program exceptions that a TM transaction may cause - even if 
-% it aborts - when it observes an inconsistent state of memory.
-% 
-% % \ignore{  the  context of  memory transactions,  stricter
-% % criteria are desirable, because even transactions that  
-% % will  eventually abort  may cause  program  exceptions if  they observe  an
-% % inconsistent state of the shared memory.  For this  
-% % reason, a  prominent consistency condition for  transactional memory, which
-% % is stricter than serializability,  has been proposed. }
-% 
-% {\it Opacity} \cite{guerraoui08}, a stricter consistency condition for TM, 
-% requires   that  both committed as well as aborted transactions  
-% observe a  consistent state  of shared memory.  This implies that  in order  for a
-% concurrent execution of memory transactions to be  
-% opaque,  there must exist  an equivalent,  legal sequential  execution that
-% includes both committed transactions and aborted  
-% transactions, albeit reduced to their read prefix.  Other consistency conditions 
-% have also been proposed, such as {\it virtual world consistency}~\cite{IR09}. It is weaker than 
-% opacity while keeping its spirit (i.e., it depends on both committed 
-% transactions and aborted transactions). 
-
-%\vspace{-0.2cm}
-
-\paragraph{Transaction vs Non-transactional Code.}
-In a  concurrent environment,  shared memory  may  occasionally be
-accessed by both transactions as well as  
-non-transactional operations. %This  is mostly brought about by  the need to
-%continue using legacy code that existed before  
-%transactional memory was  implemented. 
-Traditionally, however, transactions
-are designed to synchronize only with other transactions  
-without considering the possibility of  non-transactional code;
-a program that accesses the same shared memory both transactionally
-and non-transactionally would be considered incorrect.
-A TM system that implements opacity minimally guarantees consistency between transactional
-accesses, however, consistency violations  may  still be  
-possible  in the  presence  of concurrent  non-transactional
-code.
-
-%Traditionally, the same goes for code that is non-transactional: It  
-%is not expected from the  programmer to know the synchronization details of
-%the transactional memory algorithm that will run  
-%concurrently with  her non-transactional code.  
-%Therefore, this possibility
-%of {\it co-existence of two different paradigms}, as well as  
-%the  fact that  transactional memory  is mostly  implemented as  a software
-%platform - instead of the transaction abstraction being  
-%directly  provided by  the hardware  -  reveal  two different  aspects that
-%transactional memory may acquire: In the first aspect,  
-%it  is  the  only way  through  which  shared  memory  may be  accessed  by
-%concurrent processes.  In the second aspect, which  
-%comes into view when it exists alongside non-transactional code, it is just
-%another means of achieving synchronization,  
-%along with  locks, fences  and other traditional methods.  
-
-This  algorithm builds on  the base  of TM
-algorithm  TL2 and  extends it in  order to account for  non-transactional 
-operations. While read   and write operations that appear inside a 
-transaction follow the original TL2 algorithm rather closely (cheap read 
-only transactions, commit-time locking, write-back), 
-the proposed algorithm 
-specifies non-transactional read and  write operations 
-that are to be used 
-by the programmer, substituting conventional
-shared memory read and write operations. 
-TM with strong isolation has also been proposed in
-software \cite{SMSA08,shpeis07} in hardware \cite{MTCM07}, and has been suggested to be too costly \cite{DS09}.
-This work differs from other implementations in that it is terminating and
-is implemented on top of a state-of-the-art STM in order to avoid too much extra cost.
-
-
-
-
-\paragraph{Providing Strong Isolation.}
-
-There  are different  definitions in  literature for  strong 
+Further complicating things, there  are different  definitions in  literature for  strong 
 isolation \cite{blundell06,ma07,harris06}.
 In this paper we consider strong isolation to be the following:
 %\begin{enumerate}
@@ -793,11 +616,16 @@ In this paper we consider strong isolation to be the following:
 %As non-transactional read an write operations never abort, 
 %this is called {\it terminating strong isolation} in the following.
 (a) non-transactional   operations   are   considered  as ``mini''
-transactions which never abort and  contain only a single  read or 
-write operation, and (b) the consistency condition for transactions is opacity.
+transactions which contain only a single  read or 
+write operation, and (b) the consistency condition for transactions is opacity
+(or virtual world consistency).
+We choose this definition as it is simple and keeps with the spirit of atomic transactions
+without having to seperate the memory.
  
-This definition implies that the properties that are referred to  as  
-{\it containment}  and {\it non-interference} \cite{blundell06} are satisfied.  
+Using this definition, the properties referd to as
+{\it containment}  and {\it non-interference} are satisfied.
+These properties were defined in \cite{blundell06} in order to describe
+the syncronization issues between concurrent transactional and non-transactional operations.
 Containment is   illustrated in  the  left  part of  Fig.
 \ref{fig:int-nonc}.  There,
 under strong  isolation, we have  to assume that transaction  $T_1$ happens
@@ -818,9 +646,6 @@ read a shared variable $x$.
 % Non-interference of  a transaction  $T_1$ can also  
 % be compromised  by the interaction between non-transactional  operations  and  
 % another  transaction   $T_2$. 
-An additional feature of strong isolation, implemented in this paper, 
-is that non-transactional read and write operations never block or abort. 
-For this reason, it is termed {\it terminating strong isolation}.
 
 \begin{figure*}[ht]
 \centerline{
@@ -878,6 +703,223 @@ by process $p_2$).}
 %$p_3$ interfere with transaction $T_1$.} 
 %\label{fig:timent}
 %\end{figure*}
+
+
+
+
+
+%========================================================================
+\subsection{Terminating Strong  Isolation}
+\label{sec:protocol}
+
+
+Strong isolation allows transactions to not be restricted to use a fixed
+subset of memory while still ensuring their atomicity with repect to
+other transactions as well as non-transactional operations.
+This allows the programmer to preform reads ands write to the same memory he accesses
+in his transactions without having to worry about observing or creating inconsistencies.
+As indicated in the paragraph on strong isolation, one possible implementation
+is to simply convert all non-transactional reads and writes into mini-transactions.
+Let us also consider the solution to  the problem of  ensuring strong isolation 
+by using  locks or barriers: Each shared
+variable would then  
+be associated with a lock and both transactions as well as non-transactional 
+operations would have to access the lock before accessing the variable.
+Locks are already used  in TM algorithms - such as TL2  itself - where it is
+however     assumed   that  shared   memory   is   only  accessed   through
+transactions. The use  of locks  in a TM algorithm  entails blocking and may
+even lead a process to starvation.
+Previous research on STM protocols has taken the approach that
+these characteristics might acceptable.
+The reason for this is that the
+programmer  accepts the fact that a  transaction has a duration and that it
+may  even  fail: Given that every live transaction has the posibility
+to abort means that the  
+failure to complete can be considered a part of the transaction concept.  
+
+Now if we have non-transactional operations that rely on the same mechanisms
+(either implemnted using locks or by mini-transactions) then they are sucseptable
+to the same posibilty of non-completion.
+However one must consider that a transaction does not have the same semantics
+as a simple read or write operation.
+While the concept of the memory  transaction includes the possibility of failure,
+the concept of a simple read/write operation does not.
+When it  comes to single read or  write accesses  to  a shared
+variable, a  non-transactional operation is normally understood  as an
+event  that  happens   atomically  and   completes.
+While executing, a  read  or write  operation   is  not 
+expected  to  be de-scheduled, blocked or aborted.  
+Unfortunately   strong
+isolation  implemented with  locks  entails the blocking  
+of non-transactional read and write operations and would not provide termination.
+In the previous chapter we argued that, when considering ease-of-use, 
+every transaction should be committed and the
+possible non-termination of transactions is unacceptable.
+Even worse would be if a programmer had to consider that simple
+read and write operations to shared memory are not guaranteed to terminate.
+Such an approach to strong isolation would then be rather counter-intuitive for the 
+programmer (as well as possibly detrimental for program efficiency).
+
+For this reason we believe that an STM protocol implementing srong
+isolation should also consider the progress of non-transactional operations.
+In order to deal with this we suggest that a STM protcol should implemnt
+\emph{terminating strong isolation}, which we simply define as strong isolation
+with the additional guarantee that the non-transactional read and write
+operations of a process are guaranteed to terminate no matter the actions of
+concurrent processes in the system.
+The rest of this chapter will focus on the design of an STM protocol
+that ensures terminating strong isolation.
+
+% The non-transactional read and write operations in this algorithm
+% focus on efficiency and do not
+% rely on locks, instead only executing non-blocking operations with no loops
+% ensuring their termination.
+
+
+
+
+
+
+
+% This means that a
+% programmer expects  that a transaction  
+% might fail,  either by blocking or by  aborting.
+% 
+% read or write operations, which  the programmer expects to
+% be  atomic. 
+
+
+
+
+
+%Strong isolation always imposes synchronization between 
+%transactional and non-transactional code that access memory areas that 
+%are potentially shared, which means that a system that guarantees strong 
+%isolation is inherently privatization safe.
+
+
+
+
+
+
+
+% \paragraph{Content of the Paper.}
+% This paper presents  a TM  algorithm which takes the
+% previous issues into account. It is built on top of 
+% TM algorithm TL2 \cite{dice06},  a  word-based  TM algorithm  that  uses locks. 
+% More precisely,  TL2 is modified to provide strong isolation with non-transactional read 
+% and write operations.  However,  
+% the algorithm  is designed  without the use  of locks  for non-transactional
+% code, in order to guarantee that their execution will always terminate.  
+% To achieve  this,    two    additional     functions are specified, which substitute 
+% %${\sf non\_transactional\_read()}$ and ${\sf non\_transactional\_write()}$,  
+% %which  the programmer  has to  use instead  of 
+% conventional  read  or write operations that have to be performed  outside  of  a  transaction.  
+% %The  possible ``bad  scenarios''  of  running
+% %transactional and non-transactional code in  
+% %the absence of strong isolation 
+% % Possible violations of correctness under strong isolation are reviewed in Sect. 
+% % \ref{sec:badthings}. The TL2 algorithm is described in Sect. \ref{sec:tl2}. 
+% % Section \ref{sec:protocol} describes  the proposed algorithm that implements
+% % strong isolation for TL2, while  
+% % Sect. \ref{sec:conclusions}  concludes the paper by  summarizing the work
+% % and examining possible applications.  
+
+
+
+
+
+%=======================================================================
+\section{Formalizing the problem}
+\label{sec:badthings}
+
+% \paragraph{Consistency Issues.}
+% 
+% % \ignore{When it comes  to environments where shared memory  is 
+% % accessed exclusively through transactions, then most accepted  
+% % consistency   conditions    build   on   the idea of  {\it serializability}
+% % \cite{P79}, a condition first  established  for  the study  of  database  transactions.}
+% 
+% Commonly, consistency conditions for TM build on the concept of 
+% {\it serializability} \cite{P79}, a condition first  established  for  the 
+% study  of  database  transactions.
+% 
+% % \ignore{For a  concurrent
+% % execution of transactions to be serializable, it must be  
+% % possible to find a serialization for it, i.e., a legal sequential execution
+% % that is equivalent to it. }
+% 
+% A concurrent execution of transactions is serializable, 
+% if there exists a serialization, i.e., a legal sequential execution equivalent to it.
+% Serializability refers only to committed  transactions,  however, and fails to take into 
+% account the possible program exceptions that a TM transaction may cause - even if 
+% it aborts - when it observes an inconsistent state of memory.
+% 
+% % \ignore{  the  context of  memory transactions,  stricter
+% % criteria are desirable, because even transactions that  
+% % will  eventually abort  may cause  program  exceptions if  they observe  an
+% % inconsistent state of the shared memory.  For this  
+% % reason, a  prominent consistency condition for  transactional memory, which
+% % is stricter than serializability,  has been proposed. }
+% 
+% {\it Opacity} \cite{guerraoui08}, a stricter consistency condition for TM, 
+% requires   that  both committed as well as aborted transactions  
+% observe a  consistent state  of shared memory.  This implies that  in order  for a
+% concurrent execution of memory transactions to be  
+% opaque,  there must exist  an equivalent,  legal sequential  execution that
+% includes both committed transactions and aborted  
+% transactions, albeit reduced to their read prefix.  Other consistency conditions 
+% have also been proposed, such as {\it virtual world consistency}~\cite{IR09}. It is weaker than 
+% opacity while keeping its spirit (i.e., it depends on both committed 
+% transactions and aborted transactions). 
+
+%\vspace{-0.2cm}
+
+As previously described, an additional feature of strong isolation, as implemented in this paper, 
+is that non-transactional read and write operations never block or abort. 
+For this reason, it is termed {\it terminating strong isolation}.
+
+
+% Traditionally, however, transactions
+% are designed to synchronize only with other transactions  
+% without considering the possibility of  non-transactional code;
+% a program that accesses the same shared memory both transactionally
+% and non-transactionally would be considered incorrect.
+% A TM system that implements opacity minimally guarantees consistency between transactional
+% accesses, however, consistency violations  may  still be  
+% possible  in the  presence  of concurrent  non-transactional
+% code.
+
+%Traditionally, the same goes for code that is non-transactional: It  
+%is not expected from the  programmer to know the synchronization details of
+%the transactional memory algorithm that will run  
+%concurrently with  her non-transactional code.  
+%Therefore, this possibility
+%of {\it co-existence of two different paradigms}, as well as  
+%the  fact that  transactional memory  is mostly  implemented as  a software
+%platform - instead of the transaction abstraction being  
+%directly  provided by  the hardware  -  reveal  two different  aspects that
+%transactional memory may acquire: In the first aspect,  
+%it  is  the  only way  through  which  shared  memory  may be  accessed  by
+%concurrent processes.  In the second aspect, which  
+%comes into view when it exists alongside non-transactional code, it is just
+%another means of achieving synchronization,  
+%along with  locks, fences  and other traditional methods.  
+
+This  algorithm builds on  the base  of TM
+algorithm  TL2 and  extends it in  order to account for  non-transactional 
+operations. While read   and write operations that appear inside a 
+transaction follow the original TL2 algorithm rather closely (cheap read 
+only transactions, commit-time locking, write-back), 
+the proposed algorithm 
+specifies non-transactional read and  write operations 
+that are to be used 
+by the programmer, substituting conventional
+shared memory read and write operations. 
+TM with strong isolation has also been proposed in
+software \cite{SMSA08,shpeis07} in hardware \cite{MTCM07}, and has been suggested to be too costly \cite{DS09}.
+This work differs from other implementations in that it is terminating and
+is implemented on top of a state-of-the-art STM in order to avoid too much extra cost.
 
 
 
