@@ -200,6 +200,7 @@ easier when using transactional memory instead of locks.
 
 
 \section{Details}
+\label{sec:details}
 The notion  of   transactional  memory  was
 first   proposed  nearly twenty years ago by Herlihy  and Moss 
 as an abstraction to be implemented in hardware and be used in order to easily 
@@ -207,7 +208,7 @@ implement lock-free concurrent  data structures  \cite{HM93}.  It  has  since  b
 first implemented in software  by Shavit  and  Touitou   \cite{ST97} and, partially thanks
 to the multi-core revolition,  has
 recently gained great  momentum as  a promising alternative  to locks in
-concurrent programming  \cite{FFGH08,H07,LK08,R08}.
+concurrent programming  \cite{FFGH08,HCUAGSV07,LK08,R08}.
 Especially in the reseach community transactional memory has been a very hot topic with hundreds
 of papers being published, this section will give a very breif overview of some of that reseach
 in order to help exlain STM.
@@ -219,7 +220,7 @@ simple and precise interface for programers to use.
 In order to actually define transactions in code, the most common
 and approach is to surround the code by some keywords that indicate the beginning and end of a transaction.
 For example the programmer might just enclose his transaction using the \emph{atomic} keyword:
-$$atomic{\ldots}$$
+$$atomic\{\ldots\}$$
 The code within this block will then be treated as a transaction and apper to be executed atomically.
 In an ideal world this would be all that a programmer would have to know before starting to use
 transactional memory, but unfortuantely as will be shown in this thesis, it is much more complex than this
@@ -243,7 +244,7 @@ can either be done by the programmer or done automatically.
 Of course a solution that requires the programmer to define this makes using an STM more complicated, but on
 the other hand dertermining them automatically can lead to more accesses being declared as shared then necessary
 causing increased overhead during execution.
-Doing this efficiently is no easy task, \cite{LPD-REPORT-2009-003} discusses some of the dificulties with STM code complication.
+Doing this efficiently is no easy task, \cite{DFGG11} discusses some of the dificulties with STM code complication.
 and in \cite{1133985} an efficent STM is designed with optimizations for their JIT complier to lower the overhead
 of shared memory accesses.
 
@@ -254,7 +255,7 @@ and \emph{privitization} \cite{spear:privitization:podc:2007}.
 Chapter \ref{chap:SI} looks at the problem of memory access in more detail.
 
 \subsection{Abort/Commit}
-When executing a STM protocol, a solution in which a single transaction  executes at a time
+For an STM protocol, a solution in which a single transaction  executes at a time
 trivially implements transaction atomicity but is irrelevant from 
 an efficiency point of view. So, a STM system has to do ``its best'' to 
 execute and commit as many transactions  per time unit as possible
@@ -362,21 +363,21 @@ In open nesting, $P$ can still commit, because even though $N$ accesses the same
  as $S$, $N$ has already committed to shared memory before $S$ started, so there is no conflict. 
 In closed nesting and flattening, $P$ might have to abort because $N$ has only committed
  within $P$ and not to shared memory, so there is a conflict between $P$ and $S$.
-\cite{_opennested} gives a comprehensive overview of open nesting.
+\cite{Mos06} gives a comprehensive overview of open nesting.
 Allowing a transaction to commit to shared memory fromm within a transaction 
 obviously violates the idea that everything within a transaction is executed atomically,
 possibly increasing performance, but also making programming transactions more difficult.
 Given this a new consistency model has to be considered, one such model, \emph{abstract} serializability,
-is described  in \cite{1229442}.
+is described  in \cite{NMA+07}.
 
 % In open nesting handling the situation where a parent transaction aborts after a nested
 %  transaction has committed becomes very difficult.
 % It is not sufficient to just roll back the nested transaction as that could lead to
 %  inconsistencies with other transactions that had committed after the nested transaction committed.
-% In order to deal with this \cite{1229442} introduces a set of extra mechanisms that
+% In order to deal with this \cite{NMA+07} introduces a set of extra mechanisms that
 %  a programmer can use, but this also introduces quite a bit of difficulty for the 
 % programmer, and if used incorrectly can cause deadlock.
-% Because of these difficulties, they \cite{1229442} conclude that open nesting is only
+% Because of these difficulties, they \cite{NMA+07} conclude that open nesting is only
 %  useful for expert programmers, but it allows them to create efficient libraries of
 %  data structures and algorithms that can benefit largely from open nesting.
 % These libraries can then be reused by non-expert programmers when writing
@@ -554,7 +555,7 @@ also occurs and must be handled by the TM implementation.
 
 \subsubsection{Dealing with conflicts}
 Once a conflict is detected the STM system must then choose a way to deal with it.
-Contention management was originally implemented in DSTM \cite{872048} as an out-of-bound mechanism
+Contention management was originally implemented in DSTM \cite{HLMS03} as an out-of-bound mechanism
 that a transaction would call when it detected a conflict with another transaction, 
 asking whether it should back off, abort, or tell the conflicting transaction to abort.
 % DSTM was proposed with two possible contention management policies \emph{aggressive} and
@@ -580,14 +581,14 @@ Mostly these contention managers have been proposed and designed by making certa
 by examining the contention manager's performance on a limited set of implementations and workloads.
 Part of the difficulty is that an contention management strategy that may work well for one STM 
 implementation may not work at all for another, based on how the STM implements things such as
- visibility of reads, and eagerness of acquire for writes \cite{1542494}.
+ visibility of reads, and eagerness of acquire for writes \cite{DGK09}.
 Given this, certain TM implementations such as LSA-STM have been tested using a wide array of 
-different contention managers \cite{10.1109/TPDS.2010.49} but there is no definiate answer as 
+different contention managers \cite{RFF07} but there is no definiate answer as 
 to what type of contention manager works best for which TM properties.
 
 A workload can largely effect how well a contention manager performs, for example passive contention
  managment is know to perform well on workloads with a regular access pattern \cite{1504199}, while
- polka \cite{1073861} works well on small scale benchmarks \cite{1542494}.
+ polka \cite{1073861} works well on small scale benchmarks \cite{DGK09}.
 The obvious problem with this is that there is no "best" contention manager that performs well in 
 all reasonable situations, in \cite{guerraoui05polymorphic/LPD} they come to this conclusion by 
 running a set of the top performing contention managers on a range of benchmarks designed to simulate real world applications.
@@ -596,10 +597,10 @@ running a set of the top performing contention managers on a range of benchmarks
 Unfortuantely many contention managers do not actually prove any guarantee of progress, they often
  only suggest why they should work well, there are possibly workloads that can be generated that 
 cause extremely poor performance and admit the livelock or starvation of transactions.
-The contention manager \emph{greedy} \cite{1073863} is an exception to this,
+The contention manager \emph{greedy} \cite{GHP05} is an exception to this,
 it is proven to prevent livelock and starvation, yet in oder to ensure these properties it
  introduces a high amount of contention on some shared meta data, resulting in poor performance in
- workloads with a large amount of short transactions \cite{1542494}.
+ workloads with a large amount of short transactions \cite{DGK09}.
 The liveness and progress of transactional memory is discussed in more detail in chapter
 \ref{chap:UC}.
 
@@ -630,81 +631,101 @@ The liveness and progress of transactional memory is discussed in more detail in
 
 
 \section{Simplicity}
-As we can see, the primary goal of transactional memory is to make concurrent programming
+Give that there are so many different interesting properties to consider
+when thinking about transactions, it is easy to loose sight of the what
+we are really looking for.
+It is important to remember that he primary goal of transactional memory is to make concurrent programming
 easier and more accessable, with performance following closely as a secondary goal.
-Unfortunately neiter of these goals have yet been realized.
+In reality though, unfortunately neiter of these goals have yet been realized.
 While the basic semantics of a transaction are widely aggreed on
-(that each transaction should appear to have been executed atomically
-with respect to other transactions), there are many other details to consider,
+(i.e. transaction atomicity with respect to other transactions), there are many other details to consider,
 some of which are actively debated and some of which remain as open questions.
 Standardizing these semantics and answering these open questions is an important
 step in ensuring that the primary goal of making concurrent programming easier
 is realized.
 If the semantics are either too hard to understand, or a programmer has to study
 too many details of one or more STM systems before being able to use them in
-his program then the original goal has been lost.
+his program then the sight of the original goal has been lost.
 While there is still no agreement on the full semantics of transactional memory,
 there has still been much research that focuses on performance first.
 The reason for this is because even though STM in its current form has been shown
 to be efficient for certain worloads \cite{DFGG11}, many people argue that
-its performance is not good enough to replace locks, even with all the
+its performance is not good enough to be an attractive alturnative to locks, even considering all the
 difficulties that surround using locks.
 
-This thesis takes the approach of finding the correct semantics for transactional
-memory before trying to improve performance as why try to improve the performace
-for something that is not fully defined and might change?
-As such the goal is to help define the semantics of software transactional memory
-that a programmer can use without being an expert in the area.
+% This thesis takes the approach of finding the correct semantics for transactional
+% memory before trying to improve performance as why try to improve the performace
+% for something that is not fully defined and might change?
+Given the dificulties that exist currently for finding the correct semantics for transactional memory
+the goal of this thesis is to take a step twords fixed and easy to understand semantics while suggesting
+ways to continue forward.
+% As such the goal is to help define the semantics of software transactional memory
+% that a programmer can use without being an expert in the area.
+With the grand goal that someday a programmer can write an efficient concurrent program
+with nearly as much ease as he would write a sequential one.
 
-Unfortunately there are far too many questions left open when dealing
-with the semantics of transactional memory to introduce here or let alone solve.
-Instead of attempting such a lofty goal this thesis will indroduce what we
+Unfortunately we can not immdeately realize this grand goal for there are far too many questions left open when dealing
+with the semantics of transactional memory to introduce in this thesis or let alone solve.
+Instead, this thesis will look at what we
 belived are the main areas of transactional memory research that take the
 ease-of-use as a primary concern.
-Each chapter will introduce an area before looking closely at a specific open
+In this way, each chapter will seperately introduce an area before looking closely at a specific open
 problem from that area and suggesting an STM protocol as a solution to the problem.
+Finally each chapter will mention some of the well know open questions from each area.
 
-The first chapter focuses on the area of STM research which takes the view that
-the first-class ease of use requirement is satisfied by ensuring transactions
+\subsection{Plan}
+Tranditionally research has taken the view that for a protocol to be considered a valid STM
+implementation then it should ensure transactions
 are atomic with respect to eachother and all transactions (aborted transaction included)
 execute in a consistent state of memory.
-Then once this is satisfied we can focus on improving the implementing protocol
-by increasing its performance or having it satsify desireable properties.
-Following this model, this chapter looks at the properties of \emph{invisible reads} and
-\emph{permissiveness} showing that they are not compatble with the correctness condition
+Once this is satisfied the research then focuses on improving the implementing protocol
+by increasing its performance or having it satsify desireable properties
+(interestingly, this properties are usually related to improving performance).
+Following this model, the first chapter looks at the specific properties of \emph{invisible reads}
+(a property important for the speed and scalibility of an STM) and
+\emph{permissiveness} (a property preventing a protocl from aborting transactions unnecessarliy)
+showing that they are not compatble with the correctness condition
 of \emph{opacity} before introduing a protocol that does satisfy these properties using
 the correctness condition of \emph{virtual world consistency}.
-See the chapter for the definition of these properties.
+% See the chapter for the definition of these properties.
 
-Following the view of transactional memory of the first chapter,
+When using this traditional view of transactional memory,
 issues that are not solved by ensuring transactions are atomic
 with eachother are left up to the programmer.
-Meaning he has to understand these issues and to choose an
-appropriate STM protocl based on his needs.
-The second and the third chapter looks at research that believes these sematics
-are not appropriate for making parallel programming easy to use.
-The second chapter suggests looking at ways to simplify these semantics
-while the thrid chapter suggests expanding these semantics to consider more
-issuses that might come up for the programmer.
+Some of these issues include things like how to deal with aborted transactions, how to deal
+with memory accessed inside and outside of transactions, how transactions are nested,
+how to deal with I/O, among others.
+The programmer then has to understand these issues and must then choose an
+appropriate STM protocol based on his needs.
+The second and the third chapters look at research that takes the approach
+that requring the programmer to make these decisions
+is not appropriate for an easy to use concurrent programming abstraction.
+The second chapter suggests looking at ways to simplify the traditional STM
+semantics while the thrid chapter suggests expanding the traditional semantics to consider
+more issuses that are likely to come up when using STM and provide straightforward
+solutions to them.
 
-In the second chapter we look at research that takes the view that for transactional memory to
+
+The second chapter looks at research that takes the view that for transactional memory to
 be easy to use the semantics defined in the first chapter should be simplified, meaning that,
 in a sense, the abstraction level should be raised.
-Specifically it looks at the problem of aborts in transactional memory and suggests that
-the programmer should not have to be aware of them, following that suggestion it introduces a protocol
+Specifically it looks at the problem of aborted transactions and suggests that
+the programmer should not have to be aware of them at all, following this suggestion it introduces a protocol
 that ensures every transaction issued by a process commits no matter the concurrecy pattern
 of other threads in the system.
 
-The definiton of transactions in the first chapter only takes a very limited view of how
+The area of research looked at in the third chapter suggests expanding the basic semantics of transactions.
+Taking just the traditional definition of transactions from the first chapter only takes a very limited view of how
 transactions fit into the big picture of computing.
-It only considers the interaction between transactions and ensuring the read and write
-operations within them at atomic with respect to the other transactions.
+It only considers the interaction between transactions themselves.
+%  and ensuring the read and write
+% operations within them at atomic with respect to the other transactions.
 Unsurprisingly this is a very limited view that leaves the interaction between
 transactions and other entities in the system undefined.
 This is not optimal considering ease-of-use as if a programmer was to use
 some of these mechanisms he would encouter undefined results or will have
-to be familir whith how different STM protocols interact with these different mechanisms.
-Basically this area of research is suggesting expanding the basic semantics of transactions.
+to be familir whith how different STM protocols specfically interact with 
+each of these mechanisms.
 The specific problem that this chapter looks at is the interaction between shared memory
 accesses inside and outside of transactions.
 It attemps to answer the question, ``how should the system act when shared memory
@@ -713,20 +734,32 @@ To answer this we suggest and define a term called \emph{terminating strong isol
 that a transaction's atomicity will not be violated by reads and writes performed
 outside of the transaction by other processes without holding back the progress of
 these reads and writes.
-A protocol protocol ensuring terminating strong isolation is then described.
+A protocol protocol ensuring this property is designed.
 
 The subject of the fourth chapter is probabaly the least interesting theoretically, but
 shows no less ambition then the previos chapters.
-The focus of the fourth chapter is to just to look at how to merge 
-Afterall it is nice to suggest all these different suggestions for the semantics
-of transactions, but it is less meaningfull if they are not compatable with
+The focus of the fourth chapter is to just to look at how to merge the research
+from the previous chapter.
+Afterall it is nice to give different suggestions for how the semantics
+of transactions should be modified, but it is less meaningfull if they are not compatable with
 eachother and we instead have to pick and choose.
 This chapter describes a protocol that considers some of the properties suggested
 in the first chapter, while hiding the nottion of abort from the programmer,
 and ensuring terminating strong isolation. 
 
 
+The fifth chapter looks into the idea of providing efficient abstractions
+as libraires for programmers to reuse from within their transactions.
+Not only does this mean the programmer does not need to design such libraries himself, but
+it allows an expert programmer who knows well the synchronization pattern of STM
+to write high performance implementations designed specfically for transactions.
+It specifcally looks into deisigned efficent data strcutres implemnting the map abstraction.
 
+
+By solving small problems in each one of these areas hopefully this thesis will
+help move forward the ease of use of transactional memory and mentioning
+some of the open problems in each of these areas will hopefully promote
+future strides towards ease of use.
 
 
 

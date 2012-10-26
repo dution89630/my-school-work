@@ -159,9 +159,9 @@ All the complexities and difficult synchronization is then taken care of by the
 underlying STM system.
 This means that, when faced to synchronization,  a programmer has 
 to concentrate on where atomicity is required and not on the way it is 
-realized. 
-(Unfortunately, in reality, it is actually not so simple for the programmer, this is discussed in
-detail in section \ref{})
+realized
+(unfortunately, in reality, it is actually not so simple for the programmer, as will
+be seen in the later chapters in this thesis).
 Like many abstractions, even if what is exposed to the programmer is a fixed well
 defined interface there are many different possible implementations and different
 properties that exist to provide the abstraction.
@@ -196,12 +196,11 @@ Each of these points are true in transactional memory as well.
 At the most basic level all a programmer should need to know is where
 to begin and end his atomic blocks.
 Beneth these atomic blocks lies the STM implementation which has many different aspects.
-Since the introduction of transactional memory in 1993 \cite{} dozens of different properties have emerged
+Since the introduction of transactional memory in 1993 \cite{HM93} dozens of different properties have emerged
 as well as many different STM algorithms,
 with each of them ensuring a greater or fewer number of these properties and being more or less
 concerned with performance.
-(In the related work section (section \ref{}) we give an overview of many different properties and
-implementations of STM)
+(Some of these properties are discussed in the introduction of this thesis in section \ref{sec:details})
 
 In an ideal world there would exist a \emph{``perfect''} STM algorithm that ensures all desirable properties
 without making any sacrifies.
@@ -866,7 +865,7 @@ can be satisfied only if the third is omitted.
 \input{./VWC-comp/vwcinvisperm}
 
 
-!!!!!!!!!!!!!!!SHOULD ALSO TALK ABOUT PROB PERM FOR THE PROOF!!!!!!!!!!!
+\anote{SHOULD ALSO TALK ABOUT PROB PERM FOR THE PROOF}
 
 
 
@@ -2440,7 +2439,7 @@ remains to be  satisfied  but for  the accesses to the common clock.
 
 \subsection{Some additional intersting properties}
 
-\anote{!!!!!!!!!NEED TO INTRO/UPDATE THIS SECTION!!!!!!}
+\anote{NEED TO INTRO/UPDATE THIS SECTION or maybe should just remove it}
 Interestingly enough, this  new  STM protocol  has additional  noteworthy
 features: (a) it uses only base read/write operations and a lock per object 
 that is  used   at  commit  time   only   and  (b) satisfies  the  disjoint  

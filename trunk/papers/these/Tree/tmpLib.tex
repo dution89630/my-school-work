@@ -1,0 +1,43 @@
+\anote{Should include this?? What to include here??}
+
+As mentioned in the introduction a partial solution to the difficulty of concurrent programming
+is to provide concurrent libraries of popular abstractions such as data structures.
+Often these are finely tuned high performance libraries
+providing the programmer with useful operations.
+The implementations of such libraries are usually very complex
+and difficult to understand, but are provided with a simple to use
+interface for anyone to use.
+By doing this experts can create algoritms providing strong guarantees
+and good performance that can then be widely reused.
+
+In a perfect world transactional memory would not need such libraries,
+as one could just directly place a sequnetial implementaion of an abstraction
+directly in transactions and it would perform as well and provide the same
+guarantees as a library provided by an expert.
+Unfortunately this is not completely true.
+Due to the general nature
+of the syncronization required by STM, a sequentail data structure implementaion directly
+placed in transactions will never perform as well as a highly tuned concurrent
+(lock based or non-blocking) implenetaion of a data structre done by an expert
+given that the expert can consider the specific syncronization needed to implement
+that data structure safely.
+
+This gives us the opportunity to design libraries designed specifically for use inside
+of transactions that take into account the syncronization considerations
+of STM.
+By doing this we can provide a programmer using transactions with abstranctions that perfrom closer
+to higly optimized non-transactional ones.
+
+A further advatage of providing efficient libraries in STM is given by the reusable nature of code implemented using
+transactions, a programmer can use the operations of the abstractions along with his own code
+to create new efficient atomic operations.
+For example a programmer might use a map abstraction that provides an $\lit{insert}$ and a $\lit{delete}$ operation
+to create an atomic $\lit{move}$ operation by simply combing the $\lit{insert}$ and $\lit{delete}$ in a transaction.
+
+By providing a programmer with a large selection of transaction based implemntaions of commonly used abstractions
+his life becomes much easier.
+Also if these libraries provide good performance then STM will be a very attractive alturnative to highly tuned
+non-transactional abstractions as STM has the advantage that the programmer can reuse the libraries in his transactions to create new
+atomic operations specific to his needs.
+
+This chapter will focus on designing efficient data structures in transactional memory proving the map abstraction.
