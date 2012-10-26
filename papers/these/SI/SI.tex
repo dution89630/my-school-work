@@ -1865,7 +1865,7 @@ it is immediately restarted as a new transaction.
 
 
 \section{Proof of correctness}
-\anote{Need to do this}
+\anote{!Need to do this!}
 
 
 
@@ -1877,23 +1877,7 @@ it is immediately restarted as a new transaction.
 
 
 
-\section{Conclusion}
-\label{sec:conclusions}
-This paper has presented an algorithm that achieves non-blocking strong 
-isolation  ``on top of'' a TM algorithm based on logical dates and locks, 
-namely  TL2. 
-In the case of a conflict between a transactional and a non-transactional
-operation, this algorithm gives priority to 
-the non-transactional operation, 
-with the reasoning that while an eventual abort or restart is part of the 
-specification of a transaction,
-this is not the case for a single shared read or write operation. 
-Due to this priority mechanism, 
-the proposed algorithm is   particularly appropriate  for environments 
-in which processes do not rely heavily
-on the use of especially large transactions along with non-transactional write operations.
-In such environments, terminating strong isolation is  provided for transactions, 
-while conventional read and write operations execute with a small additional overhead.
+
 
 
 %\section{Refernces}\label{references}
@@ -2020,6 +2004,9 @@ while conventional read and write operations execute with a small additional ove
 
 
 \section{Version of algorithm that does not use NT-records}
+
+\anote{Either remove this section or describe the algs}
+
 This algorithm also provides wait-free NT read and write operations.
 The difference is that NT-records are not used.
 Instead NT values are read and written directly from memory.
@@ -2243,6 +2230,39 @@ The only change that is needed to the base TL2 algorithm is that when an item is
 transaction has a marker that is initialized as $\mathit{LIVE}$ and is set to $\mathit{COMMITTED}$ just before the transaction starts performing write backs 
 during the commit phase.
 The NT-read operation is shown in Fig. \ref{fig:noblock-readonly}.
+
+
+
+
+\section{Conclusion}
+\label{sec:conclusions}
+This paper has presented an algorithm that achieves non-blocking strong 
+isolation  ``on top of'' a TM algorithm based on logical dates and locks, 
+namely  TL2. 
+In the case of a conflict between a transactional and a non-transactional
+operation, this algorithm gives priority to 
+the non-transactional operation, 
+with the reasoning that while an eventual abort or restart is part of the 
+specification of a transaction,
+this is not the case for a single shared read or write operation. 
+Due to this priority mechanism, 
+the proposed algorithm is   particularly appropriate  for environments 
+in which processes do not rely heavily
+on the use of especially large transactions along with non-transactional write operations.
+In such environments, terminating strong isolation is  provided for transactions, 
+while conventional read and write operations execute with a small additional overhead.
+
+
+
+
+
+
+
+
+
+
+
+
 
 % \end{appendix}
 % 
