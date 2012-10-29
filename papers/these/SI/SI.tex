@@ -168,7 +168,7 @@
 Simplified transaction semantics may not be enough.
 In the interest of ease-of-use, each chapter in this thesis has had
 a primary focus on transaction semantics.
-The first chapert suggested improving STM
+The first chapter suggested improving STM
 protocols without changing the semantics of a transaction, the second
 chapter suggested simplifying the semantics of a transaction,
 and this chapter will suggest expanding the semantics.
@@ -177,7 +177,7 @@ within his code in order to suggest the expansion of transactional
 semantics again in the interest of ease-of-use.
 
 Following the example of the previous chapter we will promote our change
-of semantics by contransting transactions to concurrent objects.
+of semantics by contrasting transactions to concurrent objects.
 
 A discussion on semantics the of concurrent protocols is meaningless without
 first considering consistency conditions.
@@ -185,7 +185,7 @@ By satisfying a consistency condition a concurrent protocol allows the
 user of that protocol to reason about how he can use it in his program
 in a concurrent setting.
 For example having a concurrent data structure that satisfies linearizability
-means that the operations of a data strcuture will have a global order
+means that the operations of a data structure will have a global order
 based on the invocation and completion time of operations.
 This allows, for example, a programmer who is coding some user based service
 to use reasoning such as: if user $A$ who
@@ -202,20 +202,20 @@ Likewise in transactional memory, a correctness condition helps the
 programmer reason about how he can use transactions in his programs.
 For example opacity ensures that all transactions have a global order
 and each transaction appears to have happened instantly at some point
-in time between its invocation and commital.
-This allows the programmer to create mult-process programs where the processes are
+in time between its invocation and committal.
+This allows the programmer to create multi-process programs where the processes are
 synchronized using programmer defined atomic operations.
 The most common example of this is a banking application defined by transactions.
 A programmer writing such a bank application may want to define an operation
-that transfers a given ammount of money $m$ from account $A$ to another accout $B$.
+that transfers a given amount of money $m$ from account $A$ to another account $B$.
 In order to do this he creates a transaction that first reads the balance
-on the source accout ($A.balance$), and if the account has enough money the transfer
+on the source account ($A.balance$), and if the account has enough money the transfer
 proceeds by first setting $A.balance$ to the value previously read minus $m$.
 Next the balance of account $B$ is read, before setting its new balance
 to the value read plus $m$ and the transaction is completed.
 Given that the programmer uses an STM protocol that ensures transactions are executed
 atomically, a user of this program will see only valid transfers
-completed, otherwise conditions might arrise where a blanace is concurrently
+completed, otherwise conditions might arise where a balance is concurrently
 modified by another process during a transaction, resulting in invalid balances
 where someone could loose or gain too much money.
 
@@ -231,34 +231,34 @@ for a programmer to reason about how to use it.
 % semantics of transactions.
 Now we will suggest that due to the way transactions are used in a program
 an STM protocol must satisfy more then a correctness condition
-such as opacity that is only coconcerend with transactions.
+such as opacity that is only concerned with transactions.
 The reason for this is best seen by going back to the comparison of
 a transaction and an operation on a concurrent object.
 
 For a concurrent object consider the common example of a tree
 data structure implementing the set abstraction.
-This abstraction might provide the following lineariable operations:
+This abstraction might provide the following linearizable operations:
 $insert(K)$ which adds $K$ to the set if it does not already exist, returning $true$
 on success, $delete(K)$ which removes $K$, if it exists, from the set
 returning $true$ on success, and $contains(K)$ returning $true$ if $K$
 exists in the set, $false$ otherwise.
-Here there are two importnat things to point out, first is that these operations
-are contained to their data structre implementation, the status of shared
+Here there are two important things to point out, first is that these operations
+are contained to their data structure implementation, the status of shared
 memory outside of the data structure has no affect on these operations.
-Second is that these operations fully implemnt the desired abstraction
+Second is that these operations fully implement the desired abstraction
 (in this case a set),
 a user chooses to use this specific implementation because he needs
 the $insert$, $delete$, and $contains$ operations.
-If he wanted addtional functionality such as in-order iteration, then
-he would have to choose a different implemntation providing the appropriate
+If he wanted additional functionality such as in-order iteration, then
+he would have to choose a different implementation providing the appropriate
 abstraction.
-This might lead the programmer to consider data structure as a seperate entity
-from that of thit program where this entity is accessable through some fixed
+This might lead the programmer to consider data structure as a separate entity
+from that of the program where this entity is accessible through some fixed
 interface, he need not be aware of the implementation below the interface.
 
-Transactions on the other hand are integreated into the users program
-rather then compromising some seperate entity.
-When a user places a trasaction in his code it is because he requires
+Transactions on the other hand are integrated into the users program
+rather then compromising some separate entity.
+When a user places a transaction in his code it is because he requires
 synchronization between the processes of his program, this synchronization
 does not have to be based on some predefined abstraction or only access
 some contained structure.
@@ -266,17 +266,17 @@ The concept of the transaction allows the programmer to be free to
 perform any sort of operation, performing reads and write to any
 location in the shared memory.
 In this sense the transaction is a different type of mechanism
-then a concurrent object as transactions are integreated and contained within
+then a concurrent object as transactions are integrated and contained within
 a user's program instead of being separate entities behind
 a fixed interface.
 
 So we have concurrent objects whose operations follow some correctness condition
 allowing them to be accessed as something interesting to the programmer as
-a seperate entity.
+a separate entity.
 And transactions which appear as atomic blocks (thanks to the STM protocol
 satisfying a correctness condition) built into a users program.
 At a low level the difference between a transaction and an operation
-on a shared object might imply separate protocol design chocies.
+on a shared object might imply separate protocol design choices.
 For example the previous chapter highlighted some of the implementation
 differences between a traditional universal construction and a
 universal construction for transaction based programs.
@@ -285,10 +285,10 @@ But, let us step backwards for a moment and look at a higher level.
 Before we consider implementation details we must consider how
 how the programmer interacts with a transaction is considered at an abstraction level.
 The previous discussion
-has expressed the view that transactions exsit as an integrated part of
+has expressed the view that transactions exist as an integrated part of
 a users program.
 This happens when the programmer places a group of reads and writes
-inside a block of code bouded by the keywords $transaction\_begin$ and
+inside a block of code bounded by the keywords $transaction\_begin$ and
 $transaction\_end$.
 Inside this block of code reads and writes to shared memory are then
 treated by the STM protocol as calls to the operations
@@ -301,9 +301,9 @@ semantics and correctness of a transaction when considering shared memory.
 Should the transactions appear to be atomic only with other transactions, or should
 concurrent non-transactional shared memory accesses also be considered?
 More precisely, should the shared memory that is accessed from within a transaction
-be only safely accessable from within transactions, or should it be
+be only safely accessible from within transactions, or should it be
 safe to access memory inside and outside of transactions at any time,
-or should it be something inbetween?
+or should it be something in-between?
 
 Interestingly, this possibility of the {\it existence of two different paradigms} reveals
 %between strong and weak isolation reveals 
@@ -316,18 +316,18 @@ as well considering the discussion on transactions vs operations on concurrent o
 the choice of paradigm seems clear.
 If within a program there are two sets of shared memory, one set for accessing inside
 transactions, and another set for accessing outside of transactions, then we loose a
-bit of the integration concept for a bit more of the seperated object concept.
+bit of the integration concept for a bit more of the separated object concept.
 One way to think of it is that the transactions represent at programmer defined
 interface to one large discrete shared object.
 Transactions are still defined and placed by the programmers, but they are limited
 in what memory they can access.
 On the other hand if the programmer can access shared memory both inside and outside
-of transactions while the system is still ensurubg the atomicity of the transactions then
+of transactions while the system is still ensuring the atomicity of the transactions then
 we have a more straightforward integrated system.
 
 \subsection{Transaction vs Non-transactional Code.}
 \label{sec:TvNT}
-Let us now define precisely what we mean by trasactional vs, non-transactional
+Let us now define precisely what we mean by transactional vs, non-transactional
 accesses.
 In a  concurrent environment,  shared memory  may  be
 accessed by both transactions as well as  
@@ -364,7 +364,7 @@ the  transaction{}'s   execution.
 % acceptable for an application, then the responsibility to prevent it is  
 % delegated   to  the   programmer  of   concurrent  applications   for  this
 % system.
-Nevertheless, these concurrecny issuses can be anticipated and used
+Nevertheless, these concurrency issues can be anticipated and used
 appropriately by the 
 programmer,  still resulting  in correctly  functioning  applications.
 Ways of how a programmer might consider to use weak isolation in his code
@@ -372,13 +372,13 @@ is presented in \cite{blundell06}.
 This requires the programmer 
 to  be conscious  of  eventual race  conditions  between transactional  and
 non-transactional code that can change depending on the STM system used.
-Not only can this make transactional code extreemly difficult to write
+Not only can this make transactional code extremely difficult to write
 and understand, but a simple change in the STM protocol could render the
 program useless.
 Obviously this is not a good solution to concurrent transactional and non-transactional
 access when considering ease-of-use.
 
-More commonly, an STM protocol that implemnts weak isolation expects users to avoid
+More commonly, an STM protocol that implements weak isolation expects users to avoid
 any concurrent interaction between the shared memory outside and inside of
 transactions.
 This is because the type of consistency guaranteed is usually undefined
@@ -386,8 +386,8 @@ and depends on the implementation of the STM protocol used.
 A programmer already has to consider different types of memory such as thread local
 process local and shared memory so having him decide what memory should be transactional
 and what should not be just adds an additional burden to the programmer.
-Along with this, having a seperate section of memory for transactions is also not consistent with
-the concpet of transactions being integrated within a program.
+Along with this, having a separate section of memory for transactions is also not consistent with
+the concept of transactions being integrated within a program.
 
 Therefore, in order  to keep consistent with  the spirit of TM  principles a
 system should prevent unexpected   results  from   occurring  
@@ -409,16 +409,16 @@ as providing stronger guarantees tend to have an impact on performance.
 In some cases a programmer using an STM that satisfies
 weak isolation can deal with concurrency issues between transactional
 and non-transactional accesses himself.
-Usually a programmer will porpously subject himself to these
+Usually a programmer will purposely subject himself to these
 difficulties in the interest of performance.
-Examining more formally these performance over ease-of-use concepts, serveral
-STM protocols have been proposed allowing the existance of transactions
-that might not apper as being atomic.
-These protcols often focus on ways to give the programmer the power to weaken the semantics
+Examining more formally these performance over ease-of-use concepts, several
+STM protocols have been proposed allowing the existence of transactions
+that might not appear as being atomic.
+These protocols often focus on ways to give the programmer the power to weaken the semantics
 of certain transactions or even specific reads within transactions.
 DSTM \cite{HLMS03} introduced the concept of \emph{early-release}, giving a programmer
 the ability to remove locations from the read set of a transaction,
-in the hope of improving performance by lessening the likelyhood of a
+in the hope of improving performance by lessening the likely-hood of a
 transactional abort.
 \emph{Elastic} transactions \cite{FGG09} allow a programmer to mark transactions that
 satisfy a weaker consistency condition then opacity allowing for efficient
@@ -428,17 +428,17 @@ inside and outside of transactions, we felt it was interesting to mention
 these solutions as in a way they allow a sort of non-transactional read
 to be preformed from within a transaction.
 
-\paragraph{Privitization}
-Privitization is an interesting solution problem to the splitting of memory
+\paragraph{Privatization}
+Privatization is an interesting solution problem to the splitting of memory
 between transactions and non-transactional accesses.
-As the name implies, privitization gives the programmer the ability
-to privitize sections memory to a specific process giving it exclusive access to
+As the name implies, privatization gives the programmer the ability
+to privatize sections memory to a specific process giving it exclusive access to
 memory that was previously shared.
-The programmer does this through the use of what is called a privitizing transaction
-within which he makes some memory unaccessable from other processes' transactions.
-Once a process has privitized some memory then is safe
-to access it outside of transaction within the privitizing thread.
-After privitizaion, memory can then be publicized to be accessed
+The programmer does this through the use of what is called a privatizing transaction
+within which he makes some memory unaccessible from other processes' transactions.
+Once a process has privatized some memory then is safe
+to access it outside of transaction within the privatizing thread.
+After privatization, memory can then be publicized to be accessed
 from within transactions again
 by using a publication transaction.
 
@@ -447,7 +447,7 @@ linked list. The  removal of a node $n$ by a  transaction $T_i$, for private
 use, through  non-transactional  code,  by  the process $p$ that  invoked $T_i$,  
 constitutes  privatization. Then, $T_i$  is called privatizing transaction. 
 Obviously after the transaction commits future transactions will no longer
-be observe $n$ in the list, but unless the STM protocol is privitization safe
+be observe $n$ in the list, but unless the STM protocol is privatization safe
 $p$ cannot safely access $n$ non-transactionally.
 Normally this is due to the fact that there could be live transactions
 that started before $T_i$ committed who have concurrently accessed $n$.
@@ -455,8 +455,8 @@ that started before $T_i$ committed who have concurrently accessed $n$.
 % that for $T_i${}'s process the node is private but for other processes, the node is 
 % still seen as shared. 
 These problems are closely examined in \cite{spear07}.
-Here they show that prviding privitization safety is not as
-simple as just implemnting an STM protcol that provides opacity as incorrect results due to
+Here they show that providing privatization safety is not as
+simple as just implementing an STM protocol that provides opacity as incorrect results due to
 privatization can occur regardless of the update policy
 (redo log or undo log)  that a  transactional memory algorithm implements. 
 As  an example, consider
@@ -489,24 +489,24 @@ such as using visible reads, conventional means of
 synchronization such as fences, sandboxing, partitioning by consensus 
 \cite{scott07}, the use of lock-free reference   counters   \cite{afek10}  or   
 by  using private transactions \cite{dice10}, to name a few. 
-Several protocols implementing privitization have been proposed,
+Several protocols implementing privatization have been proposed,
 ranging from solutions where a programmer uses a special keyword to mark
-which transactions are privitizing, to others that ensure safety by having
-a privtizing transaction block until all other concurrent transactions
+which transactions are privatizing, to others that ensure safety by having
+a privatizing transaction block until all other concurrent transactions
 have finished, to more complex non-blocking solutions.
 
 
-A main advatage of privitizaion is in the case of performance, as when
-a thread privitizes some memory, it can then access it without overhead.
-While privitization is an interesting solution, we feel that is does not
+A main advantage of privatization is in the case of performance, as when
+a thread privatizes some memory, it can then access it without overhead.
+While privatization is an interesting solution, we feel that is does not
 fit in our model of ease-of-use for two main reasons.
-Firstly the seperation between the memory safe to access by transactions
-and that safe to access outside of transactions is still separated, privitization/
-publication just gives the user the abitiy to dynamically move sections of memory
+Firstly the separation between the memory safe to access by transactions
+and that safe to access outside of transactions is still separated, privatization/
+publication just gives the user the ability to dynamically move sections of memory
 from one part to another.
 Secondly it adds an extra layer of complication to the transactional memory
-abstraction, if the programmer wants to takes advatage of privitization he
-has to decide when and what to privitize and publicize.
+abstraction, if the programmer wants to takes advantage of privatization he
+has to decide when and what to privatize and publicize.
 
 
 
@@ -543,7 +543,7 @@ has to decide when and what to privitize and publicize.
 \paragraph{Strong isolation}
 
 \emph{Strong isolation}, in order to spare the programmer from the responsibilities
-raised by weak isolation or privitizaion, ensures that  
+raised by weak isolation or privatization, ensures that  
 both the  transactions  and  the non-transactional
 read and write operations are be implemented in a way  
 that  takes their co-existence  into account.
@@ -554,29 +554,29 @@ Strong isolation ensures that the non-transactional accesses to shared memory
 do not violate the atomicity of the transactions.
 As a result,
 the aforementioned scenarios described in the paragraphs about weak isolation
-and privitization  where non-transactional operations  violate
+and privatization  where non-transactional operations  violate
 transaction isolation, are not be allowed to happen.  
 In fact strong isolation
 inherently also solves the privatization problem as it
 imposes synchronization between transactional and non-transactional code.
 
 In order to better understand strong isolation guarantees, consider
-the follwoing simple intuitive extention that can be applied to an STM protocol
+the following simple intuitive extension that can be applied to an STM protocol
 in order to ensure strong isolation.
-In order to provide this extention, any non-transactional operation that 
+In order to provide this extension, any non-transactional operation that 
 accesses shared data is simply treated as a ``mini-transaction'', i.e., a transaction  that contains a
 single read/write operation. In that case,  transactions  will have to  be  
 consistent (see Sect.~\ref{sec:badthings})  not only with 
 respect to each other, but 
 also with respect to the  non-transactional operations.
-Obviously in this solution there is no seperate section of memory for transactions
-and their atomicity is preserved resulting in a simplier framework for
-the programmer then privitization or weak isolation.
+Obviously in this solution there is no separate section of memory for transactions
+and their atomicity is preserved resulting in a simpler framework for
+the programmer then privatization or weak isolation.
 While this solution is simple, it is not necessarily optimal performance wise.
 As such, several more efficient approaches to implementing strong isolation have been proposed,
 in \cite{shpeis07} a blocking implementation to strong isolation
 is described by placing barriers in transactions to ensure safety.
-In the intrest of improving performance, this paper also proposes ways of performing dynamic
+In the interest of improving performance, this paper also proposes ways of performing dynamic
 and static analysis in order to remove certain barriers
 while still ensuring safety.
 Further dynamic optimizations proposed in \cite{SMSA08}, but
@@ -593,7 +593,7 @@ Other work has considered strong isolation in hardware transactional memory \cit
 % isolation}.
 
 When implementing strong isolation in order to ensure the safety of non transactional reads and writes
-(weather they are implemeted as mini-tranactions or by using memory barriers)
+(weather they are implemented as mini-transactions or by using memory barriers)
 they become more then just a single load or store operation when actually being executed on the processor.
 In order not to increase the complexity of using transactional memory we want the programmer to be
 able to perform non-transactional operations in his code just as he would a normal read and write.
@@ -612,7 +612,7 @@ Interestingly this paper also presents examples of code that a programmer
 might write to run along with an STM protocol that provides some type of weak
 isolation which would not run using an STM protocol that provides strong isolation,
 further suggesting that a standard should be proposed so that the programmer
-is not stuck having to uderstand the intracacies provided by different STM
+is not stuck having to understand the intricacies provided by different STM
 protocols.
 
 Further complicating things, there  are different  definitions in  literature for  strong 
@@ -633,12 +633,12 @@ transactions which contain only a single  read or
 write operation, and (b) the consistency condition for transactions is opacity
 (or virtual world consistency).
 We choose this definition as it is simple and keeps with the spirit of atomic transactions
-without having to seperate the memory.
+without having to separate the memory.
  
-Using this definition, the properties referd to as
+Using this definition, the properties referred to as
 {\it containment}  and {\it non-interference} are satisfied.
 These properties were defined in \cite{blundell06} in order to describe
-the syncronization issues between concurrent transactional and non-transactional operations.
+the synchronization issues between concurrent transactional and non-transactional operations.
 Containment is   illustrated in  the  left  part of  Fig.
 \ref{fig:int-nonc}.  There,
 under strong  isolation, we have  to assume that transaction  $T_1$ happens
@@ -727,7 +727,7 @@ by process $p_2$).}
 
 
 Strong isolation allows transactions to not be restricted to use a fixed
-subset of memory while still ensuring their atomicity with repect to
+subset of memory while still ensuring their atomicity with respect to
 other transactions as well as non-transactional operations.
 This allows the programmer to preform reads ands write to the same memory he accesses
 in his transactions without having to worry about observing or creating inconsistencies.
@@ -746,13 +746,13 @@ Previous research on STM protocols has taken the approach that
 these characteristics might acceptable.
 The reason for this is that the
 programmer  accepts the fact that a  transaction has a duration and that it
-may  even  fail: Given that every live transaction has the posibility
+may  even  fail: Given that every live transaction has the possibility
 to abort means that the  
 failure to complete can be considered a part of the transaction concept.  
 
 Now if we have non-transactional operations that rely on the same mechanisms
-(either implemnted using locks or by mini-transactions) then they are sucseptable
-to the same posibilty of non-completion.
+(either implemented using locks or by mini-transactions) then they are susceptible
+to the same possibility of non-completion.
 However one must consider that a transaction does not have the same semantics
 as a simple read or write operation.
 While the concept of the memory  transaction includes the possibility of failure,
@@ -773,9 +773,9 @@ read and write operations to shared memory are not guaranteed to terminate.
 Such an approach to strong isolation would then be rather counter-intuitive for the 
 programmer (as well as possibly detrimental for program efficiency).
 
-For this reason we believe that an STM protocol implementing srong
+For this reason we believe that an STM protocol implementing strong
 isolation should also consider the progress of non-transactional operations.
-In order to deal with this we suggest that a STM protcol should implemnt
+In order to deal with this we suggest that a STM protocol should implement
 \emph{terminating strong isolation}, which we simply define as strong isolation
 with the additional guarantee that the non-transactional read and write
 operations of a process are guaranteed to terminate no matter the actions of
@@ -916,20 +916,20 @@ As previously described, the goal is to design a protocol in which
 non-transactional read and write operations never block or abort
 i.e. {\it terminating strong isolation}.
 Before diving into the design of a new protocol, let us consider how
-this relates to the protocol described in the previousl chapter.
+this relates to the protocol described in the previous chapter.
 The previous chapter introduced an STM protocol in which every transaction
 is guaranteed to commit where the progress of a transaction only depends on
 its issuing process.
 This helps hide the notion of abort for the programmer, but does
-not prevent aborts from happeneing at all.
+not prevent aborts from happening at all.
 In fact any transaction is allowed to abort, but only a finite number
 of times.
 When implementing terminating strong isolation on the other hand we
-want to compeltely avoid non-transactional operations from aborting.
+want to completely avoid non-transactional operations from aborting.
 The most obvious reason for this is because we want non-transactional reads and write
 to behave the same as simple atomic reads and writes.
 
-The second, less theoretically intersting, but just as important reason
+The second, less theoretically interesting, but just as important reason
 is performance.
 To the programmer the non-transactional operations as simple reads and
 writes, he should be able to assume that they are efficient.
@@ -937,14 +937,14 @@ In fact, the primary concern of previous research on strong isolation
 is performance, it has even been suggested that 
 
 In the previous chapter we were more interested in showing that a concept was
-possible, while in this chapter performace is a just as important concern.
+possible, while in this chapter performance is a just as important concern.
 Given this we cannot simply implement non-transactional
 operations as we did transactions in the previous chapter's protocol.
 
 Still it is not necessary to design a completely new protocol, instead we
 choose to take the base design of an efficient state-of-the-art STM protocol
 that provides weak isolation and extend it to provide terminating strong isolation.
-The TL2 protocol was choosen for this as it is fairly straightforward
+The TL2 protocol was chosen for this as it is fairly straightforward
 and can be considered as one of the fastest STM implementations.
 In the redesigned TL2 protocol presented in this chapter
  read   and write operations that appear inside a 
@@ -982,12 +982,12 @@ The word-based version of the algorithm is used, %which means that the shared va
 %words and that the operations issued by a transaction are simply read and write operations. 
 %For the sake of brevity, implementation details of the algorithm are omitted in the following description. 
 where transactional reads and writes are to single memory words.
-Instead of presenting the detailed alorithm we will only present the main concepts of the algorithm
+Instead of presenting the detailed algorithm we will only present the main concepts of the algorithm
 that are used in the protocol presented in this chapter.
 The safety condition ensure by TL2 for transactions is opacity.
 It should be noted that the original version of TL2 takes no consideration into non-transactional memory
 accesses taking the view that transactions should be relegated to their own separate section of memory.
-Extended versions of TL2 that are privitizaion safe have also been exaimed \cite{DSS10}.
+Extended versions of TL2 that are privatization safe have also been examined \cite{DSS10}.
 %\vspace{-0.25cm}
 %---------------------------------------------------------------------
 %\subsection{Main Features of TL2}
@@ -1004,7 +1004,7 @@ One of the key features of TL2 is that read-only transactions are considered eff
 This is because they do not need to maintain 
 local copies of a read or write set  and because if they reach the $try\_to\_commit$
 operation before aborting then they can commit immediately as they are guaranteed
-to be consistend.
+to be consistent.
 To control transaction synchronization, TL2 employs locks and logical dates. 
 %The variables  that a  transaction has to read form its read
 %set, while the variable it has to update, form its write set.  
@@ -1036,10 +1036,10 @@ If, on the  contrary, the logical date of a read set  item is larger than the $\
 of the transaction,  then  a concurrent  transaction 
 has updated this item, invalidating the read.
 A transaction must abort if its read set is not valid.  
-Once the read set it varified to be consistent the commit operation performs an increment-and-fetch on $\mathit{GVC}$, and stores the 
+Once the read set it verified to be consistent the commit operation performs an increment-and-fetch on $\mathit{GVC}$, and stores the 
 return value in local variable $\mathit{wv}$ (which can be seen as a write version number  or a version timestamp). 
 Should the transaction commit, it will assign its $\mathit{wv}$ as the new logical date of the shared variables in its write set.
-Finally the locks are realeased completing the commit operation.
+Finally the locks are released completing the commit operation.
 
 A read operation must check both the lock and the logical time of the variable it is reading.
 If it is either locked, or the value of the logical time is greater then $\mathit{rv}$ then the transaction must abort,
@@ -1049,7 +1049,7 @@ Importantly, thanks to the use of the logical clocks the read operations take co
 and do not require validating the locations previously read in order to ensure opacity.
 
 % \paragraph{Locks.}
-In order to implemnt the locks and logical time, they  are stored in  a shared array
+In order to implement the locks and logical time, they  are stored in  a shared array
 of words.
 Each shared memory  word accessed by the STM protocol is
 mapped to a location in the lock array through a  
@@ -1059,7 +1059,7 @@ memory locations. This  partitions the memory into  so-called stripes.
 For each memory word in the array
 the first bit acts as lock  bit, indicating whether the lock  is free or
 not. The rest of the bits form the  
-logical time of the variables assoiated to that location by the hash function.
+logical time of the variables associated to that location by the hash function.
 
 
 %Timestamping with logical dates facilitates read set validation for a transaction. 
