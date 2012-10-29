@@ -150,8 +150,8 @@
 \vspace{0.1cm}
 
 \subsection{Software transactional memory (STM) systems}
-The most imporant goal of the concept of STM is to make concurrent programming
-easier and more accessable to any programmer.
+The most important goal of the concept of STM is to make concurrent programming
+easier and more accessible to any programmer.
 Arguably all a programmer should need to know in order to use STM abstraction is to know
 the syntax for writing an atomic block, likely something as simple as
 $$atomic \{ \dots \} $$
@@ -176,14 +176,14 @@ functionality and use it in his program without knowing any additional informati
 
 Now even though this is all that the programmer needs to know, there are many
 more details to consider at a lower level.
-The most obvious is that there are different data stuctures that can be used to
+The most obvious is that there are different data structures that can be used to
 provide a map abstraction, with examples such as a skip-list, binary tree, or hash table.
-Chosing one of these may impact the applications performance or provide additional
+Choosing one of these may impact the applications performance or provide additional
 functionality, yet
 to the programmer just interested in the map abstraction he case use each of them the same.
 
-To further complicate things for the people implementing the actual datat sturcutures,
-even when considering a single data sturcture there are different properties a specific implementation might ensure.
+To further complicate things for the people implementing the actual data structures,
+even when considering a single data structure there are different properties a specific implementation might ensure.
 For example you might have a blocking skip-list or a non-blocking skip-list which provide
 different guarantees of the progress of the operations.
 Taking this a step further, different implementations might perform
@@ -195,7 +195,7 @@ Again though a programmer is not required to know these details.
 Each of these points are true in transactional memory as well.
 At the most basic level all a programmer should need to know is where
 to begin and end his atomic blocks.
-Beneth these atomic blocks lies the STM implementation which has many different aspects.
+Beneath these atomic blocks lies the STM implementation which has many different aspects.
 Since the introduction of transactional memory in 1993 \cite{HM93} dozens of different properties have emerged
 as well as many different STM algorithms,
 with each of them ensuring a greater or fewer number of these properties and being more or less
@@ -203,16 +203,16 @@ concerned with performance.
 (Some of these properties are discussed in the introduction of this thesis in section \ref{sec:details})
 
 In an ideal world there would exist a \emph{``perfect''} STM algorithm that ensures all desirable properties
-without making any sacrifies.
+without making any sacrifices.
 Unfortunately this algorithm has not yet been discovered (if it is even possible).
-In fact many of these desierable properties have been little more then introduced and many of their implications
-on how they affect STM algorithms or how they interact with eachother has yet to be explored.
-Motivated by this, this chapter examines two desiralbe properties that are concerned with performance,
+In fact many of these desirable properties have been little more then introduced and many of their implications
+on how they affect STM algorithms or how they interact with each other has yet to be explored.
+Motivated by this, this chapter examines two desirable properties that are concerned with performance,
 namely \emph{permissiveness} and \emph{invisible-reads}, and how they interact with two consistency
 criterion for STM systems, namely \emph{opacity} and \emph{virtual world consistency}.
 As previously noted, these are just a few of the many properties that have been defined for STM systems
 so this work is only touching on a much larger set of problems, but hopefully this work encourages
-the study of attitional properties.
+the study of additional properties.
 
 
 %----------------------------------------------------------------------
@@ -240,7 +240,7 @@ the values of the objects read by a transaction have not been modified (and
 aborts the transaction if true) cannot be permissive  with respect to opacity. 
 In fact other then the protocol introduced along with permissiveness in \cite{GHS08}
 virtually all published STM protocols abort transactions that could
-otherwise be safely commmitted, i.e. the protcols are not permissive.
+otherwise be safely committed, i.e. the protocols are not permissive.
 
 
 \paragraph{Probabilistic Permissiveness}
@@ -259,20 +259,20 @@ satisfies the condition is accepted with positive probability \cite{GHS08}.
 %----------------------------------------------------------------------
 \subsection{Two consistency conditions  for STM systems}
 
-If you have not noticed already, a reocurring theme throughout this document is that
+If you have not noticed already, a recurring theme throughout this document is that
 the most important goal of transactional memory is ease of use,
 and is the subject of this section.
-We alreay have our syntax defined for the programmer ($atomic\{ \dots \})$) and
+We already have our syntax defined for the programmer ($atomic\{ \dots \})$) and
 a basic idea of what this means, ``the code in the atomic block will appear as if
-it has been executeded instantaneously'', yet we need to precisely define what this
+it has been executed instantaneously'', yet we need to precisely define what this
 means for an STM algorithm.
-At the heart of this we have consistency criterions.
-These criterions precisely define the semantics of a transaction and guide the creation
+At the heart of this we have consistency criterion.
+These criterion precisely define the semantics of a transaction and guide the creation
 of algorithms in order that the chosen criterion is satisfied.
 Without a clear and precisely defined consistency criterion we loose the ease of use
 that is the original intention of STM.
 
-In this section we give a overview of two well known consitency criterion
+In this section we give a overview of two well known consistency criterion
 defined for transactional memory.
 
 
@@ -288,19 +288,19 @@ a transaction  that aborts is not prevented from accessing an inconsistent
 state   before aborting. 
 It should be noted that serializability is sometimes strengthened in ``strict
 serializability''.
-Strict serializability has the additional constranst that the equivalent sequentail history
+Strict serializability has the additional constraint that the equivalent sequential history
 must follow a real time order so that each transaction is placed somewhere between its
 invocation and response time,
 as  implemented  when   using   the   2-phase  locking
 mechanism.
-Strict serializability is often refered to as linearizability \cite{}  when considering the operations
+Strict serializability is often referred to as linearizability \cite{HW90}  when considering the operations
 of an object instead of the system as a while.
 
 In contrast to database transactions that 
 are usually produced by SQL queries, in  a STM  system the code  
 encapsulated in a transaction is not restricted to particular patterns. 
 Consequently  a transaction always has to operate on a consistent state
-(no matter if it is eventually commited or not).
+(no matter if it is eventually committed or not).
 To be more explicit, let   us consider the following example where 
 a transaction  contains the statement $x\leftarrow a/(b-c)$ 
 (where $a$, $b$ and $c$ are  integer data), and let us assume that 
@@ -683,7 +683,7 @@ the execution depicted on Figure~\ref{fig:example-linear-extensions}. There
 are two processes: $p_1$ has sequentially issued $T_1^1$,  $T_1^2$,  $T_1'$
 and $T_1^3$, while $p_2$ has issued   $T_2^1$,  $T_2^2$,  $T_2'$ and
 $T_2^3$.  The transactions associated with a black dot have committed, while
-the ones with a grey square have aborted. From a dependency point of view, 
+the ones with a gray square have aborted. From a dependency point of view, 
 each   transaction   issued  by   a   process  depends   on   its  previous
 committed   transactions  and    on  committed  transactions   issued by
 the  other  process as  defined  by the  read-from relation due to the  
@@ -701,17 +701,17 @@ are consistent with respect to its causal past dependencies.
 \section{Invisible reads, permissiveness, and consistency}
 In the previous section several interesting properties and consistency conditions
 for STM have been defined.
-In this section we examine the some of the implcations of these properties
+In this section we examine the some of the implications of these properties
 on STM algorithms.
 
-We start by proving that an STM portocal cannot implemnt invisible reads, opactiy,
+We start by proving that an STM protocol cannot implement invisible reads, opacity,
 and permissiveness at the same time.
-This is importat because it shows that no matter how well we keep track of
-the interatctions between transactions, an opaque STM portocol will have to abort
+This is important because it shows that no matter how well we keep track of
+the interactions between transactions, an opaque STM protocol will have to abort
 transactions unnecessarily if invisible reads are used.
 We then show that by simply replacing virtual world consistency for opacity
-as the consistency condition no transactions need to be aborted unenessarily.
-Importantly changing virtual world consictency for opacity makes no difference
+as the consistency condition no transactions need to be aborted unnecessarily.
+Importantly changing virtual world consistency for opacity makes no difference
 to the meaning of a transaction for the programmer.
 
 %=========================================================================
@@ -2488,24 +2488,24 @@ and uses $k$-Compare\&single-swap operations.
 \ref{fig:ttc-protocol}}
 \label{sec:improving-base-protocol}
 
-The previous sections investigated the interatcions between a few different STM
+The previous sections investigated the interactions between a few different STM
 properties and consistency conditions.
-It showed that premissiveness, opacity, and invisible reads are imcompatable, but
+It showed that permissiveness, opacity, and invisible reads are incompatible, but
 if opacity is switched for virtual world consistency then not only are the properties
 compatible, they can be satisfied by a realistic protocol.
 This work focused mostly on theory, showing
 concepts to be possible or not.
 This study of theory is important as it gives us a starting point from where to design
-practiacl STM algorithms, but
+practical STM algorithms, but
 does not provide a complete examination of STM
-as it leaves us with no practiacl implementations.
+as it leaves us with no practical implementations.
 
-This section begins an investigaion towards this more practiacl study of algorithms.
+This section begins an investigation towards this more practical study of algorithms.
 What we have observed is that in practice we might not want a perfectly permissive algorithm
 because it would likely have too much bookkeeping overhead just in order to commit a small number
 of transactions that otherwise would be aborted unnecessarily.
 Specially we noticed that there were interesting ways that the ``not quite'' permissive algorithm of
-figure \ref{fig:ttc-protocol} could be modified in order to make the read operations cheaper whithout impacting the correctness of
+figure \ref{fig:ttc-protocol} could be modified in order to make the read operations cheaper without impacting the correctness of
 the algorithm that were not compatible with the permissive algorithm of figure \ref{fig:ttc-V22-protocol}.
 
 
@@ -2577,7 +2577,7 @@ We can take advantage of this  observation  in order to increase
 the number of times a transaction performs fast reads.
 This is not without a trade off though, allowing a transaction to only 
 consider its causal past means that in certain cases transactions with 
-no realtime-compliant legal linear extension with previously committed 
+no real time-compliant legal linear extension with previously committed 
 transactions will have their abort operation delayed. 
 Or in other words a transaction that is doomed to abort could possibly 
 be allowed to stay alive longer.
@@ -2859,7 +2859,7 @@ fast reads as described  in Appendix \ref{appendix-fast-reads}).
 \section{Conclusion}
 \label{sec:conclusion}
 
-To conclude this chapter we will return to the idea that the main pourpose of
+To conclude this chapter we will return to the idea that the main purpose of
 transactional memory is to make concurrent programming easier.
 Overall the contribution of this chapter is a study of the interaction
 between several properties and consistency conditions of transactional memory.
@@ -2867,48 +2867,48 @@ So then what does this have to do with the ease-of-use of
 transactional memory?
 
 When designing an STM protocol it is necessary that we design it to satisfy
-some consistency criteron.
-This is important because these consitency criterion define the semantics
+some consistency criterion.
+This is important because these consistency criterion define the semantics
 of a transaction to the programmer.
-As long as the choosen consistency criterion is satisfied then we can start considering other
+As long as the chosen consistency criterion is satisfied then we can start considering other
 secondary, but still important things such as performance.
-This is where different properties such as read invisiblity and permissiveness
+This is where different properties such as read invisibility and permissiveness
 come in, a protocol that chooses or not to implement such properties might impact
-the performace of that protocol, but does not change the semantics of a transaction.
+the performance of that protocol, but does not change the semantics of a transaction.
 By doing this we are putting the ease-of-use for the programmer as a first class requirement.
 
 The first contribution of this chapter shows that permissive and read invisibility are
 incompatible with opacity, we then show that we can choose a weaker consistency criterion
 (virtual world consistency) to design a protocol that satisfies permissiveness and
 read invisibility.
-Most importatnly, even though we have weakend the consistency criteron, the programmer
-will see no difference in the semaintics of a transaction.
+Most importantly, even though we have weakened the consistency criterion, the programmer
+will see no difference in the semantics of a transaction.
 If virtual world consistency changed the way a programmer had to think about transactions versus opacity
-then it would not be considered an appropriate consistency criteron for transactional memory.
+then it would not be considered an appropriate consistency criterion for transactional memory.
 
-The second contribution of this chapter introduces a relistic algorithm that satisfies
+The second contribution of this chapter introduces a realistic algorithm that satisfies
 virtual world consistency, permissiveness, and read invisibility.
 It then shows some ways to optimize the speed of the read operations of the protocol
 by trading-off some permissiveness.
 
-An important distinction of this work from most is that instead of looking at properties independtly,
+An important distinction of this work from most is that instead of looking at properties independently,
 it considers multiple properties at once.
-More specifally it looks at the compaability of properties, how realistic protocols can be
-desinged to satisfy them, and how trade-offs in these proterties can be made for efficiency.
-Hopefully these contributions have convinced the reader that studing such combinations is important for understanding
+More specifically it looks at the compatibility of properties, how realistic protocols can be
+designed to satisfy them, and how trade-offs in these properties can be made for efficiency.
+Hopefully these contributions have convinced the reader that studying such combinations is important for understanding
 transactional memory and will help inspire similar research on the many combinations
 left unexamined.
 Importantly this suggests that weakening the transactional model in the interest
 of improving performance might not be necessary, as much of what is possible under the current
-model has yet to be exaimed.
+model has yet to be examined.
 
 As a final note on ease-of use, it should be said that the research direction suggested in
 this chapter is also similar in a way to that of
 the majority of published work on transactional memory in that it concerns itself with
-designing an efficient protcol without modifying the idea of a transaction.
+designing an efficient protocol without modifying the idea of a transaction.
 Each of the protocols presented in these various works have no impact on how the programmer
 understands the transaction which, in a way, puts ease-of-use first.
-The following chapters will take a different direction, examing some of what we consider shortcomings
+The following chapters will take a different direction, examining some of what we consider shortcomings
 of the commonly used transactional model and how to improve it.
 
  
