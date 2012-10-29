@@ -168,7 +168,7 @@ properties that exist to provide the abstraction.
 
 Let us consider the common example of a classical map abstraction provided by a
 data structure.  A programmer might want to access and store some data in memory
-and he knows that in order to do this he needs the $insert$, $delete$, and $contains$
+and he knows that in order to do this he needs the ${\sf insert}$, ${\sf delete}$, and ${\sf contains}$
 operations provided by the map abstraction.
 He also knows he wants to perform these operations concurrently.
 With this information he should be able to take a take a library providing this
@@ -187,10 +187,10 @@ even when considering a single data structure there are different properties a s
 For example you might have a blocking skip-list or a non-blocking skip-list which provide
 different guarantees of the progress of the operations.
 Taking this a step further, different implementations might perform
-differently depending on the workload.
+better or wore depending on the workload.
 For example you might have a skip-list implementation that is memory efficient, but is slower
 then another implementation that is less memory efficient.
-Again though a programmer is not required to know these details.
+Again though a programmer is not required to know these details (but they can still help him).
 
 Each of these points are true in transactional memory as well.
 At the most basic level all a programmer should need to know is where
