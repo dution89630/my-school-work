@@ -161,34 +161,37 @@
 
 \section{Introduction}
 
-The previous chapter focused on a few contributions to an area of transactional
+The previous chapter focused on the area of transactional
 memory research that takes a fixed view of the semantics of a transaction for the programmer
 and studies what can be done in an STM protocol without changing the semantics.
 This type of STM research puts first the ease-of-use for the programmer using the STM protocol
 before considering secondary interests (usually performance).
 In most cases this ease-of-use is ensured by having the protocol satisfy opacity.
 Opacity is used because generally it is considered
-to ensure the amount of safety a programmer would expect from an atomic block without having
+to provide the amount of safety a programmer would expect from an atomic block without having
 to worry about inconsistencies of aborted transactions
 (Note that in some cases virtual world consistency is used as it does not change
 how the programmer views a transaction).
 This chapter takes a slightly different approach to STM research as it suggest that transactional
 memory might be more usable to a programmer if it satisfied more then just opacity.
 
-Opacity and other consistency criterion are generally considered to be safety properties.
+\anote{Needs more talk about simplifying semantics.}
+
+Opacity and other consistency criterion are sometimes also called safety properties.
 Informally this is because they ensure a protocol that implements them will
 act in a way that a user would expect and not produce any weird behavior.
 For example opacity prevents any transaction from executing on invalid states of memory, preventing
 things such as divide by zero exceptions in correct code.
-What such consistency criterion do not consider (among other things) is how often transactions commit.
+One important thing such consistency criterion do not consider (among other things) is how often transactions commit.
 For example a protocol could satisfy opacity by just aborting every transaction before it performs
 any action, but of course this protocol would be useless.
-In order to avoid this, certain STM protocols satisfy liveness (or progress) properties
+In order to avoid this, certain STM protocols satisfy liveness (or progress) properties.
 These properties, not limited to transactional memory, ensure the operations of a process
 will make some sort of progress sometimes depending on the amount of contention in the system.
 Let us now look at some of these properties.
 
 \subsection{Progress properties}
+\anote{Need citations for this section}
 This section will give an overview of the most common progress properties defined
 for concurrent algorithms.
 They are arranged into two categories, blocking and non-blocking.
@@ -218,9 +221,11 @@ In this case thread $A$ and $B$ will be stuck infinitely, waiting to acquire the
 already owns creating a state of deadlock.
 It is generally considered that every correct concurrent protocol should at least satisfy deadlock
 freedom.
-A common way to avoid deadlock freedom is by ensuring threads acquire locks in a fixed global order.
+A common way to avoid deadlock freedom is by ensuring threads acquire locks in a fixed global order,
+but this can have negative implications on performance.
+
 \paragraph{Livelock freedom}
-Stronger then deadlock freedom, livelock freedom prevents a state of livelock in which threads
+Stronger then deadlock freedom, livelock freedom prevents a state of livelock where threads
 can never progress due to their progress depending on a shared state that is created by another thread.
 Consider the following simple example:
 in order to progress a thread must own locks $l1$ and $l2$ concurrently.
@@ -238,7 +243,9 @@ $A.release(l1)$, $B.release(l2)$.
 
 
 If such an order of events is continually repeated then livelock is observed.
+Even though the processes are not stalled they are not making progress.
 It should be noted that by definition livelock freedom also ensure deadlock freedom.
+
 \paragraph{Starvation freedom}
 The strongest blocking property, starvation freedom ensure that no threads starve.
 A thread is starved when it requires access to some shared resources in a certain state to progress, but
@@ -264,10 +271,10 @@ When concerning scalability, non-blocking algorithms have two main advantages ov
 
 The first most obvious advantage is by definition, in a non-blocking algorithm a thread will never be blocked
 waiting for another thread.
-Normally waiting might seem to be necessary part of synchronization, in our everyday when working together
+Normally waiting might seem to be necessary part of synchronization, in our everyday lives when working together
 with someone on a project we will wait for a teammate to finish their task before starting ours.
 But then consider a massive project that involves hundreds of people across the world in multiple organizations,
-one person on this project might have an approaching deadline and he might not want to wait on someone across the
+if one person on this project might have an approaching deadline and he might not want to wait on someone across the
 world that he has never met before in order to start his task.
 Similar situations can exist in largely parallel computer systems, threads might be spread across multiple
 processors or machines, some might be sleeping, some might execute slower then others, the data connection between
@@ -276,7 +283,9 @@ In such cases the amount of time a thread might have to wait could be unknown an
 
 The second advantage is when faults are considered.
 If a thread is waiting for a lock that is owned by another thread that has crashed
-then without fault detection and recovery this thread will be waiting forever.
+then without fault detection and recovery (known to be a very difficult problem to solve \cite{}
+\anote{need citation}
+) this thread will be waiting forever.
 Non-blocking algorithms on the other hand by definition do not have to worry about this.
 Given that fault detection and recovery is a difficult problem especially in massively parallel
 systems this is an obvious advantage of non-blocking algorithms.
@@ -285,7 +294,7 @@ systems this is an obvious advantage of non-blocking algorithms.
 The first non-blocking property is \emph{obstruction-freedom}.
 A protocol that is obstruction-free ensures that any thread will eventually make progress
 as long as it is able to run by itself for long enough.
-This property ensure that no thread is ever stuck waiting for another thread, but only guarantees
+This property ensures that no thread is ever stuck waiting for another thread, but only guarantees
 progress in the absence of contention.
 
 \paragraph{Lock-freedom}
@@ -300,10 +309,6 @@ An even stronger progress property \emph{wait-freedom} ensures that
 all threads eventually make progress.
 This is a nice property to ensure as each thread in the system
 is only dependent on itself and not other threads for making progress.
-
-
-
-
 
 
 
@@ -333,7 +338,7 @@ the objects that are  defined by a sequential specification
 on total operations (i.e., operations that, when executed alone, 
 always return a result).
 For example data structures are the typical example
-of the use of a universal construction.
+of the algorithms that can make use of a universal construction.
 
 %
 %  MOVED IN THE DISCUSSION IN FIRST PART OF THE CONCLUSION    
@@ -356,7 +361,8 @@ in \cite{H91} might be intricate, the key design concepts are quite clear.
 
 The first concept has to deal with correctness.
 How to ensure that the sequential code is executed safely when there
-can be multiple threads concurrently performing operations on the object?
+can be multiple threads concurrently performing operations on the object
+(i.e. satisfies linearizability)?
 This is ensured simply by each thread operating on a local copy of the object.
 Before a thread starts executing the original sequential code, it makes a copy
 of the object in its local memory and the operation is performed on that object.
@@ -368,9 +374,9 @@ changing it to point to a descriptor of its operation.
 The value swapped out must be the same as it was when the operation started,
 if not the operation discards its modifications and starts over with a
 new up to date local copy.
-Unfortunately this means that best case performance will be no better
+Unfortunately this means that best case concurrent performance will be no better
 then a single thread, but in certain cases this might be an acceptable
-trade-off for wait-free progress.
+trade-off for having wait-free progress.
 
 The second key concept has to deal with liveness.
 As described in the previous paragraph an operation completes by
@@ -416,17 +422,25 @@ optimistically (differently, albeit very inefficient,  using a single
 global lock for  all transactions would allow any  transaction to executed
 without being aborted).
 
-(A main issue solved in  \cite{CER10}
-lies in ensuring that, without violating wait-freedom,  an  operation $op$ 
-issued by a process $p_i$  is not committed in the back of $p_i$ by another  
-process $p_j$  which is  helping it to execute that  operation.) 
+% (A main issue solved in  \cite{CER10}
+% lies in ensuring that, without violating wait-freedom,  an  operation $op$ 
+% issued by a process $p_i$  is not committed in the back of $p_i$ by another  
+% process $p_j$  which is  helping it to execute that  operation.) 
 
 
-\subsection{Transactional memory and universal constructions}
-The previous sections fist discussed progress properties for
-concurrent code in general followed by a discussion
-on universal constructions which can be used to create
-a concurrent wait-free construction of any sequential object.
+
+
+!!!!!!!!!!!!!!!!HHHHHERE!!!!!!!!!!!!!
+
+
+
+
+\section{Transactional memory, progress, and universal constructions}
+Now that we have discussed progress properties for
+concurrent code in general as well as
+universal constructions which can be used to create
+a concurrent wait-free construction of any sequential object
+we will now look into how this relates to transactional memory.
 The following sections will discuss how progress properties
 can be considered in transactional memory as well as the relation
 between universal constructions and transactional memory.

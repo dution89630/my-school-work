@@ -259,7 +259,7 @@ satisfies the condition is accepted with positive probability \cite{GHS08}.
 %----------------------------------------------------------------------
 \subsection{Two consistency conditions  for STM systems}
 
-If you have not noticed already, a recurring theme throughout this document is that
+As viewed, the recurring theme throughout this document is that
 the most important goal of transactional memory is ease of use,
 and is the subject of this section.
 We already have our syntax defined for the programmer ($atomic\{ \dots \})$) and
@@ -271,7 +271,6 @@ These criterion precisely define the semantics of a transaction and guide the cr
 of algorithms in order that the chosen criterion is satisfied.
 Without a clear and precisely defined consistency criterion we loose the ease of use
 that is the original intention of STM.
-
 In this section we give a overview of two well known consistency criterion
 defined for transactional memory.
 
@@ -396,7 +395,7 @@ to write his concurrent program?
 Possible performance implications aside, absolutely nothing,
 The programmer will see no difference between an STM protocol that is opaque
 versus one that is virtual world consistent.
-Given the first requirement of transactional memory is ease of use, this is extreely
+Given the first requirement of transactional memory is ease of use, this is extremely
 important, virtual world consistency would be much less interesting as an STM
 consistency condition if this were not true.
 
@@ -2906,7 +2905,7 @@ As a final note on ease-of use, it should be said that the research direction su
 this chapter is also similar in a way to that of
 the majority of published work on transactional memory in that it concerns itself with
 designing an efficient protocol without modifying the idea of a transaction.
-Each of the protocols presented in these various works have no impact on how the programmer
+Each of the protocols presented in these various works (DSTM, TL2, TinySTM, SwissSTM, RSTM, etc...) have no impact on how the programmer
 understands the transaction which, in a way, puts ease-of-use first.
 The following chapters will take a different direction, examining some of what we consider shortcomings
 of the commonly used transactional model and how to improve it.
