@@ -175,13 +175,15 @@ how the programmer views a transaction).
 This chapter takes a slightly different approach to STM research as it suggest that transactional
 memory might be more usable to a programmer if it satisfied more then just opacity.
 
-\anote{Needs more talk about simplifying semantics.}
-
 Opacity and other consistency criterion are sometimes also called safety properties.
 Informally this is because they ensure a protocol that implements them will
 act in a way that a user would expect and not produce any weird behavior.
 For example opacity prevents any transaction from executing on invalid states of memory, preventing
 things such as divide by zero exceptions in correct code.
+Even though consistency criterion remove the complexity of having to deal with undefined states of memory,
+they leave open other problems for the programmer to deal with that could make using STM more difficult.
+In this sense we suggest hiding some of these problems from the programmer by dealing with them in the STM
+implementation.
 One important thing such consistency criterion do not consider (among other things) is how often transactions commit.
 For example a protocol could satisfy opacity by just aborting every transaction before it performs
 any action, but of course this protocol would be useless.
@@ -441,9 +443,9 @@ concurrent code in general as well as
 universal constructions which can be used to create
 a concurrent wait-free construction of any sequential object
 we will now look into how this relates to transactional memory.
-The following sections will discuss how progress properties
-can be considered in transactional memory as well as the relation
-between universal constructions and transactional memory.
+% The following sections will discuss how progress properties
+% can be considered in transactional memory as well as the relation
+% between universal constructions and transactional memory.
 
 \subsection{Progress properties and transactional memory}
 \anote{Say that That most STM don't ensure progress just for speed's sake.}
@@ -455,10 +457,10 @@ The key difference to consider between transactional memory traditional concurre
 code is that transactions can abort and restart.
 Does an aborted transaction entitle progress?
 If we are just considering that code being executed entitles
-progress then yes, but when considering the ease-of-use of transactional
+progress then possibly yes, but when considering the ease-of-use of transactional
 memory it is more interesting to consider that only committed transactions
 create progress.
-The question of what to do with aborted transactions is an important one,
+Then the question of what to do with aborted transactions is an important one,
 the following section first looks at how the previously mentioned progress
 properties can be applied to transactional memory
 followed by a brief overview of how progress is approached in transactional
@@ -478,7 +480,7 @@ For example we might want a lock-free transactional memory protocol
 to ensure that at least one of the live transactions in the system will
 eventually commit.
 A more detailed analysis of non-blocking progress properties and
-transactional memory has been performed in \cite{BGK12}.
+transactional memory has been done in \cite{BGK12}.
 In this work they define the non-blocking properties
 \emph{solo-progress}
 as a equivalent to the obstruction-freedom property
@@ -500,15 +502,16 @@ tries to commit).
 They show that local-progress is impossible in a faulty system
 where each transaction is fixed to a certain process.
 An extended discussion on the possible/impossible liveness properties 
-of a STM system is presented by the same authors in \cite{GK10} where it is 
-also described  a general  lock-free STM system. This  system is 
-based on a mechanism similar to the Compare\&Swap used in this paper.
+of a STM system is presented by the same authors in \cite{GK10} where a general 
+ lock-free STM system is described.
+%  This  system is 
+% based on a mechanism similar to the Compare\&Swap used in this paper.
 
 \subsection{Previous approaches}
 In order to ensure levels of progress and cope with aborted transactions,
-several solutions have been proposed witch each taking different approaches
+several solutions have been proposed with each taking different approaches
 to progress.
-A whole range of solutions has been proposed.
+A whole range of solutions have been proposed.
 Some do not directly confront the problem of progress,
 focusing mainly on the performance of the protocols, while
 others  offer   ``best effort semantics'' 
@@ -520,12 +523,10 @@ The least complex solution simply leaves the  management of aborted transactions
 to the application programmer (similarly to  exception handling
 encountered  in  some systems).
 In such systems the programmer has the choice to have the protocol execute 
-a chosen set of code when a transaction
-is aborted one or several times.
+a specifically defined set of code when a transaction is aborted one or several times.
 This can be a powerful option for an experience programmer who knows the details
-of an transactional memory implementation, but this thesis takes the view
-that the primary goal of transactional memory is ease-of-use and having programmers
-have to manage aborted transactions themselves goes against this goal.
+of an transactional memory implementation, but this also provides the programmer
+with additional problems to deal with.
 
 
 \paragraph{Contention Management} The idea is here to keep
@@ -550,7 +551,7 @@ is presented in \cite{WF10}.
 An overview  of different contention managers and their performance is
 presented  in \cite{GHP05}. Interestingly the authors find that there is no 
 "best" contention manager and that the performance depends on the application. 
-The notion of a {\it greedy contention manager} they propose
+The notion of a {\it greedy contention manager} 
 ensures that every issued transaction  eventually commits. 
 This  is done  by giving  each transaction  a time-stamp  when it  is first
 issued and,  once the  time-stamp reaches a  certain age, the  system ensures
@@ -566,7 +567,7 @@ on both on the  process that issued this transaction as well as the process
 that issued the transaction  with the oldest time-stamp.
 
 Unfortunately even though such contention managers exist that ensure
-all transactions commit, most
+all transactions commit in a blocking fashion, most
 STM implementations do not use them in the interest of performance
 and as a result provide less strong progress guarantees.
 As a solution to avoid these performance problems while still
@@ -680,16 +681,17 @@ execution in which a transaction is always stalled
 (transactions cannot wait for this stalled transaction because they do not 
 know if it is making progress).
 
-Unfortunately, none of them  provides the property that every issued 
+Unfortunately, none of them  provide the property that every issued 
 transaction is committed.
 As described in the previous section,
-in order for the described universal constructions ensure that each operation
-is performed successfully, threads must help other threads by executing
+in order for the described universal constructions to ensure that each operation
+is performed successfully threads must help other threads by executing
 each other's operations.
 In previously proposed non-blocking STM, helping only occurs
 with transactions that are in the process of committing.
 With only this type of help,  some transaction 
-can be aborted indefinitely without violating safety.
+can be aborted indefinitely without violating safety
+at most satisfying non-blocking global progress.
 Consider for example a thread $T1$ transaction $t1$
 and a separate thread $T2$ that executes an infinite sequence of the
 same transaction $t2$.
@@ -716,11 +718,11 @@ other processes then the one that issued the transaction.
 Such a solution would prioritize ease-of-use as such a protocol would hide
 the concept of aborted transactions from the programmer.
 
-More precisely we want a non-blocking STM protocol which ensures that every transaction
+More precisely, a better solution would be a non-blocking STM protocol which ensures that every transaction
 issued by a process is eventually committed wheres its progress only depends
 on the issuing process.
 Then, the job of a
-programmer is to write her/his concurrent program in terms of cooperating sequential
+programmer is then to write her/his concurrent program in terms of cooperating sequential
 processes, each process being made up of a sequence of transactions (plus possibly
 some non-transactional code). At the programming level, any transaction invoked by
 a process is executed exactly once (similarly to a procedure invocation in sequential
@@ -729,12 +731,9 @@ program is linearizable \cite{HW90}, meaning that all the transactions appear as
 been executed one after the other in an order compatible with their real-time occurrence
 order. Hence, from the programmer point of view, the progress condition associated
 with an execution is a very classical one, namely, starvation-freedom.
-
-
-The remainder of this chapter focuses on the design of a such protocol that.
+The remainder of this chapter focuses on the design of a such protocol.
 (As a note it should be said that the presentation of previous approaches
-that deal with aborted transactions
-is not entirely fair as they are primarily
+that deal with aborted transactions are primarily
 efficiency-oriented while our construction is
 more theory-oriented.)
 
@@ -742,7 +741,7 @@ more theory-oriented.)
 \subsection{A short comparison with object-oriented universal construction}
 \label{sec:comparison-Herlihy}
 
-The first point to notice is that an STM that hides the concept of
+First it is important to notice that an STM that hides the concept of
 commit/abort from the programmer has objectives similar to that of a
 universal construction described earlier in this chapter.
 A universal construction allows a programmer to turn a sequential
@@ -761,7 +760,7 @@ difference between an operation and a transaction.
 There is an important and fundamental difference between an operation on 
 a concurrent object (e.g.,  a shared queue) and a transaction performed
 by an STM protocol. 
-\anote{Clean up this}
+\anote{update this section}
 Albeit the operations on a queue can have many different implementations, 
 their semantics is  defined once for all. 
 Differently, each transaction is a specific  atomic procedure whose 
@@ -773,7 +772,7 @@ of a  data structure.
 Simply put, a programmer might want to use a universal construction when
 he has an object with predefined self-contained operations that
 he wants to use concurrently (such as a data structure) while transactions
-might be more suitable when the programmer wants to perform general
+might be more suitable when the programmer wants to perform general and reusable
 atomic operations within his code.
 
 To briefly examine how these differences can effect the implementation
@@ -790,17 +789,17 @@ Moreover, as it  requires each operation on an object to make a copy of
 this object   (before  accessing it),  H\_UC would force each  operation to
 copy the whole  shared memory, even it  it works on a very  small subset of
 its  content.  This is not the case in the construction proposed
-in this chapter, where
+for STM, where
 only  the specific locations accessed by a transaction needs to be copied. 
 The space granularities required by  H\_UC (when applied to STM)  and 
 the proposed construction do not belong to the same magnitude order.
 Traditionally STM protocols commonly use a read and write set
-with the purpose of tracking the  locations the STM  has read so far as well as those
+with the purpose of tracking the  locations the transaction  has read so far as well as those
 that will be modified upon commit, validating these sets
 in order to ensure correctness.
-In the case of the STM protocol presented in this chapter these read
-and write sets have the additional benefit of saving us from making copies of
-the entire shared memory.
+% In the case of the STM protocol presented in this chapter these read
+% and write sets have the additional benefit of saving us from making copies of
+% the entire shared memory.
 
 Even given the differences,
 the proposed STM protocol in this chapter borrows key ideas from previous
@@ -808,12 +807,9 @@ universal constructions such as helping and using a shared global pointer
 that is modified using a compare-and-swap in order to ensure
 progress and correctness.
 
-Another interesting feature of  the proposed construction
-(which is specifically designed for STM programs)  
+Another important feature of  STM constructions
+% (which is specifically designed for STM programs)  
 is the  systematic use of  speculative execution.
-Even  if  efficiency is   not a  first class  requirement addressed  in our
-work, the notion of a  speculative  execution  can  be  a  basis  for  future
-work  on  universal construction  that will focus on efficiency. 
 As discussed in section \ref{sec:univ-const}, a traditional universal construction can expect best
 case performance to be equal to that of a sequential implementation.
 While in the case of the STM's speculative execution
@@ -821,13 +817,16 @@ any number of transactions are able to execute concurrently (and successfully if
 conflict is  found) by performing  validations on their read  sets.
 In some ways, the computation cost of performing validation can be seen as
 a trade off in order to allow for higher concurrency.
+Still,  efficiency is   not a  first class  requirement addressed  in our
+work but, the notion of a  speculative  execution  can  be  a  basis  for  future
+work  on  an STM protocol   that will focus on efficiency and  providing the same progress as a universal construction.
 
 \section{A universal construction for transaction based programs}
 
 The following sections  present a  new STM construction  that,
 in order to hide the notion of abort/commit from the programmer, ensures every  
 transaction issued by a process is necessarily committed and  each process 
-makes progress.
+makes progress without depending on the state other processes.
 More specifically it ensures linearizable X-ability.
 X-ability, or exactly-once ability, was originally defined 
 by Fr{\o}lund and Guerraoui in \cite{FG01}
@@ -2463,10 +2462,10 @@ So we have $1+1+2+3+\ldots+(m-1)+m$ trials of $T$ which is  $O(m^2)$.
 
 %=============================================================================
 
-\subsection{A short discussion}
+\subsection{Additional notes}
 \label{sec:discussion} 
 
-The aim of the universal construction that has been presented 
+The aim of the universal construction for STM that has been presented 
 was to demonstrate and investigate this type of construction for
 transaction-based multiprocess programs. (Efficiency issues 
 would deserve  a separate investigation.) To  conclude, we list  here a few
@@ -2530,6 +2529,7 @@ used to represent the state of the constructed object lies at the
 core of the construction). The study of these  similarities would 
 deserve a  deeper investigation.
 
+\subsection{A short discussion}
 The previous chapter explored an area of transactional memory
 research that focuses on improving STM protocols without effecting
 how the user interacts with the STM, that is by ensuring some implementation
@@ -2556,7 +2556,7 @@ Opacity differs from linearizability or serializibility in that
 it frees the programmer from having to worry about consistency
 issues that could arise in aborted transactions.
 This liveness suggested in this chapter for STM protocols differs
-from previous suggestions in that it frees the programmer from
+from previous liveness suggestions in that it frees the programmer from
 having to worry that his transaction might not commit.
 In a way it can be considered the equivalent to opacity except
 opacity considers correctness (bad things happening in aborted transactions),
@@ -2571,7 +2571,13 @@ due to the actions of some other process in the system.
 
 Further research is still needed on how the semantics of a transaction
 can be simplified.
-For example currently transactions are only able to contain reads
-and writes, while things that input and output are not allowed,
-and the interaction between transactions and other synchronization
-methods is undefined or prohibited.
+An important problems in this area yet has a clear solution is the problem
+of what happens when a transaction is nested within another.
+How should these transactions be treated?
+Should a separate consistency or liveness condition be considered for these transactions?
+Given that composition is a strong argument for the use of transactions,
+coming up with a simple solution to nesting is vital for the future of STM.
+% For example currently transactions are only able to contain reads
+% and writes, while things that input and output are not allowed,
+% and the interaction between transactions and other synchronization
+% methods is undefined or prohibited.

@@ -166,17 +166,17 @@
 \label{sec:SIintro}
 
 Simplified transaction semantics may not be enough.
-In the interest of ease-of-use, each chapter in this thesis has had
-a primary focus on transaction semantics.
+In the interest of ease-of-use, each chapter in this takes a 
+different look on transaction semantics.
 The first chapter suggested improving STM
 protocols without changing the semantics of a transaction, the second
 chapter suggested simplifying the semantics of a transaction,
 and this chapter will suggest expanding the semantics.
 It will look at how a programmer might use transactions
 within his code in order to suggest the expansion of transactional
-semantics again in the interest of ease-of-use.
+semantics in the interest of ease-of-use.
 
-Following the example of the previous chapter we will promote our change
+Following the discussion of the previous chapter we will promote our change
 of semantics by contrasting transactions to concurrent objects.
 
 A discussion on semantics the of concurrent protocols is meaningless without
@@ -230,9 +230,10 @@ for a programmer to reason about how to use it.
 % This chapter will use these difference to motivate an addition to the
 % semantics of transactions.
 Now we will suggest that due to the way transactions are used in a program
-an STM protocol must satisfy more then a correctness condition
-such as opacity that is only concerned with transactions.
-The reason for this is best seen by going back to the comparison of
+an STM protocol should satisfy more then just a correctness condition
+such as opacity.
+The reason for this is that opacity only considers the atomicity between transactions themselves,
+and to motivate this suggestion we will go back to the comparison of
 a transaction and an operation on a concurrent object.
 
 For a concurrent object consider the common example of a tree
@@ -270,7 +271,7 @@ then a concurrent object as transactions are integrated and contained within
 a user's program instead of being separate entities behind
 a fixed interface.
 
-So we have concurrent objects whose operations follow some correctness condition
+So now we have concurrent objects whose operations follow some correctness condition
 allowing them to be accessed as something interesting to the programmer as
 a separate entity.
 And transactions which appear as atomic blocks (thanks to the STM protocol
@@ -280,7 +281,6 @@ on a shared object might imply separate protocol design choices.
 For example the previous chapter highlighted some of the implementation
 differences between a traditional universal construction and a
 universal construction for transaction based programs.
-
 But, let us step backwards for a moment and look at a higher level.
 Before we consider implementation details we must consider how
 how the programmer interacts with a transaction is considered at an abstraction level.
@@ -290,12 +290,14 @@ a users program.
 This happens when the programmer places a group of reads and writes
 inside a block of code bounded by the keywords $transaction\_begin$ and
 $transaction\_end$.
-Inside this block of code reads and writes to shared memory are then
-treated by the STM protocol as calls to the operations
-$transaction\_read$ and $transaction\_write$.
-The STM protocol then
-takes care of the difficult synchronization in order to ensure these transactions
-appear as if they happen atomically.
+This atomic operation exists directly as a piece of his code preceded
+and followed by code also written by himself.
+% Inside this block of code reads and writes to shared memory are then
+% treated by the STM protocol as calls to the operations
+% $transaction\_read$ and $transaction\_write$.
+% The STM protocol then
+% takes care of the difficult synchronization in order to ensure these transactions
+% appear as if they happen atomically.
 At this point we have an important choice to make dealing with the
 semantics and correctness of a transaction when considering shared memory.
 Should the transactions appear to be atomic only with other transactions, or should
@@ -310,14 +312,13 @@ Interestingly, this possibility of the {\it existence of two different paradigms
 two different interpretations of transactional memory: On one hand considering TM as an implementation
 of shared memory, and, on the other hand, considering TM as an additional way of achieving synchronization, 
 to be used alongside with locks, fences, and other traditional methods.
-
 When putting ease-of-use as the primary requirement of transactional memory
 as well considering the discussion on transactions vs operations on concurrent objects
 the choice of paradigm seems clear.
 If within a program there are two sets of shared memory, one set for accessing inside
 transactions, and another set for accessing outside of transactions, then we loose a
 bit of the integration concept for a bit more of the separated object concept.
-One way to think of it is that the transactions represent at programmer defined
+One way to think of it is that the transactions represent a programmer defined
 interface to one large discrete shared object.
 Transactions are still defined and placed by the programmers, but they are limited
 in what memory they can access.
@@ -329,6 +330,7 @@ we have a more straightforward integrated system.
 \label{sec:TvNT}
 Let us now define precisely what we mean by transactional vs, non-transactional
 accesses.
+
 In a  concurrent environment,  shared memory  may  be
 accessed by both transactions as well as  
 non-transactional operations. %This  is mostly brought about by  the need to
@@ -2236,7 +2238,15 @@ The NT-read operation is shown in Fig. \ref{fig:noblock-readonly}.
 
 \section{Conclusion}
 \label{sec:conclusions}
-This paper has presented an algorithm that achieves non-blocking strong 
+How should STM deal with mechanisms in the system that are not transactions?
+This chapter has suggested that the semantics of a transaction should be
+expanded in order that the programmer know there is fixed way that
+these different systems will interact.
+In this sense it has looked at the problem of accesses to the same
+shared memory being performed inside and outside of a transaction
+and suggested termination strong isolation to be used to deal with this.
+
+Following this suggestion this chapter has presented an algorithm that achieves terminating strong 
 isolation  ``on top of'' a TM algorithm based on logical dates and locks, 
 namely  TL2. 
 In the case of a conflict between a transactional and a non-transactional
@@ -2245,16 +2255,23 @@ the non-transactional operation,
 with the reasoning that while an eventual abort or restart is part of the 
 specification of a transaction,
 this is not the case for a single shared read or write operation. 
-Due to this priority mechanism, 
-the proposed algorithm is   particularly appropriate  for environments 
-in which processes do not rely heavily
-on the use of especially large transactions along with non-transactional write operations.
-In such environments, terminating strong isolation is  provided for transactions, 
-while conventional read and write operations execute with a small additional overhead.
+This allows the programmer to know his transaction will execute atomically even
+in the presence of non-transactional memory access, while ensuring the non-transactional
+access are never blocked from progressing.
+% Due to this priority mechanism, 
+% the proposed algorithm is   particularly appropriate  for environments 
+% in which processes do not rely heavily
+% on the use of especially large transactions along with non-transactional write operations.
+% In such environments, terminating strong isolation is  provided for transactions, 
+% while conventional read and write operations execute with a small additional overhead.
 
-
-
-
+The interaction between transactional and non-transactional accesses to shared memory
+is just one among many possible interactions that a programmer may face when using
+transactions.
+For example he might want to use locks or atomic hardware operations along side his transactions,
+he might want to use I/O within his transactions.
+Each of these and many more things deserve an investigation on possible models in which
+they are considered alongside the semantics of transactions.
 
 
 
