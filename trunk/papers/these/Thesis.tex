@@ -255,46 +255,43 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 %  Abstract -----------
 
 
-\section*{Software Transactional Memory and Concurrent Data Structures: On the performance and usability of parallel programming abstractions}
+\section*{Software Transactional Memory: On the usability of parallel programming abstractions}
 %\begin{abstract}
 \subsection*{Abstract}
-Writing parallel programs is well know difficult task and because of this
+\anote{Update abstract}
+Writing concurrent programs is well know difficult task and because of this
 there are some abstractions that can help make parallel programming easier.
-Two different approaches that try to solve this problem are transactional memory and
-concurrent data abstractions (such as sets or dictionaries).
-Transactional memory can be viewed as a methodology for parallel programming, allowing
+Traditionally locks have been used to write concurrent algorithms, unfortunately it is
+difficult to write efficient concurrent programs using locks that perform efficiently.
+In addition to this, lock present other problems such as scalability issues.
+Transactional memory has been proposed as a possible promising solution to these
+difficulties of writing concurrent programs.
+Using transactions can be viewed as a different methodology for parallel programming, allowing
 the programmer the ability to declare what sections of his code should be executed atomically,
-while concurrent data abstractions expose some specifically defined operations that can be
-safely executed concurrently to access and modify shared data.
-Importantly, even though these are separate solutions to the problem they are not mutually exclusive.
-They can be (and are) used together, as an example concurrent data abstractions are often used within transactions.
-Unfortunately they both are know to suffer from performance and (especially in the case of transactional memory)
+without having to worry about synchronization details.
+Unfortunately transactional memory is know to suffer from performance and
 ease of use problems.
-This thesis examines and proposes some solutions trying to address these problems.
+This thesis specifically focuses on the ease of use problem
+by discussing how previous research has coped with these problems so far and proposes some ways in which we can address 
+some unanswered problems.
 
 Transactional memory is designed to make parallel programming easier by allowing the programmer to define
 what blocks of code he wants to be executed atomically while leaving the difficult synchronization tasks for the
 underlying system.
 Even though the idea of a transaction is clear, how the programmer should interact with the
 abstraction is still not clearly defined and STM systems are known to suffer from performance problems.
-Three STM algorithms are presented to help study these problems.
+The first chapter presents an introduction to this problem.
+The following four chapters look at how different problems can be solved with STM protocols,
+defined as follows:
 \begin{enumerate}
-\item One that satisfies two properties that can be considered good for efficiency.
-\item One that guarantees transactions commit exactly once and hides the concepts of aborts to the programmer.
-\item One that allows safe concurrent access to the same memory both inside and outside of transactions.
+\item One STM protocol that satisfies two properties that can be considered good for efficiency.
+\item One STM protocol that guarantees transactions commit exactly once and hides the concepts of aborts to the programmer.
+\item One STM protocol that allows safe concurrent access to the same memory both inside and outside of transactions.
+\item One STM protocol that combines the properties of the previous chapters.
 \end{enumerate}
-
-Concurrent data structures representing abstractions such as a set or map/dictionary are often
-an important component of parallel programs as they allow the programmer to access/store/and modify
-data safely and concurrently.
-Due to this they can be heavily used and highly contended in concurrent workloads leading to poor performance
-in programs.
-Some proposed solutions to this suggest weakening the abstraction, but this can make using the data structures
-more complicated.
-In this thesis a methodology is proposed that improves performance without weakening the abstraction.
-This methodology can also be applied to data structures used within transactions.
-
-
+The sixth chapter discusses adding efficient libraries specifically designed for use within STM
+to be accessed by the programmer in order to make his life easier.
+The thesis finishes with a chapter detailing the conclusion and future work.
 
 %\end{abstract}
 
@@ -360,6 +357,7 @@ This methodology can also be applied to data structures used within transactions
 
 \chapter{An easier to use STM}
 \label{chap:STMProt}
+\input{./STMProt/STMProt}
 
 \chapter{Libraries for STM}
 \label{chap:STMlib}
