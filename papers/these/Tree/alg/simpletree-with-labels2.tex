@@ -1,0 +1,138 @@
+\begin{figure}[h!]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+\resetline
+\begin{tabbing}
+aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
+
+
+ \bf{State of node $n$} \\
+	\line{BA01} \> $\ms{node}$ a record with fields: \\
+	\line{BA01} \>\> $\ms{k} \in  \mathbb{N}$, the node key \\
+	\line{BA01} \>\> $\ms{v} \in  \mathbb{N}$, the node value \\
+	\line{BA01} \>\> $\ms{\ell}, \ms{r} \in \mathbb{N}$, left/right child pointers, initially $\bot$ \\
+	\line{BA01} \>\> $\ms{left-h}, \ms{right-h} \in \mathbb{N}$, local height of left/right child, initially 0 \\
+	\line{BA01} \>\> $\ms{local-h} \in \mathbb{N}$, expected local height, initially 1 \\
+	\line{BA01} \>\> $\ms{del} \in \{\lit{true}, \lit{false}\}$, indicate whether logically deleted, initially $\lit{false}$ \\
+   		
+   		   		
+   		   		
+   \bf{State of process $p$} \\
+	\line{BA01} $\ms{root}$, shared pointer to root \\
+			%\State $\ms{curr}$, a pointer to a node used while traversing the tree
+			%\State $\ms{\ell}, \ms{r}$, pointers to left/right children 
+			%\State $\ms{left-h}, \ms{right-h}, \ms{left-local-h}, \ms{right-local-h}, \ms{local-h}  \in \mathbb{N}$
+			%\State $\ms{bal} \in \mathbb{N}$, the imbalance level
+			
+\bf{operation} $\act{find}(k)_p$ \\
+		\line{BA01} \> $\ms{next} \gets \ms{root}$ \\
+		\line{BA01} \> \bf{while} $(\lit{true})$ \bf{do} \\
+		\line{BA01} \>\> $\ms{curr} \gets \ms{next}$; $\ms{val} \gets \ms{curr.k}$ \\
+		\line{BA01} \>\> \bf{if} $(\ms{val} = \ms{k})$ \bf{then} $\lit{break}()$ \bf{end if} \label{sline:find-value} \\
+		\line{BA01} \>\> \bf{if} $(\ms{val} > k)$ \bf{then} $\ms{next} \gets \lit{read}(\ms{curr.r})$  \label{sline:find-right} \\
+		\line{BA01} \>\>\> \bf{else} $\ms{next} \gets \lit{read}(\ms{curr.\ell})$ \bf{end if} \label{sline:find-left} \\
+		\line{BA01} \>\> \bf{if} $(\ms{next} = \bot)$ \bf{then} $\lit{break}()$ \bf{end if} \label{sline:find-bot} \\
+		\line{BA01} \> \bf{end while} \\
+		\line{BA01} \> $\sf{return}(\ms{curr})$. \label{sline:find-return} \\
+		
+
+\bf{operation} $\act{contains}(k)_p$ \\
+		\line{BA01} \> $\lit{begin\_transaction}()$ \\
+		\line{BA01} \> $\ms{result} \gets \lit{true}$; $\ms{curr} \gets \lit{find}(k)$ \label{sline:cont-find} \\
+		\line{BA01} \> \bf{if} $(\ms{curr.k} \neq k)$ \bf{then} $\ms{result} \gets \lit{false}$ \label{sline:cont-neq} \\
+		\line{BA01} \>\> \bf{else if} $(\lit{read}(\ms{curr.del}))$ \bf{then} $\ms{result} \gets \lit{false}$ \bf{end if} \label{sline:del-cont} \\
+		\line{BA01} \> \bf{end if} \\
+		\line{BA01} \> $\lit{try\_to\_commit}()$ \\
+		\line{BA01} \> $\sf{return}(\ms{result})$. \label{sline:cont-return} \\
+
+   		
+\bf{operation} $\act{insert}(k,v)_p$ \\
+		\line{BA01} \> $\lit{begin\_transaction}()$ \\
+		\line{BA01} \> $\ms{result} \gets \lit{true}$; $\ms{curr} \gets \lit{find}(k)$  \label{sline:find-ins} \\
+		\line{BA01} \> \bf{if} $(\ms{curr.k} = \ms{k})$ \bf{then} \\
+		\line{BA01} \>\>\> \bf{if} $(\lit{read}(\ms{curr.del}))$ \bf{then} $\lit{write}(\ms{curr.del}, \lit{false})$ \label{sline:del-false-ins} \label{sline:del-ins} \\
+						
+		\line{BA01} \>\>\>\> \bf{else} $\ms{result} \gets \lit{false}$ \bf{end if} \label{sline:false-ins} \\
+		\line{BA01} \>\> \bf{else} \sf{allocate a new node} \label{sline:new-node} \\
+		\line{BA01} \>\>\> $\ms{new.k} \gets \ms{k}$; $\ms{new.v} \gets \ms{v}$ \\
+		\line{BA01} \>\>\> \bf{if} $(\ms{curr.k} > \ms{k})$ \bf{then} $\lit{write}(\ms{curr.r},\ms{new})$ \label{sline:start-ins} \\
+		\line{BA01} \>\>\>\> \bf{else} $\lit{write}(\ms{curr.\ell}, \ms{new})$ \bf{end if} \label{sline:end-ins} \\
+		\line{BA01} \> \bf{end if} \\
+		\line{BA01} \> $\lit{try\_to\_commit}()$ \\
+		\line{BA01} \> $\sf{return}(\ms{result})$. \label{sline:insert-return} \\
+   		
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Algorithm for the operations of the protocol}
+\label{fig:ttc-protocol}
+}
+\end{figure}
+   		
+   		
+   		
+\begin{figure}[h!]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+\resetline
+\begin{tabbing}
+aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
+   		
+\bf{operation} $\act{right\_rotate}(\ms{parent}, \ms{left-child})_p$ \\
+		\line{BA01} \> $\lit{begin\_transaction}()$ \\
+		\line{BA01} \> \bf{if} $(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
+		\line{BA01} \>\> \bf{else} $\ms{n} \gets \lit{read}(\ms{parent.r})$ \bf{end if} \\
+		\line{BA01} \> \bf{if} $(\ms{n = \bot})$ {\bf then} ${\sf return}(\lit{false})$  \bf{end if} \\
+		\line{BA01} \> $\ms{\ell} \gets \lit{read}(\ms{n.\ell})$ \\
+		\line{BA01} \> \bf{if} $(\ms{\ell = \bot})$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\
+		\line{BA01} \> $\ms{\ell{}r} \gets \lit{read}(\ms{\ell.r})$; $\lit{write}(\ms{n.\ell}, \ms{\ell{}r})$; $\lit{write}(\ms{\ell.r}, \ms{n})$ \\
+		\line{BA01} \> \bf{if} $(\ms{left-child})$ \bf{then} $\lit{write}(\ms{parent.\ell}, \ell)$ \\
+		\line{BA01} \>\> \bf{else} $\lit{write}(\ms{parent.r}, \ms{\ell})$ \bf{end if} \\
+		\line{BA01} \> $\act{update-balance-values()}$ \label{line:u-b-v1} \\
+		\line{BA01} \> $\lit{try\_to\_commit}()$ \\
+		\line{BA01} \> $\sf{return}(\lit{true})$. \\
+		
+
+\bf{operation} $\act{delete}(k)_p$ \\
+		\line{BA01} \> $\lit{begin\_transaction}()$ \\
+		\line{BA01} \> $\ms{result} \gets \lit{true}$ \\
+		\line{BA01} \> $\ms{curr} \gets \lit{find}(k)$ \label{sline:del-find} \\
+		\line{BA01} \> \bf{if} $(\ms{curr.k} \neq k)$ \bf{then} $\ms{result} \gets \lit{false}$ \label{sline:del-false2} \\
+		\line{BA01} \>\> \bf{else} \\
+		\line{BA01} \>\>\> \bf{if} $(\lit{read}(\ms{curr.del}))$ \bf{then} $\ms{result} \gets \lit{false}$ \label{sline:del-false}  \label{sline:del-del} \\
+		\line{BA01} \>\>\>\> \bf{else} $\lit{write}(\ms{curr.del}, \lit{true})$ {\bf end if} \label{sline:del-set} \\
+		\line{BA01} \> \bf{end if} \\
+		\line{BA01} \> $\lit{try\_to\_commit}()$ \\
+		\line{BA01} \> $\sf{return}(\ms{result})$. \label{sline:del-return} \\
+		
+\bf{operation} $\act{remove}(\ms{parent}, \ms{left-child})_p$ \\
+		\line{BA01} \> $\lit{begin\_transaction}()$ \\
+		\line{BA01} \> \bf{if} $(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
+		\line{BA01} \>\> \bf{else} $\ms{n} \gets \lit{read}(\ms{parent.r})$ \bf{end if} \\
+		\line{BA01} \> \bf{if} $(\ms{n = \bot} \vee \neg\lit{read}(\ms{n.del}))$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\	
+		\line{BA01} \> \bf{if} $((\ms{child} \gets \lit{read}(\ms{n.\ell})) \neq \bot)$ \\
+		\line{BA01} \>\> \bf{then if} $(\lit{read}(\ms{n.r}) \neq \bot)$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \label{sline:rem-2child} \\
+		\line{BA01} \>\> \bf{else} $\ms{child} \gets \lit{read}(\ms{n.r})$ {\bf end if} \\
+		\line{BA01} \> \bf{end if} \\
+		\line{BA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\lit{write}(\ms{parent.\ell}, \ms{child})$ \label{sline:rem-unlink1} \\
+		\line{BA01} \>\> \bf{else} $\lit{write}(\ms{parent.r}, \ms{child})$ \bf{end if} \label{sline:rem-unlink2} \\
+		\line{BA01} \> $\act{update-balance-values()}$ \label{line:u-b-v2} \\
+		\line{BA01} \> $\lit{try\_to\_commit}()$ \\
+		\line{BA01} \> $\sf{return}(\lit{true})$. \\
+		
+		
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Algorithm for the operations of the protocol}
+\label{fig:ttc-protocol}
+}
+\end{figure}
