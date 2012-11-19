@@ -2,9 +2,9 @@
 
 As mentioned in the introduction a partial solution to the difficulty of concurrent programming
 is to provide concurrent libraries of popular abstractions such as data structures.
-Often these are finely tuned high performance libraries
+Generally these are finely tuned high performance libraries
 providing the programmer with useful operations.
-The implementations of such libraries are usually very complex
+The implementations of such libraries are often very complex
 and difficult to understand, but are provided with a simple to use
 interface for anyone to use.
 By doing this experts can create algorithms providing strong guarantees
@@ -36,8 +36,9 @@ to create an atomic $\lit{move}$ operation by simply combing the $\lit{insert}$ 
 
 By providing a programmer with a large selection of transaction based implementations of commonly used abstractions
 his life becomes much easier.
-Also if these libraries provide good performance then STM will be a very attractive alternative to highly tuned
-non-transactional abstractions as STM has the advantage that the programmer can reuse the libraries in his transactions to create new
-atomic operations specific to his needs.
+Also if these libraries provide good performance it gives an additional reason to use STM as an attractive alternative to
+concurrent code using locks or even highly tuned non-transactional abstractions.
+Furthermore STM has the advantage over these other types of concurrent abstractions that the programmer can reuse
+the libraries in his transactions to create new atomic operations specific to his needs.
 
-This chapter will focus on designing efficient data structures in transactional memory proving the map abstraction.
+This chapter will focus on designing efficient data structures in transactional memory providing the map abstraction.
