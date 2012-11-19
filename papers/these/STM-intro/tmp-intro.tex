@@ -42,10 +42,10 @@ In addition, according to the abstraction level
 supplied to the programmer,  a lock may be encapsulated into a linguistic 
 construct such as a {\it monitor} \cite{H74} or a {\it serializer} \cite{HA79}
 giving the programmer additional operations.
-The type of synchronization admitted by locks is often referred to as\emph{pessimistic}, 
+The type of synchronization admitted by locks is often referred to as \emph{pessimistic}, 
 as each access to some location $x$ blocks further accesses to $x$ until the location is released.
 Unsurprisingly given that
-a persons thought process happens sequentially
+a person's thought process happens sequentially
 and that this concept of mutual exclusion is a straightforward way to
 conceive of synchronization/concurrency,
 locking is the by far the most widely used abstraction to
@@ -55,7 +55,10 @@ Unfortunately locks have several drawbacks. One is related to the  granularity
 of the object protected by a lock. More precisely, if several data items 
 are encapsulated  in a single  concurrent  object, the
 inherent parallelism  the object can provide 
-can be drastically reduced. This  is for example the case of a queue 
+can be drastically reduced.
+In a bad case all threads except the one owning the lock could be blocked waiting
+for the lock to be released, resulting in no better then sequential performance.
+This  is for example the case of a queue 
 object for which concurrent executions of enqueue and dequeue operations 
 should be possible as long as they are not on the same item.
 Using locks in such a way is often referred to as ``course-grained''.

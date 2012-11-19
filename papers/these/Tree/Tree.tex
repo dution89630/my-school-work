@@ -105,20 +105,20 @@ block of a wide variety of concurrent applications.
 Generally, they rely on invariants~\cite{Sha2011} which prevent them from scaling with multiple cores: 
 a tree must typically remain sufficiently balanced at any point of the concurrent execution.
 
-New programming constructs like transactions~\cite{HM93,ST95} promise 
-to exploit the concurrency inherent to multicore architectures.
-Most transactions build upon \emph{optimistic synchronization}, 
-where a sequence of shared accesses is executed speculatively and might abort.
-They simplify concurrent programming for two reasons.
-First, the programmer only needs to delimit regions of sequential 
-code into transactions or to replace critical sections by transactions
-to obtain a safe concurrent program.
-Second, the resulting transactional program is reusable by any programmer, 
-hence a programmer composing operations from a transactional library into another 
-transaction is guaranteed to obtain new deadlock-free operations that execute atomically.
-By contrast, \emph{pessimistic synchronization}, where each access to some 
-location $x$ blocks further accesses to $x$,
-is harder to program with~\cite{PA11,RHW10} and hampers reusability~\cite{HMPH05,GG11}.
+% New programming constructs like transactions~\cite{HM93,ST97} promise 
+% to exploit the concurrency inherent to multicore architectures.
+% Most transactions build upon \emph{optimistic synchronization}, 
+% where a sequence of shared accesses is executed speculatively and might abort.
+% They simplify concurrent programming for two reasons.
+% First, the programmer only needs to delimit regions of sequential 
+% code into transactions or to replace critical sections by transactions
+% to obtain a safe concurrent program.
+% Second, the resulting transactional program is reusable by any programmer, 
+% hence a programmer composing operations from a transactional library into another 
+% transaction is guaranteed to obtain new deadlock-free operations that execute atomically.
+% By contrast, \emph{pessimistic synchronization}, where each access to some 
+% location $x$ blocks further accesses to $x$,
+% is harder to program with~\cite{PA11,RHW10} and hampers reusability~\cite{HMPH05,GG11}.
 
 % problem
 Yet it is unclear how one can adapt a data structure to 
@@ -229,7 +229,7 @@ An example is the transaction-based binary search tree developed by Oracle Labs 
 to extensively evaluate transactional memories~\cite{DSS06,HLMS03,CCKO08,HK08,FFR08,YNW+08,DFGG11} .
 This library relies on the classical red-black tree algorithm that bounds the step complexity of pessimistic $\act{insert}$/$\act{delete}$/$\act{contains}$.
 It has been slightly optimized for transactions by removing sentinel nodes to reduce false-conflicts, and we are aware of 
-two benchmark-suite distributions that integrate it, STAMP~\cite{CCKO08} and synchrobench\footnote{http://lpd.epfl.ch/gramoli/php/synchrobench.php}{http://lpd.epfl.ch/gramoli/php/synchrobench.php}.
+two benchmark-suite distributions that integrate it, STAMP~\cite{CCKO08} and synchrobench\footnote{http://lpd.epfl.ch/gramoli/php/synchrobench.php}.
 
 
 \begin{figure*}
@@ -454,7 +454,7 @@ Consequently, the $\act{insert}$/$\act{delete}$/$\act{contains}$ operations can 
 	the pointer when it was $\bot$ (before it was changed to point to the new node).
 \end{enumerate}
 
-\input Tree/alg/tree-diff.tex
+%\input Tree/alg/tree-diff.tex
 
 \input Tree/alg/tree-diff2.tex
 
