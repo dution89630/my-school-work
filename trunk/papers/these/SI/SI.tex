@@ -1433,7 +1433,8 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{A01} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\ 
 \line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge (\downarrow \mathit{tmp.status}) \neq$ COMMITTED ) \\
-\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  (\downarrow \mathit{tmp.status}) = $ LIVE) \\
+%\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  (\downarrow \mathit{tmp.status}) = $ LIVE) \\
+\line{A03}  \>\>  {\bf then if}  $((\downarrow \mathit{tmp.status}) = $ LIVE) \\
 \line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
 %\line{A05} \>\> {\bf end if} \\
 \line{A06} \>\>\> {\bf if} ($(\downarrow \mathit{tmp.status}) \neq $ COMMITTED)  \\
@@ -1473,10 +1474,11 @@ The  operation first  dereferences  the pointer  stored at  $\mathit{addr}$
 If the item is a T-record that was created by a 
 transaction which  has not yet  committed then the $\mathit{value}$ field
 cannot be immediately be read as the transaction might still abort.
-Also if the current process has read (or written to) a value that is more recent then the transaction
-(meaning the process's $\mathit{time}$ field is greater or equal to the T-records
-$\mathit{time}$, line \ref{A03}) then the transaction must be directed to abort (line \ref{A04})
-so that opacity and strong isolation (containment specifically) is not violated.
+% Also if the current process has read (or written to) a value that is more recent then the transaction
+% (meaning the process's $\mathit{time}$ field is greater or equal to the T-records
+% $\mathit{time}$, line \ref{A03}) then 
+Then instead of waiting for the live transaction to finish committing it is directed to abort (line \ref{A04}),
+ensuring that the operation's wait-free progress as well as opacity and strong isolation (containment specifically) is not violated.
 From a T-record with a transaction that is not committed, the value from the $\mathit{last}$
 field is stored to a local variable (line \ref{A07}) and will be returned on operation completion.
 Otherwise the $\mathit{value}$ field of the T- or NT-record is used (line \ref{A08}).
@@ -1589,6 +1591,12 @@ Finally to finish the read operation, the $\tuple{\mathit{addr, value}}$
 is added to the read set if the transaction is an update transaction (line \ref{C14}),
 and the value of the local variable $\mathit{value}$  is returned.
 
+
+
+
+
+
+
 \begin{figure} [htb]
 \centering{ \fbox{
 \begin{minipage}[t]{1\linewidth}%{150mm}
@@ -1606,7 +1614,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{C02} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
 
 \line{C03} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
-\line{C04} \>\> {\bf then} {\bf if} ($\mathit{tmp.time} >= \mathit{rv}$) \\
+\line{C04} \>\> {\bf then} {\bf if} ($\mathit{tmp.time} \geq \mathit{rv}$) \\
 %\> \% Do validation to prevent abort due to a non-transactional write \\
 \line{C05} \>\>\> {\bf then if} this is an update transaction {\bf then} ${\sf validate\_by\_value}$() \\
 \line{C06} \>\>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
@@ -1720,15 +1728,17 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
 %\> \% Ensure the writes haven't been overwritten by non-transactional writes \\
+\line{DA13a} \> $\mathit{abort} \gets \lit{false}$ \\
 \line{DA14} \> 
 {\bf for each} ($\tuple{\mathit{addr, item}} \in \mathit{ws}$) {\bf do} \\
 \line{DA15} \>\> $\mathit{item.time} \gets \mathit{time}$; \\
 \line{DA16} \>\> {\bf if} $(\mathit{item} \neq (\downarrow \mathit{addr}))$  
                  {\bf then}  
-                   ${\sf abort}()$ 
+		    $\mathit{abort} \gets \lit{true}$
                 {\bf end if}; \\
 
 \line{DA17} \> {\bf end for}; \\
+\line{DA17a} \> {\bf if} $\mathit{abort}$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
 \line{DA18} \> {\bf if} ${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED) \\
 \line{DA19} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
 \line{DA20} \> \> {\bf else} \= ${\sf abort}()$ \\
@@ -1872,7 +1882,49 @@ it is immediately restarted as a new transaction.
 
 
 
+\begin{figure} [htb]
+\centering{ \fbox{
+\begin{minipage}[t]{1\linewidth}%{150mm}
+%\footnotesize 
+\scriptsize
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
+
+\line{A03a}  \>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  (\downarrow \mathit{tmp.status}) = $ LIVE) \\
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Modified line of the NT-read operation.}
+\label{fig:ser}
+}
+\end{figure}
+
+
+
+
+
+\section{From linearizability to serializability}
+
+In algorithm \ref{fig:ntops} whenever a NT-read operation encounters
+a transaction in the process of committing it immediately attempts to abort the transaction.
+Interestingly this can be prevented
+in the case that the thread performing the NT-read has not observed a write that is serialized after the transaction
+by serializing the NT-read before the transaction.
+Algorithm \ref{fig:ser} describes the changes to the NT-read operation, line \ref{A03} of
+the original algorithm is modified to become line \ref{A03a} in algorithm \ref{fig:ser}.
+It is important to note that this change means that the NT-reads will no longer be linearizable,
+instead they become serializable.
+The reason for this is that the NT-read operation could have started after the linearization point
+of a transaction, but before the transaction the transaction's status has been changed from LIVE to
+COMMITTED.
+Then if the NT-read returns the value contained in $\mathit{tmp.last}$ its real time occurrence was
+after the linearization point of the transaction, but it is serialized before the transaction.
 
 
 
