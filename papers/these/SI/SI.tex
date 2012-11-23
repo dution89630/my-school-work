@@ -1897,9 +1897,13 @@ The $\sf{non\_transactional\_write}$ operation is linearizable.
 The linearization point of the $\sf{non\_transactional\_write}(addr,value)$ operation
 is line \ref{} where the value of $\mathit{addr}$ is set to point to $\sf{next\_write}$.
 There is no pre-condition needed for this operation as it acts as a simple write operation.
-The post-condition is that the value of $\ms{next\_write.value}$ is returned by 
-read operations to $\ms{addr}$ (transactional and non-transactional) that occur after the linearization point.
-
+The post-condition is that the value of $\mathit{next\_write.value}$ is returned by 
+read operations to $\mathit{addr}$ (transactional and non-transactional) that are linearized afterwards.
+For either type of read operation their linearization point is when the the value of $\mathit{addr}$ is read,
+therefore any read operation linearized after an NT-write (and before another operation writes to $\mathit{addr}$
+will read a pointer the pointer written by the NT-write.
+Now, looking at the code of the read operations it is easy to see that when an object of type NT is read from
+$\mathit{addr}$ the 
 \end{proof}
 
 
