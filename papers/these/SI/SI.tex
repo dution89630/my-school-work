@@ -1877,7 +1877,30 @@ it is immediately restarted as a new transaction.
 
 
 \section{Proof of correctness}
-\anote{!Need to do this!}
+This section will prove the correctness of the algorithm by showing the linearizability
+of the transactions and non-transactional operations.
+Specifically we will show that every transaction (aborted or commited) as well
+as non-transactional operations have a unique linearization point, meaning that
+there is some instant in time during the execution of each operation where it
+appears to have taken place.
+Note that we do not use an STM specfic consistency criterion
+such as opacity or virtual world consistency to prove correctness as they do not consider
+non-transactional operations.
+
+
+
+\begin{lemma}
+\label{lemma:si-ntwrite}
+The $\sf{non\_transactional\_write}$ operation is linearizable.
+\end{lemma}
+\begin{proof}
+The linearization point of the $\sf{non\_transactional\_write}(addr,value)$ operation
+is line \ref{} where the value of $\mathit{addr}$ is set to point to $\sf{next\_write}$.
+There is no pre-condition needed for this operation as it acts as a simple write operation.
+The post-condition is that the value of $\ms{next\_write.value}$ is returned by 
+read operations to $\ms{addr}$ (transactional and non-transactional) that occur after the linearization point.
+
+\end{proof}
 
 
 
