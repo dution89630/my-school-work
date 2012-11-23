@@ -255,42 +255,38 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 %  Abstract -----------
 
 
-\section*{Software Transactional Memory: On the usability of parallel programming abstractions}
+\section*{Improving the Ease of Use of the Software Transactional Memory Abstraction}
 %\begin{abstract}
 \subsection*{Abstract}
 \anote{Update abstract}
-Writing concurrent programs is well know difficult task and because of this
-there are some abstractions that can help make parallel programming easier.
-Traditionally locks have been used to write concurrent algorithms, unfortunately it is
-difficult to write efficient concurrent programs using locks that perform efficiently.
-In addition to this, lock present other problems such as scalability issues.
-Transactional memory has been proposed as a possible promising solution to these
-difficulties of writing concurrent programs.
-Using transactions can be viewed as a different methodology for parallel programming, allowing
+Writing concurrent programs is well know difficult task and because
+if this there exists many abstractions designed with the intetion to make concurrent programming
+easier. Traditionally locks have been used to write concurrent programs, unfortunately it is
+difficult to write correct concurrent programs using locks that perform efficiently. In addition
+to this, locks present other problems such as scalability issues. Transactional memory has been
+proposed as a possible promising solution to these difficulties of writing concurrent programs.
+Using transactions can be viewed as a different methodology for concurrent programming, allowing
 the programmer the ability to declare what sections of his code should be executed atomically,
-without having to worry about synchronization details.
-Unfortunately transactional memory is know to suffer from performance and
-ease of use problems.
-This thesis specifically focuses on the ease of use problem
-by discussing how previous research has coped with these problems so far and proposes some ways in which we can address 
-some unanswered problems.
+without having to worry about synchronization details. Unfortunately transactional memory is
+know to suffer from performance and ease of use problems. This thesis specifically focuses on
+the ease of use problem by discussing how previous research has coped with these problems so
+far and proposes some ways in which we can address some unanswered problems.
 
-Transactional memory is designed to make parallel programming easier by allowing the programmer to define
-what blocks of code he wants to be executed atomically while leaving the difficult synchronization tasks for the
-underlying system.
+% Transactional memory is designed to make parallel programming easier by allowing the programmer to define
+% what blocks of code he wants to be executed atomically while leaving the difficult synchronization tasks for the
+% underlying system.
 Even though the idea of a transaction is clear, how the programmer should interact with the
-abstraction is still not clearly defined and STM systems are known to suffer from performance problems.
-The first chapter presents an introduction to this problem.
-The following four chapters look at how different problems can be solved with STM protocols,
-defined as follows:
+abstraction is still not clearly defined.
+The first chapter presents an introduction to this problem
+while following four chapters look at different approces working towards
+making transactional memory easier to use, organized as follows:
 \begin{enumerate}
-\item One STM protocol that satisfies two properties that can be considered good for efficiency.
-\item One STM protocol that guarantees transactions commit exactly once and hides the concepts of aborts to the programmer.
-\item One STM protocol that allows safe concurrent access to the same memory both inside and outside of transactions.
-\item One STM protocol that combines the properties of the previous chapters.
+\item The second chapter presents an STM protocol that satisfies two properties that can be considered good for efficiency.
+\item The following chapter introduces an STM protocol that guarantees transactions commit exactly once with the goal of hiding the concept of aborts to the programmer.
+\item The fourth chapter discusses an STM protocol that allows safe concurrent access to the same memory both inside and outside of transactions.
+\item The fifth chapter discusses adding efficient libraries specifically designed for use by
+programmers within STM.
 \end{enumerate}
-The sixth chapter discusses adding efficient libraries specifically designed for use within STM
-to be accessed by the programmer in order to make his life easier.
 The thesis finishes with a chapter detailing the conclusion and future work.
 
 %\end{abstract}
