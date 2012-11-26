@@ -1616,8 +1616,11 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{C03} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
 \line{C04} \>\> {\bf then} {\bf if} ($\mathit{tmp.time} \geq \mathit{rv}$) \\
 %\> \% Do validation to prevent abort due to a non-transactional write \\
-\line{C05} \>\>\> {\bf then if} this is an update transaction {\bf then} ${\sf validate\_by\_value}$() \\
+\line{C05} \>\>\> {\bf then if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,tmp.value}}$ to $\mathit{rs}$ and ${\sf validate\_by\_value}$(); \\
 \line{C06} \>\>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
+%\line{C14} \> {\bf if} this is an update transaction 
+%                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+
 
 \line{C06A} \>\>\> {\bf end if}; \\
 \line{C07} \>\>\> $\mathit{value} \gets \mathit{tmp.value}$; \\
@@ -1628,10 +1631,9 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{C11} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
 \line{C11A} \>\>\> {\bf end if}; \\
 \line{C12} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+\line{C14} \>\> {\bf if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
 \line{C13} \> {\bf end if}; \\
 
-\line{C14} \> {\bf if} this is an update transaction 
-                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
 \line{C15} \> ${\sf return}$ ($\mathit{value}$) \\
 {\bf end operation}. \\
 \\
@@ -1857,10 +1859,14 @@ Operation ${\sf validate\_by\_value()}$ is an operation that performs
 validation of the read set of a transaction. 
 Validation fails 
 if any location in $\mathit{rs}$ is 
-currently being updated by another transaction (line \ref{H05})
+currently being updated by another transaction (i.e. $\mathit{tmp.status} = $ LIVE) (line \ref{H05})
 or has had its changed since it was first read by the transaction (line \ref{H08})
 otherwise it succeeds.
 The transaction is immediately aborted if validation fails (lines \ref{H05}, \ref{H08}).
+Note that in the case that a location is being updated ($\mathit{tmp.status} = $ LIVE) and the location
+is in the write set of the current transaction then it does not abort, as this record belongs to the transaction
+currently being executed by the process performing the validation.
+Instead the $\mathit{last}$ value of the record is validated.
 Before the validation is performed the local variable $\mathit{rv}$ is updated
 to be the current value of $\mathit{GVC}$ (line \ref{H01}).
 This is done because if validation succeeds then transaction is valid at this time
@@ -1927,16 +1933,17 @@ successful then the transaction is guaranteed to be completed (lines \ref{}--\re
 
 \begin{lemma}
 \label{lemma:si-samevalue}
-For any T or NT record that is referenced by $\mathit{addr}$, any read operation (transactional or non-transactional) to
-$\mathit{addr}$ that dereferences this record will return the same value.
+For any T or NT record that is referenced by $\mathit{addr}$, any read operation (transactional or non-transactional) or validation (from $\sf{validate\_by\_value}$) to
+$\mathit{addr}$ that dereferences this record will return (or validate) the same value.
 \end{lemma}
 \begin{proof}
-There are two cases to consider, one when the record dereferenced is of type NT and tow when the record is of type T.
-\paragraph{Type NT} In this case using lemma \ref{lemma:si-nochange} and the looking at the code it is easy to see that both the transactional and non-transactional read operations
-return the value contained in the $\ms{value}$ field of the NT record dereferenced.
+There are two cases to consider, when the record dereferenced is of type NT and when the record is of type T.
+\paragraph{NT Record} In this case using lemma \ref{lemma:si-nochange} and the looking at the code it is easy to see that both the transactional and non-transactional read
+as well as validation operations
+return/validate the value contained in the $\ms{value}$ field of the NT record dereferenced.
 In the case where a $\sf{transaction\_read}$ causes a transactional abort, even though $\mathit{value}$ is not returned, linearizability is not violated
 as aborted transactions appear to have not executed at all.
-\paragraph{Type T} This case is a bit more difficult as the value returned depends on the $\mathit{status}$ of the transaction
+\paragraph{T Record} This case is a bit more difficult as the value returned depends on the $\mathit{status}$ of the transaction
 that created this record.
 First consider any $\sf{non\_transaction\_read}$ that has dereferenced this object, on line \ref{} the compare and swap ensures that the status of the transaction is
 no longer LIVE.
@@ -1946,6 +1953,11 @@ Next consider any $\sf{transaction\_read}$ that dereferences this object, like w
 (and using lemma \ref{lemma:si-statusonce}) if
 $\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned and if COMMITTED then the $\mathit{value}$ field is returned.
 Otherwise in the case that $\mathit{status}$ is still LIVE, the transaction simple aborts (line \ref{}).
+The $\sf{validate\_by\_value}$ operation follows the same pattern, with the exception if the $\mathit{status}$ is LIVE and
+is in the write set of the current transaction.
+In this case the process executing the validation is also the one who owns the record being validated, but here the compare
+and swap on line \ref{} of $\sf{try\_to\_commit}$ ensures that the value previously at this location is now in the $\mathit{last}$
+field of this record.
 \end{proof}
 
 
@@ -1985,6 +1997,45 @@ lemma \ref{lemma:si-samevalue}.
 
 
 
+\begin{lemma}
+\label{lemma:si-rvvalid}
+The value validated or returned by a successful $\sf{transactional\_read}$ operation to $\mathit{addr}$ is the same
+value that would be validated or returned by a read (non-transactional or transactional) at the time the most recent
+$\mathit{rv}$ was set for this transaction.
+\end{lemma}
+\begin{proof}
+By lemma \ref{lemma:si-samevalue} we know that for any record dereferenced the value read or validated will
+always be the same for that record, so the rest of this proof will consider that value when discussing
+a dereferenced record.
+There are two places where $\ms{rv}$ can be set, either at the start of a transaction on line \ref{} of the
+$\sf{begin\_transaction}$ operation, or before validation on line \ref{} the $\sf{validate\_by\_value}$ operation.
+
+For the $\sf{validate\_by\_value}$ case we know that every location read so far by the transaction is contained
+in the read set (including the current location) before $\mathit{rv}$ is set.
+After $\mathit{rv}$ is set, every location in the read set is validated, ensuring that each location contains the same
+value as when it was previously read.
+From this it is easy to see that when $\mathit{rv}$ is set, none of the values have been changed.
+
+Let us now consider the case where the most recent value for $\ms{rv}$ was most recently set in $\sf{begin\_transaction}$.
+In this case, if the object dereferenced on line \ref{} is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
+as otherwise a validation would have been called, updating $\mathit{rv}$.
+On line \ref{} of $\sf{non\_transactional\_write}$ operation $\mathit{addr}$ is set to reference the NT record, following this
+$\mathit{GCV}$ is read which is then used to update the record's $\mathit{time}$ field.
+Now, as previously stated this value must be smaller then $\mathit{rv}$, and given that the value of $\mathit{rv}$
+was set using $\mathit{GCV}$, which is a synchronized growing counter, $\mathit{addr}$ must have been set to reference
+this NT record before $\mathit{rv}$ was set, and has not changed up to the point where the record was dereferenced by the read.
+If the object dereferenced on line \ref{} is a T record then we must have $\mathit{tmp.time} \leq \mathit{rv}$ and 
+$\mathit{tmp.status} = $ COMMITTED or $\mathit{tmp.status} = $ ABORTED, otherwise the transaction would have aborted.
+Given this, we just need to show that the T record dereferenced was in memory before $\mathit{GCV}$ was incremented to the value
+read in $\sf{begin\_transaction}$ (i.e. before $\mathit{GCV} = \mathit{rv}$).
+First consider the case where $\mathit{tmp.status} = $ COMMITTED, 
+
+Finally given that $\sf{begin\_transaction}$ is called only once per transaction and is performed before any read or validation is performed,
+all the values returned by reads were the same when $\mathit{rv}$ was set.
+\end{proof}
+
+
+
 
 \begin{lemma}
 \label{lemma:si-tread}
@@ -1995,7 +2046,23 @@ including it and all previous reads of the transaction.
 For the $\sf{transaction\_read}$ operation we have different linearization points depending on the status of the record dereferenced
 on line \ref{}.
 The pre and post conditions are that the values returned by this and all the previous reads of the transaction are the values in memory, or more specifically, 
-using lemma \ref{lemma:si-samevalue} at the linearization point, for all the $\ms{addr}$
+(using lemma \ref{lemma:si-samevalue}) at the linearization point for each $\mathit{addr}$ read (including the current one) the location points to the record
+that contains the same value that was read.
+We must consider whether the type of record that is dereferenced on line \ref{} is an NT or T record.
+\paragraph{NT record}
+For the NT-record we have two cases depending on the value read from $\mathit{tmp.time}$.
+\begin{itemize}
+\item \bf{$\mathit{tmp.time} \geq \mathit{rv}$}
+Here the linearization point is on line \ref{}, just before the call to $\sf{validate\_by\_value}$.
+Using lemma \ref{lemma:si-samevalue} and the fact that this operation validates each value in the read set,
+aborting if any change is found, it is easy to see that the pre and post conditions are satisfied.
+\item \bf{$\mathit{tmp.time} < \mathit{rv}$}
+In this case the linearization point was the time that the value of $\mathit{rv}$ was set.
+
+\end{itemize}
+
+\paragraph{T record}
+
 
 
 The linearization point of the $\sf{non\_transaction\_read}(addr, value)$ is line \ref{} where the value
