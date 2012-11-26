@@ -1879,13 +1879,75 @@ it is immediately restarted as a new transaction.
 \section{Proof of correctness}
 This section will prove the correctness of the algorithm by showing the linearizability
 of the transactions and non-transactional operations.
-Specifically we will show that every transaction (aborted or commited) as well
+Specifically we will show that every transaction (aborted or committed) as well
 as non-transactional operations have a unique linearization point, meaning that
 there is some instant in time during the execution of each operation where it
 appears to have taken place.
-Note that we do not use an STM specfic consistency criterion
+Note that we do not use an STM specific consistency criterion
 such as opacity or virtual world consistency to prove correctness as they do not consider
 non-transactional operations.
+
+Before detailing the linearization points of the operations we will introduce a few lemmas that will help
+with the proofs.
+
+\begin{lemma}
+\label{lemma:si-nochange}
+Neither the $\mathit{value}$ field of a T or NT record nor the $\ms{last}$ field of a T record is changed once a pointer in shared memory is set to 
+reference the record.
+\end{lemma}
+\begin{proof}
+In the case of an NT record, the $\mathit{value}$ field is set just once on line \ref{} of $\sf{non\_transactional\_write}$,
+which is just after the record is allocated, and before any shared pointers are set.
+For a T record, allocation happens on line \ref{} of $\sf{transactional\_write}$,
+then the $\mathit{value}$ field is set just once on line \ref{} of the same operation.
+The $\mathit{last}$ field is set later, but also just once on line \ref{} of the $\sf{try\_to\_commit}$ operation
+and the record is not referenced by a shared pointer until later in this operation
+by performing a compare and swap on line \ref{}.
+\end{proof}
+
+
+\begin{lemma}
+\label{lemma:si-statusonce}
+The $\ms{status}$ field of a transaction record will change from LIVE to either COMMITTED or ABORTED
+exactly once.
+\end{lemma}
+\begin{proof}
+The operation $\sf{begin\_transaction}$ is called each time a new transaction start and each time a transaction is aborted.
+During this operation a new $\mathit{status}$ variable is allocated and is set to LIVE.
+The status variable is then accessible by the process that is executing the transaction or through T records created during the
+transaction (line \ref{} of $\sf{transaction\_write}$).
+$\mathit{status}$ can be modified in three places:
+On line \ref{} of $\sf{non\_transactional\_read}$ and on line \ref{} of $\sf{try\_to\_commit}$, but in both these cases
+the value of $\mathit{status}$ is changed from LIVE to either COMMITTED or ABORTED by a compare and swap.
+The third place is on line \ref{} of the $\sf{abort}$ where $\mathit{status}$ is set to ABORTED by a normal write, but
+here $\mathit{status}$ must either still be LIVE, or already ABORTED if the compare and swap from LIVE to COMMITTED was
+successful then the transaction is guaranteed to be completed (lines \ref{}--\ref{}).
+\end{proof}
+
+
+\begin{lemma}
+\label{lemma:si-samevalue}
+For any T or NT record that is referenced by $\mathit{addr}$, any read operation (transactional or non-transactional) to
+$\mathit{addr}$ that dereferences this record will return the same value.
+\end{lemma}
+\begin{proof}
+There are two cases to consider, one when the record dereferenced is of type NT and tow when the record is of type T.
+\paragraph{Type NT} In this case using lemma \ref{lemma:si-nochange} and the looking at the code it is easy to see that both the transactional and non-transactional read operations
+return the value contained in the $\ms{value}$ field of the NT record dereferenced.
+In the case where a $\sf{transaction\_read}$ causes a transactional abort, even though $\mathit{value}$ is not returned, linearizability is not violated
+as aborted transactions appear to have not executed at all.
+\paragraph{Type T} This case is a bit more difficult as the value returned depends on the $\mathit{status}$ of the transaction
+that created this record.
+First consider any $\sf{non\_transaction\_read}$ that has dereferenced this object, on line \ref{} the compare and swap ensures that the status of the transaction is
+no longer LIVE.
+Now by lemma \ref{lemma:si-statusonce} we know that $\mathit{status}$ will only change from LIVE once.
+So if $\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned, otherwise if COMMITTED then the $\mathit{value}$ field is returned.
+Next consider any $\sf{transaction\_read}$ that dereferences this object, like with the NT reads,
+(and using lemma \ref{lemma:si-statusonce}) if
+$\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned and if COMMITTED then the $\mathit{value}$ field is returned.
+Otherwise in the case that $\mathit{status}$ is still LIVE, the transaction simple aborts (line \ref{}).
+\end{proof}
+
 
 
 
@@ -1897,13 +1959,48 @@ The $\sf{non\_transactional\_write}$ operation is linearizable.
 The linearization point of the $\sf{non\_transactional\_write}(addr,value)$ operation
 is line \ref{} where the value of $\mathit{addr}$ is set to point to $\sf{next\_write}$.
 There is no pre-condition needed for this operation as it acts as a simple write operation.
-The post-condition is that the value of $\mathit{next\_write.value}$ is returned by 
-read operations to $\mathit{addr}$ (transactional and non-transactional) that are linearized afterwards.
-For either type of read operation their linearization point is when the the value of $\mathit{addr}$ is read,
-therefore any read operation linearized after an NT-write (and before another operation writes to $\mathit{addr}$
-will read a pointer the pointer written by the NT-write.
-Now, looking at the code of the read operations it is easy to see that when an object of type NT is read from
-$\mathit{addr}$ the 
+The post-condition is that the value in memory at $\mathit{addr}$ is $\mathit{value}$, meaning that $\mathit{next\_write.value}$ is returned by 
+read operations to $\mathit{addr}$ (transactional and non-transactional) that are linearized after the write.
+For either type of read operation their linearization point is when $\mathit{addr}$ is accessed (as will be detailed in further lemmas),
+therefore any read operation linearized after this NT-write (and before another operation modifies $\mathit{addr}$)
+will dereference the pointer written by the NT-write.
+Lemma \ref{lemma:si-samevalue} completes the proof.
+\end{proof}
+
+
+\begin{lemma}
+\label{lemma:si-tread}
+The $\sf{non\_transaction\_read}$ operation is linearizable.
+\end{lemma}
+\begin{proof}
+The linearization point of the $\sf{non\_transaction\_read}(addr, value)$ is line \ref{} where the value
+of $\mathit{addr}$ is read from memory.
+The pre and post conditions are that the value in memory at $\mathit{addr}$ is $\mathit{value}$, or more specifically, 
+any other read operation to $\mathit{addr}$ (transactional and non-transactional) whose access to $\mathit{addr}$
+(line \ref{} of $\sf{non\_transaction\_read}$ and \ref{} of $\sf{transaction\_read}$) dereferences
+the same record as $\mathit{tmp}$ returns the same value.
+Since the object dereferenced at the linearization point is pointed to by $\mathit{addr}$ then the proof follows from
+lemma \ref{lemma:si-samevalue}.
+\end{proof}
+
+
+
+
+\begin{lemma}
+\label{lemma:si-tread}
+The successful $\sf{transaction\_read}$ operation (i.e. one that does not cause the transaction to abort) has a linearization point
+including it and all previous reads of the transaction.
+\end{lemma}
+\begin{proof}
+For the $\sf{transaction\_read}$ operation we have different linearization points depending on the status of the record dereferenced
+on line \ref{}.
+The pre and post conditions are that the values returned by this and all the previous reads of the transaction are the values in memory, or more specifically, 
+using lemma \ref{lemma:si-samevalue} at the linearization point, for all the $\ms{addr}$
+
+
+The linearization point of the $\sf{non\_transaction\_read}(addr, value)$ is line \ref{} where the value
+of $\mathit{addr}$ is read from memory.
+The pre-condition
 \end{proof}
 
 
