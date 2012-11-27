@@ -1231,9 +1231,9 @@ into 4 parts.
 
 
 \paragraph{Select the next transaction to execute} 
-(Lines \ref{BA01}-\ref{BA11}) 
+(Lines \ref{CBA01}-\ref{CBA11}) 
 Processor $P_x$  first reads (asynchronously) the current  progress of each
-process  and  selects accordingly   a process (lines  \ref{BA01}-\ref{BA02}). 
+process  and  selects accordingly   a process (lines  \ref{CBA01}-\ref{CBA02}). 
 The procedure ${\sf select\_next\_process}()$  (whose details will be explained
 later) returns  the identity $i$ of the process for which $P_x$ has to 
 execute the next transaction. This process  $p_i$ can be a process owned by
@@ -1242,10 +1242,10 @@ execute its next transaction.
 
 
 Next, $P_x$  initializes local  variables in order  to execute  $p_i$'s next
-transaction in the appropriate correct context (lines \ref{BA03}-\ref{BA05}).
+transaction in the appropriate correct context (lines \ref{CBA03}-\ref{CBA05}).
 Before entering a speculative  execution of the transaction, 
 $P_x$ first looks to see
-if it has not yet been committed (lines  \ref{BA07}-\ref{BA11}). To that
+if it has not yet been committed (lines  \ref{CBA07}-\ref{CBA11}). To that
 end,  $P_x$  scans  the list   of  committed transactions.   Thanks to  the
 pointer value kept in  $\mathit{STATE}[i].last\_ptr$, it is useless to
 scan the list from the beginning:  
@@ -1259,7 +1259,7 @@ forever in the list because the predicate $(\downarrow current).next=\bot$
 is  never true. This  happens  when  new committed  transactions (different
 from $P_x$'s transactions) are repeatedly and infinitely 
 added to the list. The procedure  ${\sf prevent\_endless\_looping}()$
-(line \ref{BA07}) is used to prevent such an infinite looping. 
+(line \ref{CBA07}) is used to prevent such an infinite looping. 
 Its details will be  explained  later. 
 
 
@@ -1283,71 +1283,71 @@ aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
 
 
 
-\line{BA01} \> $state[1..n] \leftarrow 
+\line{CBA01} \> $state[1..n] \leftarrow 
            [\mathit{STATE}[1],\cdots,\mathit{STATE}[n]]$;\\
 
-\line{BA02} \>  $i \leftarrow {\sf select\_next\_process}()$;\\
+\line{CBA02} \>  $i \leftarrow {\sf select\_next\_process}()$;\\
 
 
-\line{BA03} \> $i\_local\_state \leftarrow state[i].local\_state;$ 
+\line{CBA03} \> $i\_local\_state \leftarrow state[i].local\_state;$ 
                $i\_tr\_sn \leftarrow state[i].tr\_sn;$\\
 
 
-\line{BA04} \> $current  \leftarrow state[i].last\_ptr$;
+\line{CBA04} \> $current  \leftarrow state[i].last\_ptr$;
                $committed \leftarrow \mathit{false}$;\\ 
 
 
-\line{BA05} \>  $k2\_counter \leftarrow 0$; 
+\line{CBA05} \>  $k2\_counter \leftarrow 0$; 
                $\mathit{after\_my\_last\_cmt} \leftarrow \mathit{false}$;\\
 
 
-\line{BA06} \> 
+\line{CBA06} \> 
       {\bf while} \= $\big(~((\downarrow current).next  \neq \bot)
                       ~\wedge~ (\neg committed)~\big)$   {\bf do}\\
 
 
-\line{BA07} \> \>   ${\sf prevent\_endless\_looping}(i)$;\\ 
+\line{CBA07} \> \>   ${\sf prevent\_endless\_looping}(i)$;\\ 
 
 
-\line{BA08} \> \>  
+\line{CBA08} \> \>  
     {\bf if} \= $((\downarrow current).tid  =\langle i,i\_tr\_sn \rangle )$\\
 
 
-\line{BA09} \> \> \>  
+\line{CBA09} \> \> \>  
     {\bf then}  $committed \leftarrow \mathit{true}$;
     $i\_local\_state \leftarrow (\downarrow current).local\_state$ \\
 
 
-\line{BA08'} \> \>   {\bf end if}; \\
+\line{CBA08'} \> \>   {\bf end if}; \\
 
 
-\line{BA10} \> \> $current \leftarrow (\downarrow current).next$\\
+\line{CBA10} \> \> $current \leftarrow (\downarrow current).next$\\
 
-\line{BA11} \>     {\bf end while}; \\
+\line{CBA11} \>     {\bf end while}; \\
 
 
-\line{BA12} \> {\bf if} \= $(\neg committed)$  {\bf then}\\
+\line{CBA12} \> {\bf if} \= $(\neg committed)$  {\bf then}\\
 
 \>\> \% --- Simulation phase  ----------------------------------------------------------------------------\\
 
 
-\line{BA13} \>  \>
+\line{CBA13} \>  \>
    execute the $i\_tr\_sn$-th transaction of $p_i$:  the value of
    {\sc x}.${\sf read}()$  is obtained \\
                 
-\line{BA14} \>  \>
+\line{CBA14} \>  \>
        by scanning downwards the transaction list 
        (starting from   $current$);  \\ %%%$state\_ptr$);  \\
 
-\line{BA15} \> \> $p_i$'s local variables are read from (written into) 
+\line{CBA15} \> \> $p_i$'s local variables are read from (written into) 
              $P_x$'s local memory (namely,   $i\_local\_state$);\\  
 
 
-\line{BA16}\>\> The set of shared objects read by the current 
+\line{CBA16}\>\> The set of shared objects read by the current 
               transaction  are saved in  the set $\mathit{lrs}$;\\ 
 
 
-\line{BA17}\>\>  The  pairs $\langle${\sc y},$v\rangle$ 
+\line{CBA17}\>\>  The  pairs $\langle${\sc y},$v\rangle$ 
                such that the transaction issued  {\sc y}.${\sf write}(v)$
                are saved in the set $ws$; \\
 
@@ -1356,111 +1356,111 @@ aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
 \>\> \% --- Try to  commit phase  ------------------------------------------------------------------------ \\
 
 
-\line{BA18} \>\> $overwritten \leftarrow \mathit{false}$; \\ 
+\line{CBA18} \>\> $overwritten \leftarrow \mathit{false}$; \\ 
 
 
-\line{BA19} \> \>
+\line{CBA19} \> \>
       {\bf while} \= $\big(~(\downarrow current).next \neq \bot)
       ~\wedge~ (\neg committed)~\big)$   %~\wedge~ (\neg overwritten)~\big)$  
         {\bf do}\\
 
 
-\line{BA20} \> \>\>   ${\sf prevent\_endless\_looping}(i)$;\\ 
+\line{CBA20} \> \>\>   ${\sf prevent\_endless\_looping}(i)$;\\ 
  
-\line{BA21} \> \>\>  $current \leftarrow (\downarrow current).next$;\\
+\line{CBA21} \> \>\>  $current \leftarrow (\downarrow current).next$;\\
 
-\line{BA22} \> \>\> same as lines \ref{BA08} and  \ref{BA09};\\
+\line{CBA22} \> \>\> same as lines \ref{CBA08} and  \ref{CBA09};\\
 
 
-\line{BA23} \> \> \> {\bf if} 
+\line{CBA23} \> \> \> {\bf if} 
     $(\exists$ {\sc x} $\in \mathit{lrs}:
                ~ \langle${\sc x}$,-\rangle \in (\downarrow current).ws)$
     {\bf then}  $overwritten  \leftarrow \mathit{true}$  {\bf end if} \\
 
 
-\line{BA24} \>\>  {\bf end while};\\
+\line{CBA24} \>\>  {\bf end while};\\
 
 
-\line{BA25} \>\>  {\bf if} \= $(\neg committed \wedge
+\line{CBA25} \>\>  {\bf if} \= $(\neg committed \wedge
                     ( \neg overwritten \vee ws=\emptyset))$\\
 
 
-\line{BA26} \>  \>\> {\bf then} \=
+\line{CBA26} \>  \>\> {\bf then} \=
    allocate a new transaction descriptor $\mathit{DESCR}$;\\
 
 
-\line{BA27} \> \> \>\> $\mathit{DESCR} \leftarrow   
+\line{CBA27} \> \> \>\> $\mathit{DESCR} \leftarrow   
 \langle  \bot, current,$ $\langle i, i\_tr\_sn \rangle,$ 
                        $ws,i\_local\_state \rangle$;\\
  
 
-\line{BA28} \> \> \>\> $committed \leftarrow 
+\line{CBA28} \> \> \>\> $committed \leftarrow 
  {\sf Compare\&Swap}((\downarrow current).next, 
                      \bot,\uparrow \mathit{DESCR})$;\\
 
 
-\line{BA29} \> \> \>\> {\bf if} ($\neg committed$) 
+\line{CBA29} \> \> \>\> {\bf if} ($\neg committed$) 
    {\bf then} disallocate  $\mathit{DESCR}$ {\bf end if}\\
 
 
 
-\line{BA30} \> \> {\bf end if}\\
+\line{CBA30} \> \> {\bf end if}\\
 
-\line{BA31} \> {\bf end if};\\
+\line{CBA31} \> {\bf end if};\\
 
-\line{BA32} \> {\bf if} $(committed)$  {\bf then}
+\line{CBA32} \> {\bf if} $(committed)$  {\bf then}
             $\mathit{LAST\_CMT}[x,i] \leftarrow i\_tr\_sn$  {\bf end if};\\
 
 \>\> \% --- End of transaction --------------------------------------------------------------------------- \\
 
 
-\line{BA33} \> {\bf if} \= $(i\in \mathit{OWNED\_BY}[x])$  {\bf then} \\
+\line{CBA33} \> {\bf if} \= $(i\in \mathit{OWNED\_BY}[x])$  {\bf then} \\
 
 
-\line{BA34} \> \>  {\bf if} \= $(\neg committed)$ \\
+\line{CBA34} \> \>  {\bf if} \= $(\neg committed)$ \\
 
-\line{BA35} \> \> \> 
+\line{CBA35} \> \> \> 
      {\bf then} \= {\bf if} \= $(state[i].help\_date =+\infty)$ {\bf then} \\
 
-\line{BA36}  \> \> \> \> \> 
+\line{CBA36}  \> \> \> \> \> 
     $helpdate \leftarrow   {\sf Fetch\&Incr}(\mathit{CLOCK})$;\\ 
 
-\line{BA37}  \> \> \> \> \> 
+\line{CBA37}  \> \> \> \> \> 
 $\mathit{STATE}[i]\leftarrow 
     \langle   state[i].tr\_sn, state[i].local\_state, helpdate,
                          state[i].last\_ptr \rangle$\\
 
-\line{BA38} \> \> \> \> {\bf end if} \\
+\line{CBA38} \> \> \> \> {\bf end if} \\
 
-\line{BA39} \> \> \>  
+\line{CBA39} \> \> \>  
 {\bf else} \>  execute non-transactional code of $p_i$ (if any) 
    in the local context  $i\_local\_state$;\\
 
-\line{BA40} \> \> \> \>  
+\line{CBA40} \> \> \> \>  
 {\bf if} \= (end of $p_i$'s code)     \\
 
 
-\line{BA41} \> \> \>\> \>{\bf then} \= 
+\line{CBA41} \> \> \>\> \>{\bf then} \= 
   $\mathit{OWNED\_BY}[x]\leftarrow    
            \mathit{OWNED\_BY}[x] \setminus \{i\}$\\
 
 
-\line{BA42} \>\>\>\>\> {\bf else} \> 
+\line{CBA42} \>\>\>\>\> {\bf else} \> 
 
    $\mathit{STATE}[i] \leftarrow 
       \langle i\_tr\_sn +1, i\_local\_state, +\infty, current \rangle$\\
 
-\line{BA43} \>\>\>\>  {\bf end if};\\ 
+\line{CBA43} \>\>\>\>  {\bf end if};\\ 
 
-\line{BA44} \>\>\>\> 
+\line{CBA44} \>\>\>\> 
  $my\_last\_cmt \leftarrow   ~\uparrow \mathit{DESCR}$;
 
  $my\_next\_proc \leftarrow  {\sf select}(\mathit{OWNED\_BY}[x])$\\
 
 
-\line{BA45} \> \>  {\bf end  if}\\
+\line{CBA45} \> \>  {\bf end  if}\\
 
-\line{BA46} \>   {\bf end if}\\ 
+\line{CBA46} \>   {\bf end if}\\ 
 
 
 {\bf end while}.  %\\
@@ -1479,21 +1479,21 @@ $\mathit{STATE}[i]\leftarrow
 
 
 \paragraph{Speculative execution of the selected  transaction} 
-(Lines \ref{BA12}-\ref{BA17}) 
+(Lines \ref{CBA12}-\ref{CBA17}) 
 The identity of the transaction selected by $P_x$ is 
 $\langle i,  i\_tr\_sn \rangle$. 
 If,  from $P_x$'s point of view, this transaction  is not committed, $P_x$ 
-simulates locally its execution (lines \ref{BA13}-\ref{BA17}).
+simulates locally its execution (lines \ref{CBA13}-\ref{CBA17}).
 The set of concurrent $t$-objects read by $p_i$ is  saved in $P_x$'s local
 set $\mathit{lrs}$, and the  pairs $\langle${\sc y},$v\rangle$ 
 such that the transaction issued {\sc y}.${\sf write}(v)$ are saved in 
 the local set $ws$. This is a transaction's speculative execution by $P_x$. 
 
 \paragraph{Try to commit the transaction}
- (Lines \ref{BA18}-\ref{BA32}) Once $P_x$ has performed a speculative
+ (Lines \ref{CBA18}-\ref{CBA32}) Once $P_x$ has performed a speculative
  execution of $p_i$'s  last transaction, it tries to commit  it by adding it
 to the descriptor list, but only if certain conditions are satisfied.
-To that end, $P_x$  enters a loop (lines \ref{BA19}-\ref{BA24}). 
+To that end, $P_x$  enters a loop (lines \ref{CBA19}-\ref{CBA24}). 
 There are two reasons for not trying to commit the transaction.
 %
 \begin{itemize}
@@ -1501,38 +1501,38 @@ There are two reasons for not trying to commit the transaction.
 \item
 The first is when  the transaction has already  been committed. 
 If this is the case, the transaction  appears in the list of committed 
-transactions (scanned by the pointer $current$, lines \ref{BA21}-\ref{BA22}).
+transactions (scanned by the pointer $current$, lines \ref{CBA21}-\ref{CBA22}).
 %
 %\vspace{-0.2cm}
 \item
 The second is when the transaction is an update transaction and it
 has read a $t$-object that  has then been overwritten (by a committed 
-transaction). This is  captured by the predicate at line \ref{BA23}.
+transaction). This is  captured by the predicate at line \ref{CBA23}.
 \end{itemize}
 
 Then, if (a) the  transaction has not yet been  committed 
 (as far as $P_x$ knows) and (b1) no $t$-object read has been overwritten  or 
 (b2) the transaction is read-only, then $P_x$ tries to
-commit its speculative execution of this transaction (line \ref{BA25}).
+commit its speculative execution of this transaction (line \ref{CBA25}).
 To do this it first creates a new descriptor $\mathit{DESCR}$,
 updates its fields  with the data obtained from its speculative execution
- (line \ref{BA27}) and then tries to add it to the list. 
+ (line \ref{CBA27}) and then tries to add it to the list. 
 %
 To perform  the commit, $P_x$ issues ${\sf Compare\&Swap}
 ((\downarrow current).next,\bot,\uparrow \mathit{DESCR})$.
 It is easy to see that this invocation succeeds if and only if $current$ 
 points to the last  descriptor of the list of committed transactions 
-(line \ref{BA28}).
+(line \ref{CBA28}).
 
 Finally, if the transaction has been committed
-$P_x$ updates  $\mathit{LAST\_CMT}[x,i]$  (line \ref{BA32}).
+$P_x$ updates  $\mathit{LAST\_CMT}[x,i]$  (line \ref{CBA32}).
 
 
 \paragraph{Use the ownership notion to ensure the progress of each process} 
-(Lines \ref{BA33}-\ref{BA46}) 
+(Lines \ref{CBA33}-\ref{CBA46}) 
 The last part of the description of $P_x$'s behavior  concerns the 
 case where  $P_x$ is the owner of the process $p_i$ that issued the 
-current transaction selected by $P_x$ (determined at line \ref{BA03}). 
+current transaction selected by $P_x$ (determined at line \ref{CBA03}). 
 This means that $P_x$ is responsible for guaranteeing the individual 
 progress of $p_i$.  There are two cases. 
 %
@@ -1542,7 +1542,7 @@ progress of $p_i$.  There are two cases.
 If $committed$ is  equal to $\mathit{false}$, $P_x$ requires help 
 from the other processors in order for $p_i$'s transaction to be eventually 
 committed. To that end, it assigns (if not yet done) the next date value 
-to $\mathit{STATE}[i].help\_date$  (lines \ref{BA35}-\ref{BA38}). 
+to $\mathit{STATE}[i].help\_date$  (lines \ref{CBA35}-\ref{CBA38}). 
 Then, $P_x$ proceeds to  the next loop iteration.
 (Let us observe that, in that case, $my\_next\_proc$ is not  modified.)
 %
@@ -1551,18 +1551,18 @@ Then, $P_x$ proceeds to  the next loop iteration.
 Given that $P_x$ is responsible for  $p_i$'s progress, 
 if $committed$ is  equal to $\mathit{true}$ then $P_x$ executes the  
 non-transactional code
-(if any) that appears after the transaction (line \ref{BA39}).
+(if any) that appears after the transaction (line \ref{CBA39}).
 Next, if  $p_i$ has terminated (finished its execution), $i$ is 
 suppressed from $\mathit{OWNED\_BY}[x]$
-(line \ref{BA41}). Otherwise, $P_x$ updates $\mathit{STATE}[i]$ 
+(line \ref{CBA41}). Otherwise, $P_x$ updates $\mathit{STATE}[i]$ 
 in order for it 
 to contain the information required to execute the next transaction of $p_i$ 
-(line \ref{BA42}). 
+(line \ref{CBA42}). 
 %
 Finally, before re-entering the main loop, $P_x$ 
 updates the pointer  $my\_last\_cmt$ (see below) and 
 $my\_next\_proc$ in order to ensure the progress of the next 
-process it owns (line \ref{BA44}). 
+process it owns (line \ref{CBA44}). 
 \end{itemize}
 
 %----------------------------------------------------------------------
@@ -1574,7 +1574,7 @@ by  a processor and  committed.
 To that end, the helping mechanism introduced previously has 
  to be enriched so that  no processor either (a) permanently helps  only
  processes owned by other processors or (b) loops forever in an internal 
-while loop (lines \ref{BA06}-\ref{BA11} or \ref{BA19}-\ref{BA24}).
+while loop (lines \ref{CBA06}-\ref{CBA11} or \ref{CBA19}-\ref{CBA24}).
 The first issue is solved by  procedure ${\sf select\_next\_process}()$
 while the second issue is solved by the procedure 
 ${\sf prevent\_endless\_looping}()$.  
@@ -1589,7 +1589,7 @@ The values $K1$ and $K2$ can be arbitrary.
 
 \paragraph{The procedure  ${\sf select\_next\_process}()$}
 This operation is described in Figure~\ref{fig:select-next-proc}.
-It is invoked at line \ref{BA02} of the main loop and 
+It is invoked at line \ref{CBA02} of the main loop and 
 returns a process identity.  Its aim is to allow the invoking processor 
 $P_x$  to  eventually make  progress for each of the processes it owns. 
 
@@ -1791,8 +1791,8 @@ $\mathit{STATE}[i]\leftarrow
 \paragraph{The procedure ${\sf prevent\_endless\_looping}()$}
 As indicated, the aim of this procedure, described in 
 Figure~\ref{fig-prevent-looping}, is to prevent a processor $P_x$ from 
-endless looping in an internal  while loop (lines \ref{BA05}-\ref{BA09} 
-or \ref{BA17}-\ref{BA21}).
+endless looping in an internal  while loop (lines \ref{CBA05}-\ref{CBA09} 
+or \ref{CBA17}-\ref{CBA21}).
 %
 
 The time period considered starts at the last committed transaction 
@@ -1800,7 +1800,7 @@ issued  by a  process owned  by $P_x$. It  is  measured by  the  number of
 transactions committed since then.  The beginning of this time period is
 determined by  $P_x$'s local pointer $my\_last\_cmt$  
 (which   is initialized to $\mathit{FIRST}$
-and updated at  line~\ref{BA44} of the main loop after the last transaction
+and updated at  line~\ref{CBA44} of the main loop after the last transaction
 of a process  owned by $P_x$  has been committed.) 
 
 
@@ -1812,7 +1812,7 @@ then $P_x$ will require help for $p_i$ once this period attains $K2$
 issued by that process will be executed and committed by other processors
 and (if not yet done) this will  allow $P_x$ to exit the while loop because
 its  local  boolean   variable  $committed$  will then  become  true  (line
-\ref{BA09} of  the main loop).  
+\ref{CBA09} of  the main loop).  
 
 
 %========================================================================
@@ -1866,10 +1866,10 @@ and (b) eventually $T_{set} = \emptyset$.
 
 If $T_{set}$  is not empty, ${\sf  select\_next\_process}()$  returns
 the process identity $j$ for some committed transaction $T'\in T_{set}$. 
-On line  \ref{BA09}, the processor 
+On line  \ref{CBA09}, the processor 
 $P_y$ will see $T'$  in the list and perform $committed \gets true$. 
 Hence, $P_y$ cannot block forever in an internal while loop. 
-Then, on line \ref{BA32}, $P_y$  updates  $\mathit{LAST\_CMT}[y,j]$.
+Then, on line \ref{CBA32}, $P_y$  updates  $\mathit{LAST\_CMT}[y,j]$.
 Let  us   observe  that,  during  the   next   iteration   of  
 ${\sf select\_next\_process}()$ by $P_x$,  $T'$ is not be added to  $set$ 
 (line  \ref{CA01}) and, consequently, 
@@ -1891,7 +1891,7 @@ Any invocation of a transaction $T$ that requests help
 
 \begin{proofL}
 Let us first observe that all transactions that require help 
-have bounded and different help dates  (lines \ref{BA36}-\ref{BA37}, 
+have bounded and different help dates  (lines \ref{CBA36}-\ref{CBA37}, 
  \ref{CA11}-\ref{CA12}  or \ref{DA05}-\ref{DA06}).  
 Moreover,  once defined, the helping date for a transaction is not modified. 
 
@@ -1917,9 +1917,9 @@ list does no longer  increase. Hence, as  the  predicate  $(\downarrow
 current).next=\bot$ becomes eventually true,  we conclude that at least one  
 processor $P_y \in \cal P$ cannot 
 be  blocked  forever in a  while  loop. Because the list is no
-longer  changing, the predicate of line  \ref{BA25} then becomes 
+longer  changing, the predicate of line  \ref{CBA25} then becomes 
 satisfied at $P_y$.
-It follows that,  when  the processors  of  $\cal P$ execute line \ref{BA28}, 
+It follows that,  when  the processors  of  $\cal P$ execute line \ref{CBA28}, 
 eventually one of them successfully executes the compare\&swap that commits 
 the transaction $T$ which contradicts the initial assumption. 
 
@@ -1934,28 +1934,28 @@ any  transaction $T$ that requires help is eventually committed.
 \begin{lemma}
 \label{lemma:no-infinite-loop}
 No processor $P_x$ loops forever in an internal while loop
-(lines \ref{BA06}-\ref{BA11} or  \ref{BA19}-\ref{BA24}). 
+(lines \ref{CBA06}-\ref{CBA11} or  \ref{CBA19}-\ref{CBA24}). 
 \end{lemma}
 
 \begin{proofL} 
 The proof is by contradiction.
 Let $P_y$ be a processor that loops  forever in an internal while loop. 
 Let $i$ be the process identity it has obtained from its last call to 
-${\sf select\_next\_process}()$ (line  \ref{BA02}) and $P_x$  be
+${\sf select\_next\_process}()$ (line  \ref{CBA02}) and $P_x$  be
 the processor owner of $p_i$. 
 
 Let us first show that  processor $P_x$ cannot loop forever in an internal
  while loop. Let us assume the contrary. 
 Because processor $P_x$ loops forever we never have $((\downarrow current).next=\bot)~\vee~
 \mathit{committed}$, but each time it executes the loop body, 
-$P_x$ invokes ${\sf prevent\_endless\_looping}(i)$ (at line \ref{BA07} 
-or \ref{BA20}). The code of this procedure is described in 
+$P_x$ invokes ${\sf prevent\_endless\_looping}(i)$ (at line \ref{CBA07} 
+or \ref{CBA20}). The code of this procedure is described in 
 Figure~\ref{fig-prevent-looping}.  
 As $i \in \mathit{OWNED\_BY}[i]$ and $P_x$ invokes infinitely often 
 ${\sf prevent\_endless\_looping}(i)$, it follows from lines 
 \ref{DA01}-\ref{DA03}  and the current value of  $my\_last\_cmt$ (that 
 points  to the last committed transaction issued by a process owned by 
-$P_x$, see line~\ref{BA44}) that 
+$P_x$, see line~\ref{CBA44}) that 
 $P_x$'s local variable $k2\_counter$ is increased infinitely often.
 Hence, eventually this number of invocations attains $K2$. 
 When this  occurs, if not yet done, $P_x$ requires help  for the 
@@ -1980,7 +1980,7 @@ As previously (but now  $current$ is  $P_y$'s local variable),
 the predicate  $(\downarrow current).tid = \langle i,i\_tr\_sn \rangle$ 
 eventually becomes true and processor $P_y$ sets  $\mathit{committed}$ 
  to $\mathit{true}$. $P_y$ then stops looping inside an internal while 
-loop (line \ref{BA08} or \ref{BA22})  which concludes the proof of the lemma.
+loop (line \ref{CBA08} or \ref{CBA22})  which concludes the proof of the lemma.
 \renewcommand{\toto}{lemma:no-infinite-loop}
 \end{proofL}
 
@@ -1997,7 +1997,7 @@ Let $T$ be the current transaction issued by $p_i$.
 We first show that $T$ is eventually committed.
 
 Let us first observe that, as $p_i$ has issued $T$, $P_x$ has 
-executed line \ref{BA42} 
+executed line \ref{CBA42} 
 where it has updated $\mathit{STATE}[i]$ that now refers to that transaction. 
 If  $P_x$  requires help for $T$, the result  follows  from 
 Lemma~\ref{lemma:helped-transaction}. 
@@ -2011,9 +2011,9 @@ ${\sf select\_next\_proc}()$. There are two cases.
 ${\sf select\_next\_process}()$ returns $i$. 
 In that  case, as $P_x$ does not loop forever in a while loop
 (Lemma~\ref{lemma:no-infinite-loop}), it eventually executes lines 
-\ref{BA33}-\ref{BA38} and consequently either commits $T$ or
+\ref{CBA33}-\ref{CBA38} and consequently either commits $T$ or
  requires help for $T$ 
-at line~\ref{BA37}. 
+at line~\ref{CBA37}. 
 %
 %\vspace{-0.2cm}
 \item ${\sf select\_next\_process}()$ never returns $i$. 
@@ -2028,7 +2028,7 @@ and, due to Lemma \ref{lemma:helped-transaction}, $T$ is eventually committed.
 
 
 Let  us  now  observe that  that, after  $T$  has been committed  (by  some
-processor), $P_x$ executes lines~\ref{BA39}-\ref{BA44}  where  it
+processor), $P_x$ executes lines~\ref{CBA39}-\ref{CBA44}  where  it
 proceeds to the  simulation of its next process  (as defined by 
 ${\sf select}(\mathit{OWNED\_BY}[x])$).  It then  follows 
 from the previous reasoning  that  the next transaction of the  process 
@@ -2053,15 +2053,15 @@ Any invocation of a transaction $T$ by a process is  committed at most once.
 
 \begin{proofL}
 Let $T$ be a transaction committed by a processor $P_y$ (i.e., 
-the corresponding ${\sf Compare\&Swap}()$ at line \ref{BA28} is successful). 
+the corresponding ${\sf Compare\&Swap}()$ at line \ref{CBA28} is successful). 
 $T$ is identified $\langle  i, \mathit{STATE}[i].ts\_sn \rangle$.
 As  $P_y$ commits  $T$,  we conclude that $P_y$ has previously 
-executed lines \ref{BA06}-\ref{BA28}. 
+executed lines \ref{CBA06}-\ref{CBA28}. 
 \begin{itemize}
 %\vspace{-0.2cm}
 \item 
 We conclude from  the last update of $\mathit{STATE}[i].last\_ptr=pt$ by $P_y$
-(line \ref{BA42}) and  the fact that $P_y$'s $current$ local variable is 
+(line \ref{CBA42}) and  the fact that $P_y$'s $current$ local variable is 
 initialized  to   $\mathit{STATE}[i].last\_ptr$,  that  $T$ is not in the 
 descriptor list before the transaction pointed to by $pt$. 
 %\vspace{-0.2cm}
@@ -2070,7 +2070,7 @@ Let us consider the other part of the list.
 As $T$ is committed by $P_y$, its pointer  $current$  progresses from 
  $\mathit{STATE}[i].last\_ptr=pt$ until its last value that is  such that
 $(\downarrow current).next=\bot$.  It then follows from 
-lines \ref{BA08} and  \ref{BA22} that  $P_y$ has never 
+lines \ref{CBA08} and  \ref{CBA22} that  $P_y$ has never 
 encountered a  transaction identified  
 $\langle  i, \mathit{STATE}[i].ts\_sn \rangle$ (i.e., $T$) 
 while traversing the descriptor list. 
@@ -2105,7 +2105,7 @@ executed exactly once.
 \end{lemma}
 
 \begin{proofL}
-This lemma  follows directly  from lines \ref{BA39}-\ref{BA44}:  once the
+This lemma  follows directly  from lines \ref{CBA39}-\ref{CBA44}:  once the
 non-transactional  code separating two  transaction invocations  has been
 executed, the processor $P_x$ that owns the corresponding process $p_i$ 
 makes it progress to the beginning of its  next transaction (if any). 
@@ -2197,7 +2197,7 @@ commits $T$.
 \item 
 The transaction is an update transaction (hence, $ws\neq \emptyset$). 
 In that case, $P_y$ has found $(\downarrow current).next$ $=\bot$
-(because  the compare\&sap  succeeds) and  at line~\ref{BA25}, just before
+(because  the compare\&sap  succeeds) and  at line~\ref{CBA25}, just before
 committing,  the predicate  $\neg committed \wedge \neg overwritten$ 
 is satisfied.  
 
@@ -2216,29 +2216,29 @@ There are  two cases.
 %\vspace{-0.2cm}
 \item $P_x=P_y$ (the transaction is committed by the owner of $p_i$). 
 In that case, the local state of $p_i$ after the execution of $T$ 
-is kept in $P_x$'s local variable $i\_local\_state$ (line \ref{BA15}). 
+is kept in $P_x$'s local variable $i\_local\_state$ (line \ref{CBA15}). 
 After processor $P_x$ has executed the 
 non-transactional code that follows the invocation of $T$ (if any, line
-\ref{BA39}), it  updates $\mathit{STATE}[i].local\_state$ with 
+\ref{CBA39}), it  updates $\mathit{STATE}[i].local\_state$ with 
 the current value of  $i\_local\_state$ (if $p_i$ had not yet terminated,
-line~\ref{BA42}). 
+line~\ref{CBA42}). 
 %
 %\vspace{-0.2cm}
 \item $P_x \neq P_y$ (the processor that commits $T$ and the owner of $p_i$ 
 are different processors). 
 In that case, $P_y$ has saved the new local state of $p_i$ in 
-$\mathit{DESCR}.local\_state$ (line \ref{BA27}) just before 
+$\mathit{DESCR}.local\_state$ (line \ref{CBA27}) just before 
 appending $\mathit{DESCR}$ at the end of the descriptor list. 
 
 Next, thanks to the the predicate $i \in \mathit{OWNED\_BY}[x]$
 in the definition of $set$ at line \ref{CA01}, 
 there is an invocation of  ${\sf select\_next\_process}()$ by  $P_x$ 
-that returns $i$. When this occurs,  $P_x$  discovers at line~\ref{BA09} 
-or \ref{BA22} that the transaction $T$ has been  committed by another 
+that returns $i$. When this occurs,  $P_x$  discovers at line~\ref{CBA09} 
+or \ref{CBA22} that the transaction $T$ has been  committed by another 
 processor. It then retrieves the local state of $p_i$ (after 
 execution of  $T$) in $(\downarrow current).local\_state$, 
 saves it in $i\_local\_state$ and (as in the previous item)  eventually 
-writes it  in  $\mathit{STATE}[i].local\_state$ (line \ref{BA42}).
+writes it  in  $\mathit{STATE}[i].local\_state$ (line \ref{CBA42}).
 \end{itemize}
 It follows that, in both cases,  the value saved in 
 $\mathit{STATE}[i].local\_state$  is the local state of $p_i$ after the 
@@ -2345,7 +2345,7 @@ In that  case, the  transaction  for which  help  is required is  the last
 transaction invoked by  process $p_{my\_next\_proc}$. 
 %\vspace{-0.2cm}
 \item 
-The second  location is on line  \ref{BA37} after the  transaction 
+The second  location is on line  \ref{CBA37} after the  transaction 
 invocation  $T$ aborts. 
 It follows from line \ref{CA03} of  the operation ${\sf  select\_next\_process}()$   
 that  this invocation is also from  the last
@@ -2353,7 +2353,7 @@ transaction invoked by  process $p_{my\_next\_proc}$.
 \end{itemize}
 So  we  only  need  to  show  that $my\_next\_proc$  only  changes  when  a
 transaction is committed, which  follows directly from the predicates at lines 
- \ref{BA34} and  \ref{BA35} and the statements of line  \ref{BA44}. 
+ \ref{CBA34} and  \ref{CBA35} and the statements of line  \ref{CBA44}. 
 \renewcommand{\toto}{lemma:1max}
 \end{proofL}   
 
@@ -2371,7 +2371,7 @@ $p_i$)  is executed once before its  help date is  set  to a finite value
 This is  because only the owner $P_x$ of $p_i$ can  select $T$
 (line \ref{CA03}) when its help date is  $+\infty$.
 Then, after it has  executed $T$ unsuccessfully once, $P_x$  requests
-help for $T$ by setting its  help date to a finite value (line \ref{BA37}).
+help for $T$ by setting its  help date to a finite value (line \ref{CBA37}).
 
 Let us now compute   how many  times $T$  can  be  executed unsuccessfully
 (i.e.,  without being committed) after its help date has been  set to a
@@ -2419,7 +2419,7 @@ Repeating this we have at most $O(m)$ conflicts of this type for $P$.
 \item
 Case  3. The  third case is  that $P$'s  execution of $T$  is aborted
 because some other process has already committed $T$.
-Then on  line \ref{BA08} $P$ will see  that $T$ has been  committed and not
+Then on  line \ref{CBA08} $P$ will see  that $T$ has been  committed and not
 execute it again, so we have at most $O(1)$ conflicts of this type.
 \end{itemize}
 %\vspace{-0.6cm}

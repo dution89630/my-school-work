@@ -1724,7 +1724,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 \line{DA11} \> {\bf end for}; \\
 
-\line{DA12} \> $\mathit{time} \gets {\sf fetch\&increment}(\mathit{GVC})$; ${\sf validate\_by\_value}()$; \\
+\line{DA12} \> $\mathit{time} \gets {\sf increment\&fetch}(\mathit{GVC})$; ${\sf validate\_by\_value}()$; \\
 
 %\line{DA13} \> ${\sf validate\_by\_value}()$;  \\
 
@@ -1902,13 +1902,13 @@ Neither the $\mathit{value}$ field of a T or NT record nor the $\ms{last}$ field
 reference the record.
 \end{lemma}
 \begin{proof}
-In the case of an NT record, the $\mathit{value}$ field is set just once on line \ref{} of $\sf{non\_transactional\_write}$,
+In the case of an NT record, the $\mathit{value}$ field is set just once on line \ref{B02} of $\sf{non\_transactional\_write}$,
 which is just after the record is allocated, and before any shared pointers are set.
-For a T record, allocation happens on line \ref{} of $\sf{transactional\_write}$,
-then the $\mathit{value}$ field is set just once on line \ref{} of the same operation.
-The $\mathit{last}$ field is set later, but also just once on line \ref{} of the $\sf{try\_to\_commit}$ operation
+For a T record, allocation happens on line \ref{D02} of $\sf{transactional\_write}$,
+then the $\mathit{value}$ field is set on lines \ref{D03} and \ref{D04} of the same operation.
+The $\mathit{last}$ field is set later, but just once on line \ref{DA05} or \ref{DA06} of the $\sf{try\_to\_commit}$ operation
 and the record is not referenced by a shared pointer until later in this operation
-by performing a compare and swap on line \ref{}.
+by performing a compare and swap on line \ref{DA08}.
 \end{proof}
 
 
@@ -1921,13 +1921,13 @@ exactly once.
 The operation $\sf{begin\_transaction}$ is called each time a new transaction start and each time a transaction is aborted.
 During this operation a new $\mathit{status}$ variable is allocated and is set to LIVE.
 The status variable is then accessible by the process that is executing the transaction or through T records created during the
-transaction (line \ref{} of $\sf{transaction\_write}$).
+transaction (line \ref{D03} of $\sf{transaction\_write}$).
 $\mathit{status}$ can be modified in three places:
-On line \ref{} of $\sf{non\_transactional\_read}$ and on line \ref{} of $\sf{try\_to\_commit}$, but in both these cases
+On line \ref{A04} of $\sf{non\_transactional\_read}$ and on line \ref{DA18} of $\sf{try\_to\_commit}$, but in both these cases
 the value of $\mathit{status}$ is changed from LIVE to either COMMITTED or ABORTED by a compare and swap.
-The third place is on line \ref{} of the $\sf{abort}$ where $\mathit{status}$ is set to ABORTED by a normal write, but
-here $\mathit{status}$ must either still be LIVE, or already ABORTED if the compare and swap from LIVE to COMMITTED was
-successful then the transaction is guaranteed to be completed (lines \ref{}--\ref{}).
+The third place is on line \ref{AB01} of the $\sf{abort}$ where $\mathit{status}$ is set to ABORTED by a normal write, but
+here $\mathit{status}$ must either still be LIVE, or already ABORTED because if the compare and swap from LIVE to COMMITTED was
+successful then the transaction is guaranteed to be completed (lines \ref{DA18}--\ref{DA20} of $\sf{try\_to\_commit}$).
 \end{proof}
 
 
@@ -1945,18 +1945,18 @@ In the case where a $\sf{transaction\_read}$ causes a transactional abort, even 
 as aborted transactions appear to have not executed at all.
 \paragraph{T Record} This case is a bit more difficult as the value returned depends on the $\mathit{status}$ of the transaction
 that created this record.
-First consider any $\sf{non\_transaction\_read}$ that has dereferenced this object, on line \ref{} the compare and swap ensures that the status of the transaction is
+First consider any $\sf{non\_transaction\_read}$ that has dereferenced this object, on line \ref{A04} the compare and swap ensures that the status of the transaction is
 no longer LIVE.
 Now by lemma \ref{lemma:si-statusonce} we know that $\mathit{status}$ will only change from LIVE once.
 So if $\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned, otherwise if COMMITTED then the $\mathit{value}$ field is returned.
 Next consider any $\sf{transaction\_read}$ that dereferences this object, like with the NT reads,
 (and using lemma \ref{lemma:si-statusonce}) if
 $\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned and if COMMITTED then the $\mathit{value}$ field is returned.
-Otherwise in the case that $\mathit{status}$ is still LIVE, the transaction simple aborts (line \ref{}).
+Otherwise in the case that $\mathit{status}$ is still LIVE, the transaction simply aborts (line \ref{C10}).
 The $\sf{validate\_by\_value}$ operation follows the same pattern, with the exception if the $\mathit{status}$ is LIVE and
 is in the write set of the current transaction.
 In this case the process executing the validation is also the one who owns the record being validated, but here the compare
-and swap on line \ref{} of $\sf{try\_to\_commit}$ ensures that the value previously at this location is now in the $\mathit{last}$
+and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ ensures that the value previously at this location is now in the $\mathit{last}$
 field of this record.
 \end{proof}
 
@@ -1969,7 +1969,7 @@ The $\sf{non\_transactional\_write}$ operation is linearizable.
 \end{lemma}
 \begin{proof}
 The linearization point of the $\sf{non\_transactional\_write}(addr,value)$ operation
-is line \ref{} where the value of $\mathit{addr}$ is set to point to $\sf{next\_write}$.
+is line \ref{B03} where the value of $\mathit{addr}$ is set to point to $\sf{next\_write}$.
 There is no pre-condition needed for this operation as it acts as a simple write operation.
 The post-condition is that the value in memory at $\mathit{addr}$ is $\mathit{value}$, meaning that $\mathit{next\_write.value}$ is returned by 
 read operations to $\mathit{addr}$ (transactional and non-transactional) that are linearized after the write.
@@ -1981,15 +1981,15 @@ Lemma \ref{lemma:si-samevalue} completes the proof.
 
 
 \begin{lemma}
-\label{lemma:si-tread}
+\label{lemma:si-ntread}
 The $\sf{non\_transaction\_read}$ operation is linearizable.
 \end{lemma}
 \begin{proof}
-The linearization point of the $\sf{non\_transaction\_read}(addr, value)$ is line \ref{} where the value
-of $\mathit{addr}$ is read from memory.
+The linearization point of the $\sf{non\_transaction\_read}(addr, value)$ is line \ref{A01} where the record
+pointed to by $\mathit{addr}$ is dereferenced from memory.
 The pre and post conditions are that the value in memory at $\mathit{addr}$ is $\mathit{value}$, or more specifically, 
 any other read operation to $\mathit{addr}$ (transactional and non-transactional) whose access to $\mathit{addr}$
-(line \ref{} of $\sf{non\_transaction\_read}$ and \ref{} of $\sf{transaction\_read}$) dereferences
+(line \ref{A01} of $\sf{non\_transaction\_read}$ and \ref{C01} of $\sf{transaction\_read}$) dereferences
 the same record as $\mathit{tmp}$ returns the same value.
 Since the object dereferenced at the linearization point is pointed to by $\mathit{addr}$ then the proof follows from
 lemma \ref{lemma:si-samevalue}.
@@ -2007,8 +2007,9 @@ $\mathit{rv}$ was set for this transaction.
 By lemma \ref{lemma:si-samevalue} we know that for any record dereferenced the value read or validated will
 always be the same for that record, so the rest of this proof will consider that value when discussing
 a dereferenced record.
-There are two places where $\ms{rv}$ can be set, either at the start of a transaction on line \ref{} of the
-$\sf{begin\_transaction}$ operation, or before validation on line \ref{} the $\sf{validate\_by\_value}$ operation.
+There are two places where $\ms{rv}$ can be set, either at the start of a transaction on line \ref{START2} of the
+$\sf{begin\_transaction}$ operation, or before validation on line \ref{H01} the $\sf{validate\_by\_value}$ operation.
+
 
 For the $\sf{validate\_by\_value}$ case we know that every location read so far by the transaction is contained
 in the read set (including the current location) before $\mathit{rv}$ is set.
@@ -2017,18 +2018,31 @@ value as when it was previously read.
 From this it is easy to see that when $\mathit{rv}$ is set, none of the values have been changed.
 
 Let us now consider the case where the most recent value for $\ms{rv}$ was most recently set in $\sf{begin\_transaction}$.
-In this case, if the object dereferenced on line \ref{} is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
+In this case, if the object dereferenced on line \ref{C01} is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
 as otherwise a validation would have been called, updating $\mathit{rv}$.
-On line \ref{} of $\sf{non\_transactional\_write}$ operation $\mathit{addr}$ is set to reference the NT record, following this
+On line \ref{B03} of $\sf{non\_transactional\_write}$ operation $\mathit{addr}$ is set to reference the NT record, following this
 $\mathit{GCV}$ is read which is then used to update the record's $\mathit{time}$ field.
 Now, as previously stated this value must be smaller then $\mathit{rv}$, and given that the value of $\mathit{rv}$
 was set using $\mathit{GCV}$, which is a synchronized growing counter, $\mathit{addr}$ must have been set to reference
 this NT record before $\mathit{rv}$ was set, and has not changed up to the point where the record was dereferenced by the read.
-If the object dereferenced on line \ref{} is a T record then we must have $\mathit{tmp.time} \leq \mathit{rv}$ and 
+If the object dereferenced on line \ref{C01} is a T record then we must have $\mathit{tmp.time} \leq \mathit{rv}$ and 
 $\mathit{tmp.status} = $ COMMITTED or $\mathit{tmp.status} = $ ABORTED, otherwise the transaction would have aborted.
 Given this, we just need to show that the T record dereferenced was in memory before $\mathit{GCV}$ was incremented to the value
 read in $\sf{begin\_transaction}$ (i.e. before $\mathit{GCV} = \mathit{rv}$).
-First consider the case where $\mathit{tmp.status} = $ COMMITTED, 
+First consider the case where $\mathit{tmp.status} = $ COMMITTED, given that $\mathit{tmp}$ is a T record, it was created
+during a $\sf{try\_to\_commit}$ operation.
+On line \ref{DA08} the compare and swap ensures that $\mathit{tmp}$ is referenced to by $\mathit{addr}$ before the transaction
+increases $\mathit{GCV}$ by performing an increment and fetch.
+Then on line \ref{DA15}, the value returned from the increment and fetch is used to set the $\mathit{time}$ field of each T record
+created by the transaction.
+Given this and that we know $\mathit{tmp.time} \leq \mathit{rv}$, $\mathit{tmp}$ must have been referenced by $\mathit{addr}$ before
+$\mathit{GCV} = \mathit{rv}$.
+Now consider the case where $\mathit{tmp.status} = $ ABORTED, the compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ ensures
+that the value in $\ms{tmp.last}$ was the previous value at $\ms{addr}$ as well as $\mathit{tmp}$ is referenced to by $\mathit{addr}$
+before the increment and fetch.
+Following this, like in the case where $\mathit{tmp.status} = $ COMMITTED we have the value returned from the increment and fetch
+used to set the $\mathit{time}$ field of each T record created by the transaction.
+Resulting in the fact that $\mathit{tmp}$ must have been referenced by $\mathit{addr}$ before $\mathit{GCV} = \mathit{rv}$.
 
 Finally given that $\sf{begin\_transaction}$ is called only once per transaction and is performed before any read or validation is performed,
 all the values returned by reads were the same when $\mathit{rv}$ was set.
@@ -2039,37 +2053,103 @@ all the values returned by reads were the same when $\mathit{rv}$ was set.
 
 \begin{lemma}
 \label{lemma:si-tread}
-The successful $\sf{transaction\_read}$ operation (i.e. one that does not cause the transaction to abort) has a linearization point
-including it and all previous reads of the transaction.
+A successful $\sf{transaction\_read}$ operation (i.e. one that does not cause the transaction to abort) in linearizable,
+at a point that includes it as well all previous reads of the transaction.
 \end{lemma}
 \begin{proof}
-For the $\sf{transaction\_read}$ operation we have different linearization points depending on the status of the record dereferenced
-on line \ref{}.
+For the $\sf{transaction\_read}$ operation the linearization point is the most recent time that $\mathit{rv}$ was set for the transaction.
+This could have been 
 The pre and post conditions are that the values returned by this and all the previous reads of the transaction are the values in memory, or more specifically, 
 (using lemma \ref{lemma:si-samevalue}) at the linearization point for each $\mathit{addr}$ read (including the current one) the location points to the record
 that contains the same value that was read.
-We must consider whether the type of record that is dereferenced on line \ref{} is an NT or T record.
-\paragraph{NT record}
-For the NT-record we have two cases depending on the value read from $\mathit{tmp.time}$.
-\begin{itemize}
-\item \bf{$\mathit{tmp.time} \geq \mathit{rv}$}
-Here the linearization point is on line \ref{}, just before the call to $\sf{validate\_by\_value}$.
-Using lemma \ref{lemma:si-samevalue} and the fact that this operation validates each value in the read set,
-aborting if any change is found, it is easy to see that the pre and post conditions are satisfied.
-\item \bf{$\mathit{tmp.time} < \mathit{rv}$}
-In this case the linearization point was the time that the value of $\mathit{rv}$ was set.
-
-\end{itemize}
-
-\paragraph{T record}
-
-
-
-The linearization point of the $\sf{non\_transaction\_read}(addr, value)$ is line \ref{} where the value
-of $\mathit{addr}$ is read from memory.
-The pre-condition
+The proof of this lemma follows directly from lemma \ref{lemma:si-rvvalid}.
+% We must consider whether the type of record that is dereferenced on line \ref{} is an NT or T record.
+% \paragraph{NT record}
+% For the NT-record we have two cases depending on the value read from $\mathit{tmp.time}$.
+% \begin{itemize}
+% \item \bf{$\mathit{tmp.time} \geq \mathit{rv}$}
+% Here the linearization point is on line \ref{}, just before the call to $\sf{validate\_by\_value}$.
+% Using lemma \ref{lemma:si-samevalue} and the fact that this operation validates each value in the read set,
+% aborting if any change is found, it is easy to see that the pre and post conditions are satisfied.
+% \item \bf{$\mathit{tmp.time} < \mathit{rv}$}
+% In this case the linearization point was the time that the value of $\mathit{rv}$ was set.
+% \end{itemize}
+% \paragraph{T record}
 \end{proof}
 
+
+\begin{lemma}
+\label{lemma:si-abort}
+An aborted transaction makes no changes to the state of memory.
+\end{lemma}
+\begin{proof}
+For this proof we only need to consider transactions that abort after they have performed
+at least one successful compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ as transactions
+that have aborted before this have not made any modifications to shared memory.
+On line \ref{DA08} the transaction compares and swaps each of its T records from its write set to
+shared memory.
+What is important here is that before the compare and swap the transaction updates the $\ms{last}$
+field of the T record for $\mathit{addr}$ using either the $\mathit{value}$ or the $\mathit{last}$ field of the current
+record at $\mathit{addr}$.
+The $\mathit{value}$ field is used if the record is of type NT or comes from a committed transaction, otherwise the $\mathit{last}$
+field is used, this follows the same pattern as the read and validate operations which were shown to all pick the same value
+from a record in lemma \ref{lemma:si-samevalue}.
+Now by using a compare and swap on line \ref{DA08} when adding the T record to memory, we ensure that the record in memory has not
+changed since the $\mathit{last}$ field of the new record was set.
+Now given that the transaction will abort (setting its $\mathit{status}$ to aborted), any read or validation that dereferences
+this record will use the $\mathit{last}$ field which is the same value that was in memory previously.
+\end{proof}
+
+
+
+\begin{lemma}
+\label{lemma:si-commit}
+A committed transaction is linearizable.
+\end{lemma}
+\begin{proof}
+For the precondition of the committed transaction we have the requirement
+that for each of the locations in the transaction's read set that the value
+contained in the record referenced by the address is equal to the value 
+previously read by the transaction.
+The post condition is that for each of the locations in the transaction's write set
+that the value written by the transaction is the one contained in the record
+referenced by the address in memory.
+Here the linearization point is line \ref{DA12}, just after the transactions T records
+have been pointed to by performing compare and swaps, and before the call to
+$\sf{validate\_by\_value}$.
+The precondition is ensured by the subsequent call to $\sf{validate\_by\_value}$,
+as if any location in the read set has been changed since it was first read then
+the transaction would abort.
+The post condition is ensured by the for loop on lines \ref{DA15}-\ref{DA17} as well
+as the compare and swap on line \ref{DA18} changing the transaction's $\mathit{status}$
+from LIVE to COMMITTED.
+The for loop checks the $\mathit{addr}$ for each record in the write set seeing
+if there has been a more recent write updating this location, aborting the transaction
+if there is.
+Finally the compare and swap setting $\mathit{status}$ to COMMITTED ensures
+that any future read (transactional or non-transactional) that dereferences one of
+the records in the transaction's write set returns the value written by the transaction.
+Lemma \ref{lemma:si-samevalue} ensures that any read or validation to any one of these
+records returns the same value.
+It is interesting to note that at the linearization point the transaction is not
+guaranteed to commit, but lemmas \ref{lemma:si-abort} and \ref{lemma:si-samevalue}
+ensure that in the case the transaction does abort, it still appears to have not happened
+at all.
+The reason for this is to ensure the progress of non-transactional operations they might
+need to abort a transaction in the process of committing in order to ensure correctness.
+\end{proof}
+
+
+
+\begin{theorem}
+\label{theorem:si-lin}
+The algorithm provides linearizability for both committed and aborted transactions
+and non-transactional reads and writes.
+\end{theorem}
+\begin{proof}
+This follows directly from lemmas \ref{lemma:si-ntwrite}, \ref{lemma:si-ntread}, \ref{lemma:si-tread},
+and \ref{lemma:si-commit}.
+\end{proof}
 
 
 
@@ -2246,236 +2326,235 @@ after the linearization point of the transaction, but it is serialized before th
 
 % \begin{appendix}\label{sec:appendix}
 
-
-
-\section{Version of algorithm that does not use NT-records}
-
-\anote{Either remove this section or describe the algs}
-
-This algorithm also provides wait-free NT read and write operations.
-The difference is that NT-records are not used.
-Instead NT values are read and written directly from memory.
-By doing this, memory allocations are not needed in NT writes and NT reads have
-one less level of indirection.
-
-The cost of this is more frequent validations required in transactions when conflicts with NT writes occur.
-This algorithm is shown in Figs. \ref{fig:ntops2}-\ref{fig:tbc2}.
-
-
-\begin{figure}[htb]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-%\setcounter{linecounter}{200}
-\begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
-
-
-{\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
-\line{MA01} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\ 
-\line{MA02} \> {\bf if} $( ~\mathit{tmp}$ is of type T )  \\
-\line{MA03}  \>\>  {\bf then if}  ($\mathit{tmp.status} = $ LIVE) \\
-\line{MA04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) \\
-\line{MA05} \>\>\> {\bf end if}; \\
-\line{MA06} \>\>\> {\bf if} ($tmp.status = $ ABORTED) \\
-\line{MA07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{MA08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
-\line{MA09} \>\>\> {\bf end if}; \\
-\line{MA10} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp}$ \\
-\line{MA10A} \> {\bf end if}; \\
-\line{MA11} \> ${\sf return}$ $(\mathit{value})$ \\
-{\bf end operation}. \\
-\\
-{\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
-\line{MB01} \> $\mathit{addr} \gets (\uparrow \sf{unMark}(\mathit{value}))$
-{\bf end operation}.
-
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Non-transactional operations for reading and writing a variable.}
-\label{fig:ntops2}
-}
-\end{figure}
-
-
-
-
-
-
-
-
-
-
-
-\begin{figure} %[htb]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-%\setcounter{linecounter}{200}
-\begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
-
-
-{\bf operation}  ${\sf transactional\_read}(\mathit{addr})$ {\bf is}\\
-\line{MC01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
-\line{MC02} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
-\line{MC03} \> {\bf if} 
-   ($\mathit{tmp}$ is of type $T$ ) \\
-\line{MC04} \>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}$() {\bf end if}; \\
-\line{MC05} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}$() {\bf end if}; \\
-\line{MC06} \>\>\> {\bf if} ($\mathit{status} =$ COMMITTED)   \\
-\line{MC07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.val}$ \\
-\line{MC08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{MC08A} \>\>\> {\bf end if}; \\
-\line{MC09} \>\> {\bf else} \\
-\> \% Do validation to prevent abort due to a non-transactional write \\
-\line{MC10} \>\>\> $\mathit{rv} \gets {\sf validate\_by\_value}()$; \\
-\line{MC11} \>\>\> $\mathit{value} \gets \mathit{tmp}$; \\
-\line{MC12} \> {\bf end if}; \\
-\line{MC13} \> {\bf if} this is an update transaction {\bf then} add $\mathit{value}$ to $\mathit{rs}$ {\bf end if}; \\
-\line{MC14} \> ${\sf return}$ $(\mathit{value})$ \\
-
-{\bf end operation}. \\
-\\
-{\bf operation}  ${\sf transactional\_write}(\mathit{addr, value})$ {\bf is}\\
-\line{MD01} \> {\bf if} $\mathit{addr} \not\in \mathit{ws}$  \\
-\line{MD02} \>\> {\bf then} \> allocate a new variable $item$ of type $T$; \\
-\line{MD03} \>\>\> $\mathit{item}  \gets (\mathit{addr, value, status, \infty})$; 
-                   $\mathit{ws} \gets \mathit{ws} \cup \mathit{item}$ \\
-\line{MD04} \>\> {\bf else} \> set $\mathit{item.value}$ with $\mathit{addr}$ in $\mathit{ws}$ to $\mathit{value}$ \\
-\line{MD05} \> {\bf end if} \\
-{\bf end operation}.
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Transactional operations for reading and writing a variable.}
-\label{fig:tops2}
-}
-\end{figure}
-
-
-
-
-
-
-
-\begin{figure} [htb]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-%\setcounter{linecounter}{200}
-\begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
-
-{\bf operation}  ${\sf try\_to\_commit}()$ {\bf is}\\
-\line{MDA01} \> {\bf if} $(\mathit{ws} = \emptyset)$ {\bf then} ${\sf return}$ (COMMITTED) {\bf end if}; \\
-
-\line{MDA02} \> 
-{\bf for each} $(\mathit{item} \in \mathit{ws})$ {\bf do} \\
-
-\line{MDA03} \>\> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
-
-
-\line{MDA04} \>\> {\bf if} 
-   ($\mathit{tmp}$ is of type $T$) \\
-\line{MDA05} \>\>\> {\bf then if} (($\mathit{status} \gets \mathit{tmp.status}$) $=$ COMMITTED) \\
-\line{MDA05A} \>\>\>\>\> {\bf then} $\mathit{item.last} \gets \mathit{tmp.value}$ \\
-\line{MDA06} \>\>\>\>\> {\bf else if} ($\mathit{status} =$ ABORTED) {\bf then} $\mathit{item.last} \gets \mathit{tmp.last}$ \\
-\line{MDA07} \>\>\>\>\> {\bf else} ${\sf abort}()$ \\
-\line{MDA07A} \>\>\>\> {\bf end if}; \\
-\line{MDA08} \>\>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp}$ \\
-\line{MDA08A} \>\> {\bf end if}; \\
-
-\line{MDA09} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{item.addr, tmp, item}))$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
-%\line{MDA10} \>\>\> {\bf then} ${\sf abort}()$ \\
-%\line{MDA11} \>\> {\bf end if}; \\
-
-\line{MDA12} \> {\bf end for}; \\
-
-\line{MDA13} \> $\mathit{time} \gets {\sf fetch\&increment}(\mathit{GVC})$; \\
-
-\line{MDA14} \> ${\sf validate\_by\_value}$(); \\
-
-
-\> \% Ensure the writes haven't been overwritten by non-transactional writes \\
-\line{MDA15} \> 
-{\bf for each} $(\mathit{item} \in \mathit{ws})$ {\bf do} \\
-
-\line{MDA16} \>\> {\bf if} $(\mathit{item} \neq (\downarrow \mathit{item.addr}))$  
-                 {\bf then} 
-                   ${\sf abort}()$ 
-                {\bf end if} \\
-\line{MDA17} \>\> $\mathit{item.time} \gets \mathit{time}$; \\
-\line{MDA18} \> {\bf end for}; \\
-\line{MDA19} \> {\bf if} (${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED)) \\
-\line{MDA20} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
-\line{MDA21} \> \> {\bf else} \= ${\sf abort}()$ \\
-\line{MDA22} \> {\bf end if};  \\
-{\bf end operation}.
-
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Transaction commit.}
-\label{fig:tbc2}
-}
-\end{figure}
-
-
-
-\begin{figure}[htb]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-%\setcounter{linecounter}{200}
-\begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
-
-
-{\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
-\line{N01} \> $\mathit{lock} \gets {\sf load\_lock}(\mathit{addr})$; \\ 
-\line{N02} \> $\mathit{value} \gets (\downarrow \mathit{addr})$; \\ 
-\line{N03} \> {\bf if} ($~\mathit{lock}$ is locked  $\wedge \mathit{tmp.status} = $ COMMITTED $\wedge \mathit{addr} \in \mathit{lock.ws}$) \\
-\line{N04} \>\> {\bf then} $\mathit{value} \gets \mathit{item.value}$ from $\mathit{addr}$ in $\mathit{lock.ws}$ \\
-\line{N05} \> {\bf end if}; \\
-
-\line{N06} \> ${\sf return}$ $(\mathit{value})$ \\
-{\bf end operation}. \\
-\\
-{\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
-\line{NB01} \> Perform a transactional begin/write/commit operation \\
-{\bf end operation}.
-
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Non-transactional operations for reading and writing a variable.}
-\label{fig:noblock-readonly}
-}
-\end{figure}
-
-
-\section{Version of algorithm with non-blocking NT-reads and blocking NT-writes}
-
-This algorithm allows wait-free NT read operations.
-The only change that is needed to the base TL2 algorithm is that when an item is locked it points to the write-set of the transaction, and that each
-transaction has a marker that is initialized as $\mathit{LIVE}$ and is set to $\mathit{COMMITTED}$ just before the transaction starts performing write backs 
-during the commit phase.
-The NT-read operation is shown in Fig. \ref{fig:noblock-readonly}.
-
+% 
+% \section{Version of algorithm that does not use NT-records}
+% 
+% \anote{Either remove this section or describe the algs}
+% 
+% This algorithm also provides wait-free NT read and write operations.
+% The difference is that NT-records are not used.
+% Instead NT values are read and written directly from memory.
+% By doing this, memory allocations are not needed in NT writes and NT reads have
+% one less level of indirection.
+% 
+% The cost of this is more frequent validations required in transactions when conflicts with NT writes occur.
+% This algorithm is shown in Figs. \ref{fig:ntops2}-\ref{fig:tbc2}.
+% 
+% 
+% \begin{figure}[htb]
+% \centering{ \fbox{
+% \begin{minipage}[t]{150mm}
+% \footnotesize 
+% \renewcommand{\baselinestretch}{2.5} 
+% %\resetline
+% %\setcounter{linecounter}{200}
+% \begin{tabbing}
+% aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+% 
+% 
+% {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
+% \line{MA01} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\ 
+% \line{MA02} \> {\bf if} $( ~\mathit{tmp}$ is of type T )  \\
+% \line{MA03}  \>\>  {\bf then if}  ($\mathit{tmp.status} = $ LIVE) \\
+% \line{MA04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) \\
+% \line{MA05} \>\>\> {\bf end if}; \\
+% \line{MA06} \>\>\> {\bf if} ($tmp.status = $ ABORTED) \\
+% \line{MA07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
+% \line{MA08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+% \line{MA09} \>\>\> {\bf end if}; \\
+% \line{MA10} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp}$ \\
+% \line{MA10A} \> {\bf end if}; \\
+% \line{MA11} \> ${\sf return}$ $(\mathit{value})$ \\
+% {\bf end operation}. \\
+% \\
+% {\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
+% \line{MB01} \> $\mathit{addr} \gets (\uparrow \sf{unMark}(\mathit{value}))$
+% {\bf end operation}.
+% 
+% \end{tabbing}
+% \normalsize
+% \end{minipage}
+% }
+% \caption{Non-transactional operations for reading and writing a variable.}
+% \label{fig:ntops2}
+% }
+% \end{figure}
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% \begin{figure} %[htb]
+% \centering{ \fbox{
+% \begin{minipage}[t]{150mm}
+% \footnotesize 
+% \renewcommand{\baselinestretch}{2.5} 
+% %\resetline
+% %\setcounter{linecounter}{200}
+% \begin{tabbing}
+% aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+% 
+% 
+% {\bf operation}  ${\sf transactional\_read}(\mathit{addr})$ {\bf is}\\
+% \line{MC01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
+% \line{MC02} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
+% \line{MC03} \> {\bf if} 
+%    ($\mathit{tmp}$ is of type $T$ ) \\
+% \line{MC04} \>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}$() {\bf end if}; \\
+% \line{MC05} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}$() {\bf end if}; \\
+% \line{MC06} \>\>\> {\bf if} ($\mathit{status} =$ COMMITTED)   \\
+% \line{MC07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.val}$ \\
+% \line{MC08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ \\
+% \line{MC08A} \>\>\> {\bf end if}; \\
+% \line{MC09} \>\> {\bf else} \\
+% \> \% Do validation to prevent abort due to a non-transactional write \\
+% \line{MC10} \>\>\> $\mathit{rv} \gets {\sf validate\_by\_value}()$; \\
+% \line{MC11} \>\>\> $\mathit{value} \gets \mathit{tmp}$; \\
+% \line{MC12} \> {\bf end if}; \\
+% \line{MC13} \> {\bf if} this is an update transaction {\bf then} add $\mathit{value}$ to $\mathit{rs}$ {\bf end if}; \\
+% \line{MC14} \> ${\sf return}$ $(\mathit{value})$ \\
+% 
+% {\bf end operation}. \\
+% \\
+% {\bf operation}  ${\sf transactional\_write}(\mathit{addr, value})$ {\bf is}\\
+% \line{MD01} \> {\bf if} $\mathit{addr} \not\in \mathit{ws}$  \\
+% \line{MD02} \>\> {\bf then} \> allocate a new variable $item$ of type $T$; \\
+% \line{MD03} \>\>\> $\mathit{item}  \gets (\mathit{addr, value, status, \infty})$; 
+%                    $\mathit{ws} \gets \mathit{ws} \cup \mathit{item}$ \\
+% \line{MD04} \>\> {\bf else} \> set $\mathit{item.value}$ with $\mathit{addr}$ in $\mathit{ws}$ to $\mathit{value}$ \\
+% \line{MD05} \> {\bf end if} \\
+% {\bf end operation}.
+% \end{tabbing}
+% \normalsize
+% \end{minipage}
+% }
+% \caption{Transactional operations for reading and writing a variable.}
+% \label{fig:tops2}
+% }
+% \end{figure}
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% \begin{figure} [htb]
+% \centering{ \fbox{
+% \begin{minipage}[t]{150mm}
+% \footnotesize 
+% \renewcommand{\baselinestretch}{2.5} 
+% %\resetline
+% %\setcounter{linecounter}{200}
+% \begin{tabbing}
+% aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+% 
+% {\bf operation}  ${\sf try\_to\_commit}()$ {\bf is}\\
+% \line{MDA01} \> {\bf if} $(\mathit{ws} = \emptyset)$ {\bf then} ${\sf return}$ (COMMITTED) {\bf end if}; \\
+% 
+% \line{MDA02} \> 
+% {\bf for each} $(\mathit{item} \in \mathit{ws})$ {\bf do} \\
+% 
+% \line{MDA03} \>\> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
+% 
+% 
+% \line{MDA04} \>\> {\bf if} 
+%    ($\mathit{tmp}$ is of type $T$) \\
+% \line{MDA05} \>\>\> {\bf then if} (($\mathit{status} \gets \mathit{tmp.status}$) $=$ COMMITTED) \\
+% \line{MDA05A} \>\>\>\>\> {\bf then} $\mathit{item.last} \gets \mathit{tmp.value}$ \\
+% \line{MDA06} \>\>\>\>\> {\bf else if} ($\mathit{status} =$ ABORTED) {\bf then} $\mathit{item.last} \gets \mathit{tmp.last}$ \\
+% \line{MDA07} \>\>\>\>\> {\bf else} ${\sf abort}()$ \\
+% \line{MDA07A} \>\>\>\> {\bf end if}; \\
+% \line{MDA08} \>\>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp}$ \\
+% \line{MDA08A} \>\> {\bf end if}; \\
+% 
+% \line{MDA09} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{item.addr, tmp, item}))$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+% %\line{MDA10} \>\>\> {\bf then} ${\sf abort}()$ \\
+% %\line{MDA11} \>\> {\bf end if}; \\
+% 
+% \line{MDA12} \> {\bf end for}; \\
+% 
+% \line{MDA13} \> $\mathit{time} \gets {\sf fetch\&increment}(\mathit{GVC})$; \\
+% 
+% \line{MDA14} \> ${\sf validate\_by\_value}$(); \\
+% 
+% 
+% \> \% Ensure the writes haven't been overwritten by non-transactional writes \\
+% \line{MDA15} \> 
+% {\bf for each} $(\mathit{item} \in \mathit{ws})$ {\bf do} \\
+% 
+% \line{MDA16} \>\> {\bf if} $(\mathit{item} \neq (\downarrow \mathit{item.addr}))$  
+%                  {\bf then} 
+%                    ${\sf abort}()$ 
+%                 {\bf end if} \\
+% \line{MDA17} \>\> $\mathit{item.time} \gets \mathit{time}$; \\
+% \line{MDA18} \> {\bf end for}; \\
+% \line{MDA19} \> {\bf if} (${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED)) \\
+% \line{MDA20} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
+% \line{MDA21} \> \> {\bf else} \= ${\sf abort}()$ \\
+% \line{MDA22} \> {\bf end if};  \\
+% {\bf end operation}.
+% 
+% \end{tabbing}
+% \normalsize
+% \end{minipage}
+% }
+% \caption{Transaction commit.}
+% \label{fig:tbc2}
+% }
+% \end{figure}
+% 
+% 
+% 
+% \begin{figure}[htb]
+% \centering{ \fbox{
+% \begin{minipage}[t]{150mm}
+% \footnotesize 
+% \renewcommand{\baselinestretch}{2.5} 
+% %\resetline
+% %\setcounter{linecounter}{200}
+% \begin{tabbing}
+% aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+% 
+% 
+% {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
+% \line{N01} \> $\mathit{lock} \gets {\sf load\_lock}(\mathit{addr})$; \\ 
+% \line{N02} \> $\mathit{value} \gets (\downarrow \mathit{addr})$; \\ 
+% \line{N03} \> {\bf if} ($~\mathit{lock}$ is locked  $\wedge \mathit{tmp.status} = $ COMMITTED $\wedge \mathit{addr} \in \mathit{lock.ws}$) \\
+% \line{N04} \>\> {\bf then} $\mathit{value} \gets \mathit{item.value}$ from $\mathit{addr}$ in $\mathit{lock.ws}$ \\
+% \line{N05} \> {\bf end if}; \\
+% 
+% \line{N06} \> ${\sf return}$ $(\mathit{value})$ \\
+% {\bf end operation}. \\
+% \\
+% {\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
+% \line{NB01} \> Perform a transactional begin/write/commit operation \\
+% {\bf end operation}.
+% 
+% \end{tabbing}
+% \normalsize
+% \end{minipage}
+% }
+% \caption{Non-transactional operations for reading and writing a variable.}
+% \label{fig:noblock-readonly}
+% }
+% \end{figure}
+% 
+% 
+% \section{Version of algorithm with non-blocking NT-reads and blocking NT-writes}
+% 
+% This algorithm allows wait-free NT read operations.
+% The only change that is needed to the base TL2 algorithm is that when an item is locked it points to the write-set of the transaction, and that each
+% transaction has a marker that is initialized as $\mathit{LIVE}$ and is set to $\mathit{COMMITTED}$ just before the transaction starts performing write backs 
+% during the commit phase.
+% The NT-read operation is shown in Fig. \ref{fig:noblock-readonly}.
+% 
 
 
 
