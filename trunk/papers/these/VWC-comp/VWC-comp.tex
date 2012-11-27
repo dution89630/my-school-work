@@ -2483,371 +2483,371 @@ the disjoint access parallelism property,  requires visible read operations
 and uses $k$-Compare\&single-swap operations. 
 
 
-\section{Improving the  base protocol described in Figure 
-\ref{fig:ttc-protocol}}
-\label{sec:improving-base-protocol}
-
-The previous sections investigated the interactions between a few different STM
-properties and consistency conditions.
-It showed that permissiveness, opacity, and invisible reads are incompatible, but
-if opacity is switched for virtual world consistency then not only are the properties
-compatible, they can be satisfied by a realistic protocol.
-This work focused mostly on theory, showing
-concepts to be possible or not.
-This study of theory is important as it gives us a starting point from where to design
-practical STM algorithms, but
-does not provide a complete examination of STM
-as it leaves us with no practical implementations.
-
-This section begins an investigation towards this more practical study of algorithms.
-What we have observed is that in practice we might not want a perfectly permissive algorithm
-because it would likely have too much bookkeeping overhead just in order to commit a small number
-of transactions that otherwise would be aborted unnecessarily.
-Specially we noticed that there were interesting ways that the ``not quite'' permissive algorithm of
-figure \ref{fig:ttc-protocol} could be modified in order to make the read operations cheaper without impacting the correctness of
-the algorithm that were not compatible with the permissive algorithm of figure \ref{fig:ttc-V22-protocol}.
-
-
-%---------------------------------------------------------------------------
-\subsection{Expediting  read operations}
-
-Let us consider the invocations $X.{\sf read}_T()$ (those are issued by $T$).
-From the second one, none of   these invocations access the shared memory. 
-As  described in Figure \ref{fig:ttc-protocol}, the first invocation 
-$X.{\sf read}_T()$ entails the execution of line \ref{BA10}
- whose costs is $O(|lrs_T|)$. 
-%
-Interestingly,  it is  possible  to define  ``favorable circumstances'' in
-which the execution  of this line can be saved when  
-$X.{\sf read}_T()$ is invoked for the  first time by $T$. Its  cost 
-becomes  then  $O(1)$.   To that end, each 
-process $p_i$ is required to manage  an additional local variable denoted 
-$earliest\_read_T$ (that is initialized to $+\infty$ at line 
-\ref{BA01} of Figure \ref{fig:ttc-protocol}). 
-Line \ref{BA10} of  $X.{\sf read}_T()$  is then replaced by:
-%
-\begin{tabbing}
-aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill 
-
-\> \> {\bf if} $(l$\=$cell(X).commit\_time >  earliest\_read_T)$\\
-
-\> \> \> {\bf then} \=  Code of line \ref{BA10} %\\
-
-%\> \> \> 
-{\bf else} %\>  
-$earliest\_read_T \leftarrow  lcell(X).commit\_time$ %\\
-
-%\> \>  
-{\bf end if}.\\  
-
-\end{tabbing}
-
-Hence, the protocol  allows for  {\it  fast}  read  operations in  favorable
-circumstances. (It is even possible, at the price of another additional 
-control variable, to refine the predicate used in the 
-previous statement in order to increase the number of favorable cases.
-Such an improvement is described in Appendix  \ref{appendix-fast-reads}. 
-It is important to notice that, while these {\it  fast} read  operations
-are possible when the consistency condition is VWC, they are not when it is
-opacity.) 
-
-
-
-
-
-
-
-
-
-%===================================================
-
-\subsection{More on fast read operations}
-\label{appendix-fast-reads}
-\paragraph{Virtual world consistency vs opacity}
-Unlike opacity, a live transaction satisfying the VWC consistency criterion 
-only has to be concerned with its causal past in order not to violate 
-consistency.
-When a new transaction commits in an opaque STM a live transaction has 
-always to consider this transaction. In contrast  in a VWC STM, a live
-transaction needs to consider only it if it is in the live transaction's 
-causal past.
-
-We can take advantage of this  observation  in order to increase 
-the number of times a transaction performs fast reads.
-This is not without a trade off though, allowing a transaction to only 
-consider its causal past means that in certain cases transactions with 
-no real time-compliant legal linear extension with previously committed 
-transactions will have their abort operation delayed. 
-Or in other words a transaction that is doomed to abort could possibly 
-be allowed to stay alive longer.
-In our STM we also have the cost of using an additional control variable.
-How much efficiency is gained or lost by this will certainly depend on the 
-execution.
-
-
-The method described below is not the only way to take advantage of VWC 
-for fast reads. It has to be seen as one  among several possible enhancements.
-The idea is that when a live transaction $T$ reads a value written by 
-some other transaction $T_1 \notin \mathit{past(T)}$,then $T_1$'s causal
- past is added to $\mathit{past(T)}$.
-But if the commit time of the transaction in $\mathit{past(T_1)}$  with 
-the largest  commit time is smaller then the commit time of all transactions 
-that $T$ has read from then it is impossible for any of the transactions 
-in $\mathit{past(T_1)}$ to overwrite any of $T$'s reads.
-In this case only the transaction $T_1$ itself could overwrite a value 
-read by $T$ causing $T$ to not be VWC, but this is only possible if $T_1$ 
-has overwritten a value that was previously written by a transaction with 
-commit time later then the commit time of the earliest transaction 
-that $T$ has read from.  Thus using some extra control variables allows 
-us to perform fast read operations in these cases.
-
-
-
-\paragraph{An implementation}
-This part discusses an implementation  of the previous idea. 
-While a transaction is live it keeps a local variable called 
-$latest\_read_T$ initialized as $commit\_time_i$ and updated 
-during each $X.read_T()$ operation to the largest commit time of the 
-transactions it has read from so far.
-When $T$ executes line \ref{BA20} of the ${\sf try\_to\_commit}_T()$ 
-operation, the variable $latest\_read_T$ 
-is (possibly) increased  to the largest commit time of the 
-transaction for the values $T$ is overwriting.
-A boolean control variable, $overwrites\_latest\_read_T$ (initialized to
-$\mathit{false}$) is set to $\mathit{true}$ if $latest\_read_T$ is 
-modified.  To that end line\ref{BA20} is replaced by the code
-described in Figure~\ref{fig:uwb-protocol}. 
-
-
-%==================================================================
-\begin{figure}[htb]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-\begin{tabbing}
-aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
-
-
-\line{BT57} \> {\bf for each} $(Y \in lws_T)$ {\bf do} \\
-
-\line{BA58} \>\> $window\_bottom_T \leftarrow 
-               \max((PT[Y]\downarrow).last\_read, window\_bottom_T)$;  \\
-
-\line{BT59} \>\> {\bf if} ($(PT[Y]\downarrow).commit\_time 
-                                      \geq latest\_read_T$) {\bf then} \\
-               
-\line{BT60} \>\>\> $latest\_read_T \gets (PT[Y]\downarrow).commit\_time$;
-		        	$overwrites\_latest\_read_T \gets true$ \\
-
-\line{BT61} \>\> {\bf end if}  \\
-
-\line{BT62} \>  {\bf end for}. \\
-
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Fast read: 
-Code to replace line \ref{BA20} of  Figure~\ref{fig:ttc-protocol}}
-\label{fig:uwb-protocol}
-}
-\end{figure}
-%=================================================================
-
-Moreover, when a transaction commits,  the values of $latest\_read_T$ and 
-$overwrites\_latest\_read_T$ have now to be stored in shared memory along
-with the other values in $CELL(X)$ for each variable $X$ written by  $T$.
-
-Finally, line \ref{BA10} of  $X.{\sf read}_T()$  is replaced by  the 
-following  statement:
-
-\begin{tabbing}
-aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill 
-
-(a) \> {\bf if}   
-        \big(\= ($CELL(X).latest\_read > earliest\_read_T$)  $\vee$  \\
-
-(b) \>  \>  ($CELL(X).latest\_read = earliest\_read_T$ 
-             $\wedge$ $CELL(X).overwrites\_latest\_read$)\big)\\
-
-\> \> $~$ $~$ $~$ {\bf then} Code of line \ref{BA10}  {\bf end if};\\  
-
-\>  
-$earliest\_read_T \leftarrow \min(lcell(X).commit\_time, earliest\_read_T)$;\\
-
-\>  $latest\_read_T \leftarrow \max(lcell(X).commit\_time,latest\_read_T)$.\\
-
-\end{tabbing}
-
-
-\paragraph{Discussion}
-It can be seen that there are two cases when 
-${\sf update\_window\_top}_T()$ will be required to be executed.
-\begin{itemize}
-\vspace{-0.2cm}
-\item
-The first corresponds to line (a), i.e., when the predicate 
-$\mathit{CELL}(X).latest\_read > earliest\_read_T$ 
-(let $T_1$ be the transaction that wrote $\mathit{CELL}(X)$) is satisfied, 
-meaning  that there is 
-at least one transaction in the causal past of $T$ that has a commit time 
-earlier than either a transaction in the causal past of $T_1$, or a 
-transaction that has written a value overwritten by $T_1$.
-Thus a value read by $T$ might have been overwritten by $T_1$ or 
-$past(T_1)$ and ${\sf update\_window\_top}_T()$ needs to be executed.
-\vspace{-0.2cm}
-\item
-The second  corresponds to line (b), i.e., when the predicate 
-$\mathit{CELL}(X).latest\_read = earliest\_read_T$ 
-$\wedge$ $cell(X).overwrites\_latest\_read$ is true.
-First, as  each transaction has a unique  commit time,  
-when $\mathit{CELL}(X).latest\_read = earliest\_read_T$ then the transactions 
-described by $\mathit{CELL}(X).latest\_read$ and $earliest\_read_T$ are 
-actually the same transaction, call this transaction $T_2$.
-So if the boolean variable $\mathit{CELL}(X).overwrites\_latest\_read$ is 
-false, then $T_1$ just reads a value from $T_2$ resulting in there being no 
-possibility of a read of $T$ being overwritten.
-Otherwise if $\mathit{CELL}(X).overwrites\_latest\_read$ is 
-satisfied,  then $T_1$ is overwritten a value written by $T_2$ and
- ${\sf update\_window\_top}_T()$ needs to be executed.
-In all other cases a fast read is performed.
-\end{itemize}
-
-
-\paragraph{Fast read operations and opacity}
-As mentioned previously performing fast reads in this way is only possible 
-in VWC. We  give below a counterexample 
-(Figure~\ref{fig:impossibility-fastreads-opacity}) in order to show that they 
-are not  compatible with opacity. 
-
-%---------------------------------------------------------------
-\begin{figure}[ht]
-\centering
-\scalebox{0.35}{\input{VWC-comp/figures/fig-opac-impos-fastreads.pdf_t}}
-\caption{Example of  fast reads that would violate opacity}
-\label{fig:impossibility-fastreads-opacity}
-\end{figure}
-%---------------------------------------------------------------
-
-In this figure we have $T_4$ committing first, then $T_2$ commits and must 
-be serialized after $T_4$ because it reads the value of $X$ written by $T_4$. 
-Next $T_3$ commits and must be serialized after $T_2$ because it overwrites 
-the value of $Y$ read by $T_2$.
-Finally we have $T_1$ which first reads the value of $X$ written by $T_4$ 
-then reads the value of $Y$ written by $T_3$.
-Now $T_1$ violates opacity because it must be serialized before $T_2$
-($T_2$ overwrites the value of $X$ it read) and after $T_3$ 
-(it reads the value of $Y$ written by $T_3$), but we already know 
-that $T_2$ is serialized before $T_3$.
-On the other hand, $T_1$ is VWC because its causal past does not contain $T_2$.
-Now we just need to show that ${\sf update\_window\_top}_T()$ is not executed 
-during the execution of $Y.{\sf read}_{T_1}()$.
-After    $T_1$    performs     $X.{\sf    read}_{T_1}()$    the    variable
-$earliest\_read_{T_1}$  
-is set to the commit time of $T_4$.
-The value $latest\_read_{T_3}$ is the commit time of transaction $T_0$
-so when $T_3$ commits we have $\mathit{CELL}((Y).latest\_read$ also set 
-to this value. During $Y.{\sf read}_{T_1}()$ we have  
-$\mathit{CELL}(Y).latest\_read < earliest\_read_{T_1}$ 
-and ${\sf update\_window\_top}_{T_1}()$ is not executed. 
-
-
-%=================================================================
-\subsection{Making read operations invisible at commit time}
-\label{appendix-invis-reads-at-commit}
-
-\paragraph{Read invisibility vs  ${\sf try\_to\_commit}_T()$ invisibility}
-Let  us observe  that read  invisibility requires that  
-read operations be invisible  when they are issued by a transaction $T$, 
-but  does  not  require they  remain  invisible  at  commit time. 
-This  means that  the shared memory is not modified  during the  read
-operation,  but a  ${\sf try\_to\_commit}_T()$ operation  is allowed to
-modify   shared  memory locations  associated  with  base  objects read  by
-transaction $T$. Interestingly though this does not always need to be the case.
-
-Similarly to  fast read operations where line  \ref{BA10} 
-of $X.{\sf read}_T()$ does not need  
-to be always executed, a read does  not always need 
-to  be made visible during the  ${\sf try\_to\_commit}_T()$ operation.  
-There are two locations  in ${\sf try\_to\_commit}_T()$ 
-that modify shared memory with respect to  objects $X\in lrs_T\setminus lws_T$. 
-The first is on line \ref{BA31} where 
-the value  of $cell(X).last\_read$ is updated for each object $X\in lrs_T$. 
-The second is on line \ref{BA18} where each object $X\in lrs_T$ is locked.
-Concerning efficiency and scalability, not  only can locking  and
-writing  to shared  memory be  considered expensive  operations, but  is is
-desirable for reads to be completely invisible. 
-
-\paragraph{Discussion:  When  write to shared memory and lock can be avoided} 
-Assume some shared variable $Y$ read by transaction $T$.
-First consider the write to $cell(Y).last\_read$.
-In the algorithm, the only time the $last\_read$ field of a cell is read
-is on line \ref{BA20} of the ${\sf try\_to\_commit}_T()$ operation. 
-Since $last\_read$ is only read  for objects in $lws_T$, 
-and $T$ locks all objects in $lws_T$, $T$ is guaranteed to
-be accessing the most recent cell. 
-This means that, during a ${\sf try\_to\_commit}_T()$ operation on line 
-\ref{BA31},  if  $lcell(Y).origin$ is  not the  latest cell  for $Y$,  
-then the  value of $last\_read$ written will never be accessed and 
-there is no reason to write the value. 
-
-So the write on line \ref{BA31} is not necessary when $lcell(Y).origin$ is
-not the latest cell,  what about the lock associated with $Y$? 
-When is  it not necessary to lock  objects in $lrs_T$? 
-This turns out to not be necessary in the same case.
-If line \ref{BA31}  is not executed for some variable  $Y \in lrs_T$, then
-the  only   other  place  a   cell  of  $Y$   is  accessed  in   the  
-${\sf try\_to\_commit}_T()$ operation is on line \ref{BA19}. 
-Here the only shared memory accessed is $(lcell(Y).origin\downarrow).end$.
-From  the construction  of the  algorithm $(lcell(Y).origin\downarrow).end$
-will be  updated at most once, therefore  if the loop iteration for $Y$ on line \ref{BA10}
-of ${\sf X.read}_T()$ (where $X$ and $Y$ may or may not be the same variable) had   been  executed    previously    with
-$(lcell(Y).origin\downarrow).end \neq +\infty$ (meaning $(lcell(Y).origin\downarrow).end$
-had been  updated previously), then  the loop iteration  for $Y$  does not need  to be
-executed again which results in $Y$ not needing to be locked. 
-
-\paragraph{An implementation} 
-It follows from the previous discussion  that a read  operation of a shared variable 
-$Y$ can be made invisible at commit time if $(lcell(Y).origin\downarrow).end$ had not equal to $+\infty$ 
-during the loop iteration for $Y$ on line \ref{BA10} for any execution of ${\sf X.read}_T()$. 
-Implementing this  in the  algorithm becomes easy, line
-\ref{BA10} must be replaced by the following. 
-\begin{tabbing}
-aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill 
-
- \> {\bf for each} $(Y \in lrs_T)$ {\bf do}\\
- 
- 
-\>\> $window\_top_T \leftarrow 
-          \min\big(window\_top_T,
-     (lcell(Y).origin\downarrow).\mathit{end} \big)$; \\
-
-\>\>  {\bf  if}  $((lcell(Y).origin\downarrow).\mathit{end} \neq  +\infty)$
-{\bf then} $lrs_T \leftarrow lrs_T \backslash \{Y\}$  {\bf end if} \\
-
-\> {\bf end for}. \\
-
-\end{tabbing}
-
-Using this  improvement there is  a possibility for a  transaction $T$ (that
-performs  at least  one  read) to  have  some or  all of  its  reads to  be
-invisible during the ${\sf try\_to\_commit}_T()$ operation. 
-Consequently a  read  only  transaction  has  a
-possibility to  be completely  invisible at commit  time, meaning  that the
-${\sf try\_to\_commit}_T()$ operation will just immediately return $commit$
-without doing any work. 
- 
-\paragraph{Additional Benefits}  
-It  is also  worth noting   that this  improvement  can  also   improve the
-performance of  the read operations  performed by the STM. 
-This is because when the one of  the new lines added is executed an object
-is removed from $lrs_T$, and the  cost of the read operation depends on the
-size of $lrs_T$. 
-In the best case this can cause the cost of a read operation to be $O(1)$
-instead  of $O(|lrs_T|)$  (note that   this works  concurrently  along with
-fast reads as described  in Appendix \ref{appendix-fast-reads}). 
+% % % % % % \section{Improving the  base protocol described in Figure 
+% % % % % % \ref{fig:ttc-protocol}}
+% % % % % % \label{sec:improving-base-protocol}
+% % % % % % 
+% % % % % % The previous sections investigated the interactions between a few different STM
+% % % % % % properties and consistency conditions.
+% % % % % % It showed that permissiveness, opacity, and invisible reads are incompatible, but
+% % % % % % if opacity is switched for virtual world consistency then not only are the properties
+% % % % % % compatible, they can be satisfied by a realistic protocol.
+% % % % % % This work focused mostly on theory, showing
+% % % % % % concepts to be possible or not.
+% % % % % % This study of theory is important as it gives us a starting point from where to design
+% % % % % % practical STM algorithms, but
+% % % % % % does not provide a complete examination of STM
+% % % % % % as it leaves us with no practical implementations.
+% % % % % % 
+% % % % % % This section begins an investigation towards this more practical study of algorithms.
+% % % % % % What we have observed is that in practice we might not want a perfectly permissive algorithm
+% % % % % % because it would likely have too much bookkeeping overhead just in order to commit a small number
+% % % % % % of transactions that otherwise would be aborted unnecessarily.
+% % % % % % Specially we noticed that there were interesting ways that the ``not quite'' permissive algorithm of
+% % % % % % figure \ref{fig:ttc-protocol} could be modified in order to make the read operations cheaper without impacting the correctness of
+% % % % % % the algorithm that were not compatible with the permissive algorithm of figure \ref{fig:ttc-V22-protocol}.
+% % % % % % 
+% % % % % % 
+% % % % % % %---------------------------------------------------------------------------
+% % % % % % \subsection{Expediting  read operations}
+% % % % % % 
+% % % % % % Let us consider the invocations $X.{\sf read}_T()$ (those are issued by $T$).
+% % % % % % From the second one, none of   these invocations access the shared memory. 
+% % % % % % As  described in Figure \ref{fig:ttc-protocol}, the first invocation 
+% % % % % % $X.{\sf read}_T()$ entails the execution of line \ref{BA10}
+% % % % % %  whose costs is $O(|lrs_T|)$. 
+% % % % % % %
+% % % % % % Interestingly,  it is  possible  to define  ``favorable circumstances'' in
+% % % % % % which the execution  of this line can be saved when  
+% % % % % % $X.{\sf read}_T()$ is invoked for the  first time by $T$. Its  cost 
+% % % % % % becomes  then  $O(1)$.   To that end, each 
+% % % % % % process $p_i$ is required to manage  an additional local variable denoted 
+% % % % % % $earliest\_read_T$ (that is initialized to $+\infty$ at line 
+% % % % % % \ref{BA01} of Figure \ref{fig:ttc-protocol}). 
+% % % % % % Line \ref{BA10} of  $X.{\sf read}_T()$  is then replaced by:
+% % % % % % %
+% % % % % % \begin{tabbing}
+% % % % % % aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill 
+% % % % % % 
+% % % % % % \> \> {\bf if} $(l$\=$cell(X).commit\_time >  earliest\_read_T)$\\
+% % % % % % 
+% % % % % % \> \> \> {\bf then} \=  Code of line \ref{BA10} %\\
+% % % % % % 
+% % % % % % %\> \> \> 
+% % % % % % {\bf else} %\>  
+% % % % % % $earliest\_read_T \leftarrow  lcell(X).commit\_time$ %\\
+% % % % % % 
+% % % % % % %\> \>  
+% % % % % % {\bf end if}.\\  
+% % % % % % 
+% % % % % % \end{tabbing}
+% % % % % % 
+% % % % % % Hence, the protocol  allows for  {\it  fast}  read  operations in  favorable
+% % % % % % circumstances. (It is even possible, at the price of another additional 
+% % % % % % control variable, to refine the predicate used in the 
+% % % % % % previous statement in order to increase the number of favorable cases.
+% % % % % % Such an improvement is described in Appendix  \ref{appendix-fast-reads}. 
+% % % % % % It is important to notice that, while these {\it  fast} read  operations
+% % % % % % are possible when the consistency condition is VWC, they are not when it is
+% % % % % % opacity.) 
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % %===================================================
+% % % % % % 
+% % % % % % \subsection{More on fast read operations}
+% % % % % % \label{appendix-fast-reads}
+% % % % % % \paragraph{Virtual world consistency vs opacity}
+% % % % % % Unlike opacity, a live transaction satisfying the VWC consistency criterion 
+% % % % % % only has to be concerned with its causal past in order not to violate 
+% % % % % % consistency.
+% % % % % % When a new transaction commits in an opaque STM a live transaction has 
+% % % % % % always to consider this transaction. In contrast  in a VWC STM, a live
+% % % % % % transaction needs to consider only it if it is in the live transaction's 
+% % % % % % causal past.
+% % % % % % 
+% % % % % % We can take advantage of this  observation  in order to increase 
+% % % % % % the number of times a transaction performs fast reads.
+% % % % % % This is not without a trade off though, allowing a transaction to only 
+% % % % % % consider its causal past means that in certain cases transactions with 
+% % % % % % no real time-compliant legal linear extension with previously committed 
+% % % % % % transactions will have their abort operation delayed. 
+% % % % % % Or in other words a transaction that is doomed to abort could possibly 
+% % % % % % be allowed to stay alive longer.
+% % % % % % In our STM we also have the cost of using an additional control variable.
+% % % % % % How much efficiency is gained or lost by this will certainly depend on the 
+% % % % % % execution.
+% % % % % % 
+% % % % % % 
+% % % % % % The method described below is not the only way to take advantage of VWC 
+% % % % % % for fast reads. It has to be seen as one  among several possible enhancements.
+% % % % % % The idea is that when a live transaction $T$ reads a value written by 
+% % % % % % some other transaction $T_1 \notin \mathit{past(T)}$,then $T_1$'s causal
+% % % % % %  past is added to $\mathit{past(T)}$.
+% % % % % % But if the commit time of the transaction in $\mathit{past(T_1)}$  with 
+% % % % % % the largest  commit time is smaller then the commit time of all transactions 
+% % % % % % that $T$ has read from then it is impossible for any of the transactions 
+% % % % % % in $\mathit{past(T_1)}$ to overwrite any of $T$'s reads.
+% % % % % % In this case only the transaction $T_1$ itself could overwrite a value 
+% % % % % % read by $T$ causing $T$ to not be VWC, but this is only possible if $T_1$ 
+% % % % % % has overwritten a value that was previously written by a transaction with 
+% % % % % % commit time later then the commit time of the earliest transaction 
+% % % % % % that $T$ has read from.  Thus using some extra control variables allows 
+% % % % % % us to perform fast read operations in these cases.
+% % % % % % 
+% % % % % % 
+% % % % % % 
+% % % % % % \paragraph{An implementation}
+% % % % % % This part discusses an implementation  of the previous idea. 
+% % % % % % While a transaction is live it keeps a local variable called 
+% % % % % % $latest\_read_T$ initialized as $commit\_time_i$ and updated 
+% % % % % % during each $X.read_T()$ operation to the largest commit time of the 
+% % % % % % transactions it has read from so far.
+% % % % % % When $T$ executes line \ref{BA20} of the ${\sf try\_to\_commit}_T()$ 
+% % % % % % operation, the variable $latest\_read_T$ 
+% % % % % % is (possibly) increased  to the largest commit time of the 
+% % % % % % transaction for the values $T$ is overwriting.
+% % % % % % A boolean control variable, $overwrites\_latest\_read_T$ (initialized to
+% % % % % % $\mathit{false}$) is set to $\mathit{true}$ if $latest\_read_T$ is 
+% % % % % % modified.  To that end line\ref{BA20} is replaced by the code
+% % % % % % described in Figure~\ref{fig:uwb-protocol}. 
+% % % % % % 
+% % % % % % 
+% % % % % % %==================================================================
+% % % % % % \begin{figure}[htb]
+% % % % % % \centering{ \fbox{
+% % % % % % \begin{minipage}[t]{150mm}
+% % % % % % \footnotesize 
+% % % % % % \renewcommand{\baselinestretch}{2.5} 
+% % % % % % %\resetline
+% % % % % % \begin{tabbing}
+% % % % % % aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
+% % % % % % 
+% % % % % % 
+% % % % % % \line{BT57} \> {\bf for each} $(Y \in lws_T)$ {\bf do} \\
+% % % % % % 
+% % % % % % \line{BA58} \>\> $window\_bottom_T \leftarrow 
+% % % % % %                \max((PT[Y]\downarrow).last\_read, window\_bottom_T)$;  \\
+% % % % % % 
+% % % % % % \line{BT59} \>\> {\bf if} ($(PT[Y]\downarrow).commit\_time 
+% % % % % %                                       \geq latest\_read_T$) {\bf then} \\
+% % % % % %                
+% % % % % % \line{BT60} \>\>\> $latest\_read_T \gets (PT[Y]\downarrow).commit\_time$;
+% % % % % % 		        	$overwrites\_latest\_read_T \gets true$ \\
+% % % % % % 
+% % % % % % \line{BT61} \>\> {\bf end if}  \\
+% % % % % % 
+% % % % % % \line{BT62} \>  {\bf end for}. \\
+% % % % % % 
+% % % % % % \end{tabbing}
+% % % % % % \normalsize
+% % % % % % \end{minipage}
+% % % % % % }
+% % % % % % \caption{Fast read: 
+% % % % % % Code to replace line \ref{BA20} of  Figure~\ref{fig:ttc-protocol}}
+% % % % % % \label{fig:uwb-protocol}
+% % % % % % }
+% % % % % % \end{figure}
+% % % % % % %=================================================================
+% % % % % % 
+% % % % % % Moreover, when a transaction commits,  the values of $latest\_read_T$ and 
+% % % % % % $overwrites\_latest\_read_T$ have now to be stored in shared memory along
+% % % % % % with the other values in $CELL(X)$ for each variable $X$ written by  $T$.
+% % % % % % 
+% % % % % % Finally, line \ref{BA10} of  $X.{\sf read}_T()$  is replaced by  the 
+% % % % % % following  statement:
+% % % % % % 
+% % % % % % \begin{tabbing}
+% % % % % % aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill 
+% % % % % % 
+% % % % % % (a) \> {\bf if}   
+% % % % % %         \big(\= ($CELL(X).latest\_read > earliest\_read_T$)  $\vee$  \\
+% % % % % % 
+% % % % % % (b) \>  \>  ($CELL(X).latest\_read = earliest\_read_T$ 
+% % % % % %              $\wedge$ $CELL(X).overwrites\_latest\_read$)\big)\\
+% % % % % % 
+% % % % % % \> \> $~$ $~$ $~$ {\bf then} Code of line \ref{BA10}  {\bf end if};\\  
+% % % % % % 
+% % % % % % \>  
+% % % % % % $earliest\_read_T \leftarrow \min(lcell(X).commit\_time, earliest\_read_T)$;\\
+% % % % % % 
+% % % % % % \>  $latest\_read_T \leftarrow \max(lcell(X).commit\_time,latest\_read_T)$.\\
+% % % % % % 
+% % % % % % \end{tabbing}
+% % % % % % 
+% % % % % % 
+% % % % % % \paragraph{Discussion}
+% % % % % % It can be seen that there are two cases when 
+% % % % % % ${\sf update\_window\_top}_T()$ will be required to be executed.
+% % % % % % \begin{itemize}
+% % % % % % \vspace{-0.2cm}
+% % % % % % \item
+% % % % % % The first corresponds to line (a), i.e., when the predicate 
+% % % % % % $\mathit{CELL}(X).latest\_read > earliest\_read_T$ 
+% % % % % % (let $T_1$ be the transaction that wrote $\mathit{CELL}(X)$) is satisfied, 
+% % % % % % meaning  that there is 
+% % % % % % at least one transaction in the causal past of $T$ that has a commit time 
+% % % % % % earlier than either a transaction in the causal past of $T_1$, or a 
+% % % % % % transaction that has written a value overwritten by $T_1$.
+% % % % % % Thus a value read by $T$ might have been overwritten by $T_1$ or 
+% % % % % % $past(T_1)$ and ${\sf update\_window\_top}_T()$ needs to be executed.
+% % % % % % \vspace{-0.2cm}
+% % % % % % \item
+% % % % % % The second  corresponds to line (b), i.e., when the predicate 
+% % % % % % $\mathit{CELL}(X).latest\_read = earliest\_read_T$ 
+% % % % % % $\wedge$ $cell(X).overwrites\_latest\_read$ is true.
+% % % % % % First, as  each transaction has a unique  commit time,  
+% % % % % % when $\mathit{CELL}(X).latest\_read = earliest\_read_T$ then the transactions 
+% % % % % % described by $\mathit{CELL}(X).latest\_read$ and $earliest\_read_T$ are 
+% % % % % % actually the same transaction, call this transaction $T_2$.
+% % % % % % So if the boolean variable $\mathit{CELL}(X).overwrites\_latest\_read$ is 
+% % % % % % false, then $T_1$ just reads a value from $T_2$ resulting in there being no 
+% % % % % % possibility of a read of $T$ being overwritten.
+% % % % % % Otherwise if $\mathit{CELL}(X).overwrites\_latest\_read$ is 
+% % % % % % satisfied,  then $T_1$ is overwritten a value written by $T_2$ and
+% % % % % %  ${\sf update\_window\_top}_T()$ needs to be executed.
+% % % % % % In all other cases a fast read is performed.
+% % % % % % \end{itemize}
+% % % % % % 
+% % % % % % 
+% % % % % % \paragraph{Fast read operations and opacity}
+% % % % % % As mentioned previously performing fast reads in this way is only possible 
+% % % % % % in VWC. We  give below a counterexample 
+% % % % % % (Figure~\ref{fig:impossibility-fastreads-opacity}) in order to show that they 
+% % % % % % are not  compatible with opacity. 
+% % % % % % 
+% % % % % % %---------------------------------------------------------------
+% % % % % % \begin{figure}[ht]
+% % % % % % \centering
+% % % % % % \scalebox{0.35}{\input{VWC-comp/figures/fig-opac-impos-fastreads.pdf_t}}
+% % % % % % \caption{Example of  fast reads that would violate opacity}
+% % % % % % \label{fig:impossibility-fastreads-opacity}
+% % % % % % \end{figure}
+% % % % % % %---------------------------------------------------------------
+% % % % % % 
+% % % % % % In this figure we have $T_4$ committing first, then $T_2$ commits and must 
+% % % % % % be serialized after $T_4$ because it reads the value of $X$ written by $T_4$. 
+% % % % % % Next $T_3$ commits and must be serialized after $T_2$ because it overwrites 
+% % % % % % the value of $Y$ read by $T_2$.
+% % % % % % Finally we have $T_1$ which first reads the value of $X$ written by $T_4$ 
+% % % % % % then reads the value of $Y$ written by $T_3$.
+% % % % % % Now $T_1$ violates opacity because it must be serialized before $T_2$
+% % % % % % ($T_2$ overwrites the value of $X$ it read) and after $T_3$ 
+% % % % % % (it reads the value of $Y$ written by $T_3$), but we already know 
+% % % % % % that $T_2$ is serialized before $T_3$.
+% % % % % % On the other hand, $T_1$ is VWC because its causal past does not contain $T_2$.
+% % % % % % Now we just need to show that ${\sf update\_window\_top}_T()$ is not executed 
+% % % % % % during the execution of $Y.{\sf read}_{T_1}()$.
+% % % % % % After    $T_1$    performs     $X.{\sf    read}_{T_1}()$    the    variable
+% % % % % % $earliest\_read_{T_1}$  
+% % % % % % is set to the commit time of $T_4$.
+% % % % % % The value $latest\_read_{T_3}$ is the commit time of transaction $T_0$
+% % % % % % so when $T_3$ commits we have $\mathit{CELL}((Y).latest\_read$ also set 
+% % % % % % to this value. During $Y.{\sf read}_{T_1}()$ we have  
+% % % % % % $\mathit{CELL}(Y).latest\_read < earliest\_read_{T_1}$ 
+% % % % % % and ${\sf update\_window\_top}_{T_1}()$ is not executed. 
+% % % % % % 
+% % % % % % 
+% % % % % % %=================================================================
+% % % % % % \subsection{Making read operations invisible at commit time}
+% % % % % % \label{appendix-invis-reads-at-commit}
+% % % % % % 
+% % % % % % \paragraph{Read invisibility vs  ${\sf try\_to\_commit}_T()$ invisibility}
+% % % % % % Let  us observe  that read  invisibility requires that  
+% % % % % % read operations be invisible  when they are issued by a transaction $T$, 
+% % % % % % but  does  not  require they  remain  invisible  at  commit time. 
+% % % % % % This  means that  the shared memory is not modified  during the  read
+% % % % % % operation,  but a  ${\sf try\_to\_commit}_T()$ operation  is allowed to
+% % % % % % modify   shared  memory locations  associated  with  base  objects read  by
+% % % % % % transaction $T$. Interestingly though this does not always need to be the case.
+% % % % % % 
+% % % % % % Similarly to  fast read operations where line  \ref{BA10} 
+% % % % % % of $X.{\sf read}_T()$ does not need  
+% % % % % % to be always executed, a read does  not always need 
+% % % % % % to  be made visible during the  ${\sf try\_to\_commit}_T()$ operation.  
+% % % % % % There are two locations  in ${\sf try\_to\_commit}_T()$ 
+% % % % % % that modify shared memory with respect to  objects $X\in lrs_T\setminus lws_T$. 
+% % % % % % The first is on line \ref{BA31} where 
+% % % % % % the value  of $cell(X).last\_read$ is updated for each object $X\in lrs_T$. 
+% % % % % % The second is on line \ref{BA18} where each object $X\in lrs_T$ is locked.
+% % % % % % Concerning efficiency and scalability, not  only can locking  and
+% % % % % % writing  to shared  memory be  considered expensive  operations, but  is is
+% % % % % % desirable for reads to be completely invisible. 
+% % % % % % 
+% % % % % % \paragraph{Discussion:  When  write to shared memory and lock can be avoided} 
+% % % % % % Assume some shared variable $Y$ read by transaction $T$.
+% % % % % % First consider the write to $cell(Y).last\_read$.
+% % % % % % In the algorithm, the only time the $last\_read$ field of a cell is read
+% % % % % % is on line \ref{BA20} of the ${\sf try\_to\_commit}_T()$ operation. 
+% % % % % % Since $last\_read$ is only read  for objects in $lws_T$, 
+% % % % % % and $T$ locks all objects in $lws_T$, $T$ is guaranteed to
+% % % % % % be accessing the most recent cell. 
+% % % % % % This means that, during a ${\sf try\_to\_commit}_T()$ operation on line 
+% % % % % % \ref{BA31},  if  $lcell(Y).origin$ is  not the  latest cell  for $Y$,  
+% % % % % % then the  value of $last\_read$ written will never be accessed and 
+% % % % % % there is no reason to write the value. 
+% % % % % % 
+% % % % % % So the write on line \ref{BA31} is not necessary when $lcell(Y).origin$ is
+% % % % % % not the latest cell,  what about the lock associated with $Y$? 
+% % % % % % When is  it not necessary to lock  objects in $lrs_T$? 
+% % % % % % This turns out to not be necessary in the same case.
+% % % % % % If line \ref{BA31}  is not executed for some variable  $Y \in lrs_T$, then
+% % % % % % the  only   other  place  a   cell  of  $Y$   is  accessed  in   the  
+% % % % % % ${\sf try\_to\_commit}_T()$ operation is on line \ref{BA19}. 
+% % % % % % Here the only shared memory accessed is $(lcell(Y).origin\downarrow).end$.
+% % % % % % From  the construction  of the  algorithm $(lcell(Y).origin\downarrow).end$
+% % % % % % will be  updated at most once, therefore  if the loop iteration for $Y$ on line \ref{BA10}
+% % % % % % of ${\sf X.read}_T()$ (where $X$ and $Y$ may or may not be the same variable) had   been  executed    previously    with
+% % % % % % $(lcell(Y).origin\downarrow).end \neq +\infty$ (meaning $(lcell(Y).origin\downarrow).end$
+% % % % % % had been  updated previously), then  the loop iteration  for $Y$  does not need  to be
+% % % % % % executed again which results in $Y$ not needing to be locked. 
+% % % % % % 
+% % % % % % \paragraph{An implementation} 
+% % % % % % It follows from the previous discussion  that a read  operation of a shared variable 
+% % % % % % $Y$ can be made invisible at commit time if $(lcell(Y).origin\downarrow).end$ had not equal to $+\infty$ 
+% % % % % % during the loop iteration for $Y$ on line \ref{BA10} for any execution of ${\sf X.read}_T()$. 
+% % % % % % Implementing this  in the  algorithm becomes easy, line
+% % % % % % \ref{BA10} must be replaced by the following. 
+% % % % % % \begin{tabbing}
+% % % % % % aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill 
+% % % % % % 
+% % % % % %  \> {\bf for each} $(Y \in lrs_T)$ {\bf do}\\
+% % % % % %  
+% % % % % %  
+% % % % % % \>\> $window\_top_T \leftarrow 
+% % % % % %           \min\big(window\_top_T,
+% % % % % %      (lcell(Y).origin\downarrow).\mathit{end} \big)$; \\
+% % % % % % 
+% % % % % % \>\>  {\bf  if}  $((lcell(Y).origin\downarrow).\mathit{end} \neq  +\infty)$
+% % % % % % {\bf then} $lrs_T \leftarrow lrs_T \backslash \{Y\}$  {\bf end if} \\
+% % % % % % 
+% % % % % % \> {\bf end for}. \\
+% % % % % % 
+% % % % % % \end{tabbing}
+% % % % % % 
+% % % % % % Using this  improvement there is  a possibility for a  transaction $T$ (that
+% % % % % % performs  at least  one  read) to  have  some or  all of  its  reads to  be
+% % % % % % invisible during the ${\sf try\_to\_commit}_T()$ operation. 
+% % % % % % Consequently a  read  only  transaction  has  a
+% % % % % % possibility to  be completely  invisible at commit  time, meaning  that the
+% % % % % % ${\sf try\_to\_commit}_T()$ operation will just immediately return $commit$
+% % % % % % without doing any work. 
+% % % % % %  
+% % % % % % \paragraph{Additional Benefits}  
+% % % % % % It  is also  worth noting   that this  improvement  can  also   improve the
+% % % % % % performance of  the read operations  performed by the STM. 
+% % % % % % This is because when the one of  the new lines added is executed an object
+% % % % % % is removed from $lrs_T$, and the  cost of the read operation depends on the
+% % % % % % size of $lrs_T$. 
+% % % % % % In the best case this can cause the cost of a read operation to be $O(1)$
+% % % % % % instead  of $O(|lrs_T|)$  (note that   this works  concurrently  along with
+% % % % % % fast reads as described  in Appendix \ref{appendix-fast-reads}). 
 
 
 
