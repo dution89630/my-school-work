@@ -1611,18 +1611,18 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation}  ${\sf transactional\_read}(\mathit{addr})$ {\bf is}\\
 \line{C01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
-\line{C02} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
+\line{C02} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; $\mathit{validate} \gets \sf{false}$;\\
 
 \line{C03} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
-\line{C04} \>\> {\bf then} {\bf if} ($\mathit{tmp.time} \geq \mathit{rv}$) \\
-%\> \% Do validation to prevent abort due to a non-transactional write \\
-\line{C05} \>\>\> {\bf then if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,tmp.value}}$ to $\mathit{rs}$ and ${\sf validate\_by\_value}$(); \\
-\line{C06} \>\>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
-%\line{C14} \> {\bf if} this is an update transaction 
-%                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
-
-
-\line{C06A} \>\>\> {\bf end if}; \\
+\line{C04} \>\> {\bf then} {\bf if} ($\mathit{tmp.time} \geq \mathit{rv}$) \bf{then} $\mathit{validate} \gets \sf{true}$ \bf{end if} \\
+% % % % %\> \% Do validation to prevent abort due to a non-transactional write \\
+% % % % \line{C05} \>\>\> {\bf then if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,tmp.value}}$ to $\mathit{rs}$ and ${\sf validate\_by\_value}$(); \\
+% % % % \line{C06} \>\>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
+% % % % %\line{C14} \> {\bf if} this is an update transaction 
+% % % % %                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+% % % % 
+% % % % 
+% % % % \line{C06A} \>\>\> {\bf end if}; \\
 \line{C07} \>\>\> $\mathit{value} \gets \mathit{tmp.value}$; \\
 
 \line{C08} \>\> {\bf else} \\
@@ -1630,9 +1630,22 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{C10} \>\>\>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}()$  {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ {\bf end if}; \\
 \line{C11} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
 \line{C11A} \>\>\> {\bf end if}; \\
-\line{C12} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{C14} \>\> {\bf if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+\line{C12} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} $\mathit{validate} \gets \sf{true}$ {\bf end if}; \\
+% % % % \line{C14} \>\> {\bf if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+
+
 \line{C13} \> {\bf end if}; \\
+
+\line{C14} \> {\bf if} this is an update transaction 
+                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+
+\line{C14A} \> {\bf if} ($\mathit{validate}$) \\
+\line{C14B} \>\> {\bf then if} this is an update transaction {\bf then}  ${\sf validate\_by\_value}$(); \\
+\line{C14C} \>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
+
+
+\line{C14D} \> {\bf end if}; \\
+
 
 \line{C15} \> ${\sf return}$ ($\mathit{value}$) \\
 {\bf end operation}. \\
