@@ -762,22 +762,22 @@ outside of the transaction by other processes without holding back the progress 
 these reads and writes.
 A protocol protocol ensuring this property is presented.
 
-The subject of the fourth chapter is probably the least interesting theoretically, but
-shows no less ambition then the previous chapters.
-The fourth chapter looks at how to merge the research
-from the previous chapter.
-After all it is nice to give different suggestions for how the semantics
-of transactions should be modified, but it is less meaningful if they are not compatible with
-each other and we instead have to pick and choose.
-In STM research someone might introduce a protocol that does something really neat, but
-if this protocol is only valid for a limited amount of situations then it probably
-is not helping solve the primary goal.
-This chapter describes a protocol that considers some of the properties suggested
-in the first chapter, while hiding the notion of abort from the programmer,
-and ensuring terminating strong isolation. 
-\anote{Hopefully!}
+% The subject of the fourth chapter is probably the least interesting theoretically, but
+% shows no less ambition then the previous chapters.
+% The fourth chapter looks at how to merge the research
+% from the previous chapter.
+% After all it is nice to give different suggestions for how the semantics
+% of transactions should be modified, but it is less meaningful if they are not compatible with
+% each other and we instead have to pick and choose.
+% In STM research someone might introduce a protocol that does something really neat, but
+% if this protocol is only valid for a limited amount of situations then it probably
+% is not helping solve the primary goal.
+% This chapter describes a protocol that considers some of the properties suggested
+% in the first chapter, while hiding the notion of abort from the programmer,
+% and ensuring terminating strong isolation. 
+% \anote{Hopefully!}
 
-The fifth chapter looks into the idea of providing efficient abstractions
+The fourth chapter looks into the idea of providing efficient abstractions
 as libraries for programmers to reuse from within their transactions.
 Not only does this mean the programmer does not need to design such libraries himself, but
 it allows an expert programmer who knows well the synchronization pattern of STM
