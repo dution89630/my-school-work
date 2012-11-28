@@ -2018,14 +2018,16 @@ value as when it was previously read.
 From this it is easy to see that when $\mathit{rv}$ is set, none of the values have been changed.
 
 Let us now consider the case where the most recent value for $\ms{rv}$ was most recently set in $\sf{begin\_transaction}$.
-In this case, if the object dereferenced on line \ref{C01} is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
+
+\paragraph{T record} If the object dereferenced on line \ref{C01} of $\sf{transactional\_read}()$ is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
 as otherwise a validation would have been called, updating $\mathit{rv}$.
 On line \ref{B03} of $\sf{non\_transactional\_write}$ operation $\mathit{addr}$ is set to reference the NT record, following this
 $\mathit{GCV}$ is read which is then used to update the record's $\mathit{time}$ field.
 Now, as previously stated this value must be smaller then $\mathit{rv}$, and given that the value of $\mathit{rv}$
 was set using $\mathit{GCV}$, which is a synchronized growing counter, $\mathit{addr}$ must have been set to reference
 this NT record before $\mathit{rv}$ was set, and has not changed up to the point where the record was dereferenced by the read.
-If the object dereferenced on line \ref{C01} is a T record then we must have $\mathit{tmp.time} \leq \mathit{rv}$ and 
+
+\paragraph{T record} If the object dereferenced on line \ref{C01} of $\sf{transactional\_read}()$ is a T record then we must have $\mathit{tmp.time} \leq \mathit{rv}$ and 
 $\mathit{tmp.status} = $ COMMITTED or $\mathit{tmp.status} = $ ABORTED, otherwise the transaction would have aborted.
 Given this, we just need to show that the T record dereferenced was in memory before $\mathit{GCV}$ was incremented to the value
 read in $\sf{begin\_transaction}$ (i.e. before $\mathit{GCV} = \mathit{rv}$).
