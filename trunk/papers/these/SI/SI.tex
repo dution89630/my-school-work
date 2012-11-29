@@ -1636,11 +1636,11 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 \line{C13} \> {\bf end if}; \\
 
-\line{C14} \> {\bf if} this is an update transaction 
+\line{C14} \> {\bf if} this is an update transaction
                         {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
 
 \line{C14A} \> {\bf if} ($\mathit{validate}$) \\
-\line{C14B} \>\> {\bf then if} this is an update transaction {\bf then}  ${\sf validate\_by\_value}$(); \\
+\line{C14B} \>\> {\bf then if} this is an update transaction {\bf then if} (${\sf validate\_by\_value}$()) {\bf then} $\sf{abort}()$ {\bf end if}; \\
 \line{C14C} \>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
 
 
@@ -1718,6 +1718,8 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 {\bf operation}  ${\sf try\_to\_commit}()$ {\bf is}\\
 \line{DA01} \> {\bf if} $(\mathit{ws} = \emptyset)$ {\bf then} ${\sf return}$ (COMMITTED) {\bf end if}; \\
 
+% \line{DA01a} \> $\mathit{abort} \gets \lit{false}$; \\
+
 \line{DA02} \> 
 {\bf for each} $(\tuple{\mathit{addr, item}} \in \mathit{ws})$ {\bf do} \\
 
@@ -1726,34 +1728,36 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 \line{DA04} \>\> {\bf if} 
    ($\mathit{tmp}$ is of type $T \wedge (\mathit{status} \gets (\downarrow \mathit{tmp.status})) \neq$ COMMITTED $)$  \\
-\line{DA05} \>\>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}()$  {\bf else} $\mathit{item.last} \gets \mathit{tmp.last}$ {\bf end if}; \\
+\line{DA05} \>\>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} $\sf{abort}()$  {\bf else} $\mathit{item.last} \gets \mathit{tmp.last}$ {\bf end if}; \\
 \line{DA06} \>\>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp.value}$ \\
 \line{DA06A} \>\> {\bf end if}; \\
-\line{DA07} \>\> $\mathit{item.time} \gets \mathit{tmp.time}$; \\
 
-\line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{addr, tmp, item}))$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+\line{DA07} \>\> $\mathit{item.time} \gets \mathit{tmp.time}$; \\
+\line{DA07a} \>\> {\bf if} ($\mathit{item.time} = \infty$) {\bf then} $\mathit{item.time} \gets \mathit{GCV}$ {\bf end if}; \\
+
+\line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{addr, tmp, item}))$ {\bf then} $\sf{abort}()$ {\bf end if}; \\
 %\line{DA09} \>\>\> {\bf then} ${\sf abort}()$ \\
 %\line{DA10} \>\> {\bf end if} \\
 
 \line{DA11} \> {\bf end for}; \\
 
-\line{DA12} \> $\mathit{time} \gets {\sf increment\&fetch}(\mathit{GVC})$; ${\sf validate\_by\_value}()$; \\
+\line{DA12} \> $\mathit{time} \gets {\sf increment\&fetch}(\mathit{GVC})$; \bf{if} (${\sf validate\_by\_value}()$) {\bf then} $\sf{abort}()$ {\bf end if}; \\
 
 %\line{DA13} \> ${\sf validate\_by\_value}()$;  \\
 
 
 %\> \% Ensure the writes haven't been overwritten by non-transactional writes \\
-\line{DA13a} \> $\mathit{abort} \gets \lit{false}$ \\
+
 \line{DA14} \> 
 {\bf for each} ($\tuple{\mathit{addr, item}} \in \mathit{ws}$) {\bf do} \\
 \line{DA15} \>\> $\mathit{item.time} \gets \mathit{time}$; \\
 \line{DA16} \>\> {\bf if} $(\mathit{item} \neq (\downarrow \mathit{addr}))$  
                  {\bf then}  
-		    $\mathit{abort} \gets \lit{true}$
+		    $\sf{abort}()$
                 {\bf end if}; \\
 
 \line{DA17} \> {\bf end for}; \\
-\line{DA17a} \> {\bf if} $\mathit{abort}$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+% \line{DA17a} \> {\bf if} $\mathit{abort}$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
 \line{DA18} \> {\bf if} ${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED) \\
 \line{DA19} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
 \line{DA20} \> \> {\bf else} \= ${\sf abort}()$ \\
@@ -1836,13 +1840,14 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{H03} \>\> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
 \line{H04} \>\> {\bf if} ($\mathit{tmp}$ is of type T $ \wedge \mathit{tmp.status} \neq $ COMMITTED) \\
 \line{H05} \>\>\> {\bf then if} ($\mathit{tmp.status} =$ LIVE $\wedge \mathit{item} \not \in \mathit{ws}$)
-     {\bf then} ${\sf abort}()$ {\bf end if}; \\
+     {\bf then} $\sf{return}(\sf{true})$ {\bf end if}; \\
 \line{H06} \>\>\>\> $\mathit{new\_value} \gets \mathit{tmp.last}$; \\
 \line{H07} \>\>\> {\bf else} $\mathit{new\_value} \gets \mathit{tmp.value}$ \\
 \line{H07A} \>\> {\bf end if}; \\
-\line{H08} \>\> {\bf if} $\mathit{new\_value} \neq \mathit{value}$
-     {\bf then} ${\sf abort}()$ {\bf end if}; \\
+\line{H08} \>\> {\bf if} ($\mathit{new\_value} \neq \mathit{value}$)
+     {\bf then} $\sf{return}(\sf{true})$ {\bf end if}; \\
 \line{H09} \> {\bf end for}; \\
+\line{H10} \> $\sf{return}(\sf{false})$. \\
 {\bf end operation}. \\
 \\
 {\bf operation} ${\sf abort}()$ {\bf is}\\
@@ -1875,7 +1880,8 @@ if any location in $\mathit{rs}$ is
 currently being updated by another transaction (i.e. $\mathit{tmp.status} = $ LIVE) (line \ref{H05})
 or has had its changed since it was first read by the transaction (line \ref{H08})
 otherwise it succeeds.
-The transaction is immediately aborted if validation fails (lines \ref{H05}, \ref{H08}).
+The transaction is directed to abort if validation fails (lines \ref{H05}, \ref{H08}) by returning $\sf{true}$,
+returning $\sf{false}$ otherwise.
 Note that in the case that a location is being updated ($\mathit{tmp.status} = $ LIVE) and the location
 is in the write set of the current transaction then it does not abort, as this record belongs to the transaction
 currently being executed by the process performing the validation.
