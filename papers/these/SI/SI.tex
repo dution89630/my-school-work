@@ -1909,7 +1909,7 @@ as non-transactional operations have a unique linearization point, meaning that
 there is some instant in time during the execution of each operation where it
 appears to have taken place.
 Note that we do not use an STM specific consistency criterion
-such as opacity or virtual world consistency to prove correctness as they do not consider
+such as opacity or virtual world consistency to prove correctness as traditionally they do not consider
 non-transactional operations.
 
 Before detailing the linearization points of the operations we will introduce a few lemmas that will help
@@ -1921,12 +1921,12 @@ Neither the $\mathit{value}$ field of a T or NT record nor the $\ms{last}$ field
 reference the record.
 \end{lemma}
 \begin{proof}
-In the case of an NT record, the $\mathit{value}$ field is set just once on line \ref{B02} of $\sf{non\_transactional\_write}$,
-which is just after the record is allocated, and before any shared pointers are set.
-For a T record, allocation happens on line \ref{D02} of $\sf{transactional\_write}$,
+In the case of an NT record, the $\mathit{value}$ field is set just once on line \ref{B02} of $\sf{non\_transactional\_write}()$,
+which is immediately after the record is allocated, and before any shared pointers are set.
+For a T record, allocation happens on line \ref{D02} of $\sf{transactional\_write}()$,
 then the $\mathit{value}$ field is set on lines \ref{D03} and \ref{D04} of the same operation.
-The $\mathit{last}$ field is set later, but just once on line \ref{DA05} or \ref{DA06} of the $\sf{try\_to\_commit}$ operation
-and the record is not referenced by a shared pointer until later in this operation
+The $\mathit{last}$ field is set later on line \ref{DA05} or \ref{DA06} of the $\sf{try\_to\_commit}()$ operation,
+but the record is not referenced by a shared pointer until later in this operation
 by performing a compare and swap on line \ref{DA08}.
 \end{proof}
 
@@ -1937,46 +1937,78 @@ The $\ms{status}$ field of a transaction record will change from LIVE to either 
 exactly once.
 \end{lemma}
 \begin{proof}
-The operation $\sf{begin\_transaction}$ is called each time a new transaction start and each time a transaction is aborted.
+The operation $\sf{begin\_transaction}()$ is called each time a new transaction start and each time a transaction is aborted.
 During this operation a new $\mathit{status}$ variable is allocated and is set to LIVE.
-The status variable is then accessible by the process that is executing the transaction or through T records created during the
-transaction (line \ref{D03} of $\sf{transaction\_write}$).
+The status variable is then accessible by the process that is executing the transaction or by other processes through T records created during the
+transaction (line \ref{D03} of $\sf{transaction\_write}()$) after they are added to shared memory during $\sf{try\_to\_commit}()$.
 $\mathit{status}$ can be modified in three places:
 On line \ref{A04} of $\sf{non\_transactional\_read}$ and on line \ref{DA18} of $\sf{try\_to\_commit}$, but in both these cases
 the value of $\mathit{status}$ is changed from LIVE to either COMMITTED or ABORTED by a compare and swap.
 The third place is on line \ref{AB01} of the $\sf{abort}$ where $\mathit{status}$ is set to ABORTED by a normal write, but
-here $\mathit{status}$ must either still be LIVE, or already ABORTED because if the compare and swap from LIVE to COMMITTED was
-successful then the transaction is guaranteed to be completed (lines \ref{DA18}--\ref{DA20} of $\sf{try\_to\_commit}$).
+here $\mathit{status}$ must either still be LIVE, or already ABORTED.
+The reason for this is that the only place $\mathit{status}$ can be changed to COMMITTED is after a successful compare and swap
+during the $\sf{try\_to\_commit}()$ operation, but in this case the transaction is completed (lines \ref{DA18}--\ref{DA20}).
 \end{proof}
+
+\begin{lemma}
+\label{lemma:si-abort}
+An aborted transaction makes no changes to the state of memory.
+\end{lemma}
+\begin{proof}
+For this proof we only need to consider transactions that abort after they have performed
+at least one successful compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ as transactions
+that have aborted before this have not made any modifications to shared memory.
+On line \ref{DA08} the transaction compares and swaps each of its T records from its write set into
+shared memory.
+What is important here is that before the compare and swap the transaction updates the $\ms{last}$
+field of its T record for $\mathit{addr}$ using either the $\mathit{value}$ or the $\mathit{last}$ field of the current
+record at $\mathit{addr}$.
+The $\mathit{value}$ field is used if the record is of type NT or comes from a committed transaction, otherwise the $\mathit{last}$
+field is used, this follows the same pattern as the read and validate operations which were shown to all use the same value
+from a record in lemma \ref{lemma:si-samevalue}.
+Now the compare and swap on line \ref{DA08} used to add the T record to memory ensures that the record referenced by $\mathit{addr}$ has not
+changed since the $\mathit{last}$ field of the new record was set.
+Now given that the transaction will abort (setting its $\mathit{status}$ to aborted), any read or validation that dereferences
+this record will use the $\mathit{last}$ field which is the same value that was in memory previously.
+\end{proof}
+
+
 
 
 \begin{lemma}
 \label{lemma:si-samevalue}
-For any T or NT record that is referenced by $\mathit{addr}$, any read operation (transactional or non-transactional) or validation (from $\sf{validate\_by\_value}$) to
+For any T or NT record that is referenced by some shared address $\mathit{addr}$, any read operation
+(transactional or non-transactional) or validation (in $\sf{validate\_by\_value}()$) to
 $\mathit{addr}$ that dereferences this record will return (or validate) the same value.
 \end{lemma}
 \begin{proof}
+By lemma \ref{lemma:si-nochange} we know that the $\mathit{value}$ filed of T and NT records as well as the $\mathit{last}$ field
+of T records will never change once referenced by shared memory, so to complete this proof we need to show that reads and validations
+are always performed using the same field (either $\mathit{value}$ or $\mathit{last}$) of a record.
 There are two cases to consider, when the record dereferenced is of type NT and when the record is of type T.
-\paragraph{NT Record} In this case using lemma \ref{lemma:si-nochange} and the looking at the code it is easy to see that both the transactional and non-transactional read
+\paragraph{NT Record} In this case by looking at the code it is easy to see that both the transactional and non-transactional read
 as well as validation operations
 return/validate the value contained in the $\ms{value}$ field of the NT record dereferenced.
-In the case where a $\sf{transaction\_read}$ causes a transactional abort, even though $\mathit{value}$ is not returned, linearizability is not violated
+In the case where a $\sf{transactional\_read}()$ to this address causes a transactional abort,
+even though $\mathit{value}$ is not returned, linearizability is not violated
 as aborted transactions appear to have not executed at all.
 \paragraph{T Record} This case is a bit more difficult as the value returned depends on the $\mathit{status}$ of the transaction
 that created this record.
-First consider any $\sf{non\_transaction\_read}$ that has dereferenced this object, on line \ref{A04} the compare and swap ensures that the status of the transaction is
+First consider any $\sf{non\_transactional\_read}()$ that has dereferenced this object, on line \ref{A04} the compare and swap ensures that the status of the transaction is
 no longer LIVE.
 Now by lemma \ref{lemma:si-statusonce} we know that $\mathit{status}$ will only change from LIVE once.
 So if $\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned, otherwise if COMMITTED then the $\mathit{value}$ field is returned.
-Next consider any $\sf{transaction\_read}$ that dereferences this object, like with the NT reads,
-(and using lemma \ref{lemma:si-statusonce}) if
+Next consider any $\sf{transactional\_read}()$ that dereferences this object, in the same way as the $\sf{non\_transactional\_read}()$, if
 $\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned and if COMMITTED then the $\mathit{value}$ field is returned.
 Otherwise in the case that $\mathit{status}$ is still LIVE, the transaction simply aborts (line \ref{C10}).
-The $\sf{validate\_by\_value}$ operation follows the same pattern, with the exception if the $\mathit{status}$ is LIVE and
-is in the write set of the current transaction.
-In this case the process executing the validation is also the one who owns the record being validated, but here the compare
-and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ ensures that the value previously at this location is now in the $\mathit{last}$
-field of this record.
+The $\sf{validate\_by\_value}()$ operation follows the same pattern, with the exception if the $\mathit{status}$ is LIVE and
+the record being validate in the write set of the current transaction.
+In this case the process executing the validation is also the process who owns the record,
+so here the $\mathit{last}$ field is used for validation as by lemma \ref{lemma:si-abort} we know this is the value previously
+in shared memory.
+ but here the compare
+% and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ ensures that the value previously at this location is now in the $\mathit{last}$
+% field of this record.
 \end{proof}
 
 
@@ -1988,14 +2020,15 @@ The $\sf{non\_transactional\_write}$ operation is linearizable.
 \end{lemma}
 \begin{proof}
 The linearization point of the $\sf{non\_transactional\_write}(addr,value)$ operation
-is line \ref{B03} where the value of $\mathit{addr}$ is set to point to $\sf{next\_write}$.
+is line \ref{B03} where $\mathit{addr}$ is set to point to $\sf{next\_write}$.
 There is no pre-condition needed for this operation as it acts as a simple write operation.
-The post-condition is that the value in memory at $\mathit{addr}$ is $\mathit{value}$, meaning that $\mathit{next\_write.value}$ is returned by 
+The post-condition is that the value in memory at $\mathit{addr}$ is $\mathit{value}$, in other words $\mathit{next\_write.value}$ is returned by 
 read operations to $\mathit{addr}$ (transactional and non-transactional) that are linearized after the write.
-For either type of read operation their linearization point is when $\mathit{addr}$ is accessed (as will be detailed in further lemmas),
+For either type of read operation their linearization point is when $\mathit{addr}$ is accessed dereferencing the record there
+(the linearization of these operations is proved in later lemmas),
 therefore any read operation linearized after this NT-write (and before another operation modifies $\mathit{addr}$)
 will dereference the pointer written by the NT-write.
-Lemma \ref{lemma:si-samevalue} completes the proof.
+Using this fact along with lemma \ref{lemma:si-samevalue} completes the proof.
 \end{proof}
 
 
@@ -2018,55 +2051,61 @@ lemma \ref{lemma:si-samevalue}.
 
 \begin{lemma}
 \label{lemma:si-rvvalid}
-The value validated or returned by a successful $\sf{transactional\_read}$ operation to $\mathit{addr}$ is the same
-value that would be validated or returned by a read (non-transactional or transactional) at the time the most recent
-$\mathit{rv}$ was set for this transaction.
+The value validated by a successful $\sf{validate\_by\_value}()$ or returned by a successful
+$\sf{transactional\_read}()$ operation to address $\mathit{addr}$ is the same
+value that would be validated or returned by any read (non-transactional or transactional) that took place
+at the time of the most recent read of $\mathit{GCV}$ by this process used to set $\mathit{rv}$ for the transaction.
 \end{lemma}
 \begin{proof}
 By lemma \ref{lemma:si-samevalue} we know that for any record dereferenced the value read or validated will
-always be the same for that record, so the rest of this proof will consider that value when discussing
+always be the same for that record, so the rest of this proof will consider that specific value when discussing
 a dereferenced record.
-There are two places where $\ms{rv}$ can be set, either at the start of a transaction on line \ref{START2} of the
-$\sf{begin\_transaction}$ operation, or before validation on line \ref{H01} the $\sf{validate\_by\_value}$ operation.
+There are two places where $\ms{rv}$ can be set for a transaction, either at the start of a transaction on line \ref{START2} of the
+$\sf{begin\_transaction}()$ operation, or before validation on line \ref{H01} the $\sf{validate\_by\_value}()$ operation.
 
 
-For the $\sf{validate\_by\_value}$ case we know that every location read so far by the transaction is contained
-in the read set (including the current location) before $\mathit{rv}$ is set.
-After $\mathit{rv}$ is set, every location in the read set is validated, ensuring that each location contains the same
-value as when it was previously read.
-From this it is easy to see that when $\mathit{rv}$ is set, none of the values have been changed.
+For the $\sf{validate\_by\_value}()$ case we have each location and its corresponding value read so far by the transaction contained
+in the read set (including the current read operation (line \ref{})) before $\mathit{rv}$ is set.
+In the $\sf{validate\_by\_value}()$ operation after $\mathit{rv}$ is set, every location in the read set is
+validated.
+This means that when $\mathit{GCV}$ is read and $\mathit{rv}$ is set all of the values are the same as they were when first read.
 
-Let us now consider the case where the most recent value for $\ms{rv}$ was most recently set in $\sf{begin\_transaction}$.
+Let us now consider the case where the most recent value for $\ms{rv}$ was set in $\sf{begin\_transaction}()$.
+We will now show that the record at the location currently being accessed by the $\sf{transactional\_read}()$
+has the same value as when $\mathit{GCV}$ was read in $\sf{begin\_transaction}()$.
 
-\paragraph{T record} If the object dereferenced on line \ref{C01} of $\sf{transactional\_read}()$ is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
-as otherwise a validation would have been called, updating $\mathit{rv}$.
-On line \ref{B03} of $\sf{non\_transactional\_write}$ operation $\mathit{addr}$ is set to reference the NT record, following this
-$\mathit{GCV}$ is read which is then used to update the record's $\mathit{time}$ field.
-Now, as previously stated this value must be smaller then $\mathit{rv}$, and given that the value of $\mathit{rv}$
-was set using $\mathit{GCV}$, which is a synchronized growing counter, $\mathit{addr}$ must have been set to reference
+\paragraph{NT record} If the object dereferenced on line \ref{C01} of $\sf{transactional\_read}()$ is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
+as otherwise a validation would have been called, updating $\mathit{rv}$ (lines \ref{}-\ref{}).
+Now on line \ref{B03} of the $\sf{non\_transactional\_write}()$ operation $\mathit{addr}$ is set to reference the NT record, following this
+$\mathit{GCV}$ is read whose value is then used to update the record's $\mathit{time}$ field.
+As previously stated this value must be smaller then $\mathit{rv}$, and given that the value of $\mathit{rv}$
+was set using $\mathit{GCV}$, which is a synchronized growing only counter, $\mathit{addr}$ must reference
 this NT record before $\mathit{rv}$ was set, and has not changed up to the point where the record was dereferenced by the read.
 
 \paragraph{T record} If the object dereferenced on line \ref{C01} of $\sf{transactional\_read}()$ is a T record then we must have $\mathit{tmp.time} \leq \mathit{rv}$ and 
-$\mathit{tmp.status} = $ COMMITTED or $\mathit{tmp.status} = $ ABORTED, otherwise the transaction would have aborted.
+$\mathit{tmp.status} = $ COMMITTED or $\mathit{tmp.status} = $ ABORTED, otherwise the current read operation would have directed the transaction
+to perform a validation (lines \ref{}-\ref{}).
 Given this, we just need to show that the T record dereferenced was in memory before $\mathit{GCV}$ was incremented to the value
 read in $\sf{begin\_transaction}$ (i.e. before $\mathit{GCV} = \mathit{rv}$).
 First consider the case where $\mathit{tmp.status} = $ COMMITTED, given that $\mathit{tmp}$ is a T record, it was created
 during a $\sf{try\_to\_commit}$ operation.
-On line \ref{DA08} the compare and swap ensures that $\mathit{tmp}$ is referenced to by $\mathit{addr}$ before the transaction
-increases $\mathit{GCV}$ by performing an increment and fetch.
+During this operation  the compare and swap on line \ref{DA08} ensures  that $\mathit{tmp}$ is referenced by $\mathit{addr}$ before the process
+increases $\mathit{GCV}$ by performing an increment and fetch (lines \ref{}-\ref{}).
 Then on line \ref{DA15}, the value returned from the increment and fetch is used to set the $\mathit{time}$ field of each T record
 created by the transaction.
-Given this and that we know $\mathit{tmp.time} \leq \mathit{rv}$, $\mathit{tmp}$ must have been referenced by $\mathit{addr}$ before
+Given this and that we know $\mathit{tmp.time} \leq \mathit{rv}$, $\mathit{tmp}$ must be referenced by $\mathit{addr}$ before
 $\mathit{GCV} = \mathit{rv}$.
-Now consider the case where $\mathit{tmp.status} = $ ABORTED, the compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ ensures
-that the value in $\ms{tmp.last}$ was the previous value at $\ms{addr}$ as well as $\mathit{tmp}$ is referenced to by $\mathit{addr}$
+Now consider the case where $\mathit{tmp.status} = $ ABORTED, the compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ and lemma \ref{lemma:si-abort} ensures
+that the value in $\ms{tmp.last}$ was the previous value at $\ms{addr}$ as well as that $\mathit{tmp}$ is referenced by $\mathit{addr}$
 before the increment and fetch.
-Following this, like in the case where $\mathit{tmp.status} = $ COMMITTED we have the value returned from the increment and fetch
+Following this (just like in the of $\mathit{tmp.status} = $ COMMITTED) we have the value returned from the increment and fetch
 used to set the $\mathit{time}$ field of each T record created by the transaction.
-Resulting in the fact that $\mathit{tmp}$ must have been referenced by $\mathit{addr}$ before $\mathit{GCV} = \mathit{rv}$.
+Therefore $\mathit{tmp}$ must have been referenced by $\mathit{addr}$ before $\mathit{GCV} = \mathit{rv}$.
 
-Finally given that $\sf{begin\_transaction}$ is called only once per transaction and is performed before any read or validation is performed,
-all the values returned by reads were the same when $\mathit{rv}$ was set.
+Finally, given that $\sf{begin\_transaction}()$ is called only once per transaction
+we have all previous read operations still being consistent.
+% and is performed before any read or validation is performed,
+% all the values returned by reads were the same when $\mathit{rv}$ was set.
 \end{proof}
 
 
@@ -2074,8 +2113,8 @@ all the values returned by reads were the same when $\mathit{rv}$ was set.
 
 \begin{lemma}
 \label{lemma:si-tread}
-A successful $\sf{transaction\_read}$ operation (i.e. one that does not cause the transaction to abort) in linearizable,
-at a point that includes it as well all previous reads of the transaction.
+A successful $\sf{transactional\_read}()$ operation (i.e. one that does not cause the transaction to abort) in linearizable,
+with a linearization point that includes the current read as well all previous reads of the transaction.
 \end{lemma}
 \begin{proof}
 For the $\sf{transaction\_read}$ operation the linearization point is the most recent time that $\mathit{rv}$ was set for the transaction.
@@ -2099,28 +2138,6 @@ The proof of this lemma follows directly from lemma \ref{lemma:si-rvvalid}.
 \end{proof}
 
 
-\begin{lemma}
-\label{lemma:si-abort}
-An aborted transaction makes no changes to the state of memory.
-\end{lemma}
-\begin{proof}
-For this proof we only need to consider transactions that abort after they have performed
-at least one successful compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ as transactions
-that have aborted before this have not made any modifications to shared memory.
-On line \ref{DA08} the transaction compares and swaps each of its T records from its write set to
-shared memory.
-What is important here is that before the compare and swap the transaction updates the $\ms{last}$
-field of the T record for $\mathit{addr}$ using either the $\mathit{value}$ or the $\mathit{last}$ field of the current
-record at $\mathit{addr}$.
-The $\mathit{value}$ field is used if the record is of type NT or comes from a committed transaction, otherwise the $\mathit{last}$
-field is used, this follows the same pattern as the read and validate operations which were shown to all pick the same value
-from a record in lemma \ref{lemma:si-samevalue}.
-Now by using a compare and swap on line \ref{DA08} when adding the T record to memory, we ensure that the record in memory has not
-changed since the $\mathit{last}$ field of the new record was set.
-Now given that the transaction will abort (setting its $\mathit{status}$ to aborted), any read or validation that dereferences
-this record will use the $\mathit{last}$ field which is the same value that was in memory previously.
-\end{proof}
-
 
 
 \begin{lemma}
@@ -2129,35 +2146,36 @@ A committed transaction is linearizable.
 \end{lemma}
 \begin{proof}
 For the precondition of the committed transaction we have the requirement
-that for each of the locations in the transaction's read set that the value
-contained in the record referenced by the address is equal to the value 
+that for each of the items in the transaction's read set that the value
+contained in the record currently referenced by the item's address is equal to the value 
 previously read by the transaction.
-The post condition is that for each of the locations in the transaction's write set
-that the value written by the transaction is the one contained in the record
-referenced by the address in memory.
-Here the linearization point is line \ref{DA12}, just after the transactions T records
-have been pointed to by performing compare and swaps, and before the call to
-$\sf{validate\_by\_value}$.
+The post condition is for each of the items in the transaction's write set
+that the value input to the transactional write is set to the $\mathit{value}$ field of the record
+referenced by the corresponding address in shared memory.
+Here the linearization point is line \ref{DA12}, just after the all of the transactions T records
+have had their corresponding address in shared memory set to point to them, and before the call to
+$\sf{validate\_by\_value}()$.
 The precondition is ensured by the subsequent call to $\sf{validate\_by\_value}$,
 as if any location in the read set has been changed since it was first read then
 the transaction would abort.
 The post condition is ensured by the for loop on lines \ref{DA15}-\ref{DA17} as well
 as the compare and swap on line \ref{DA18} changing the transaction's $\mathit{status}$
 from LIVE to COMMITTED.
-The for loop checks the $\mathit{addr}$ for each record in the write set seeing
-if there has been a more recent write updating this location, aborting the transaction
+The for loop goes through each T record in the transaction's write set, checking
+if a write by some other process has changed the record referenced by $\mathit{addr}$ so that it no longer points
+to this transaction's record and aborting the transaction
 if there is.
 Finally the compare and swap setting $\mathit{status}$ to COMMITTED ensures
 that any future read (transactional or non-transactional) that dereferences one of
-the records in the transaction's write set returns the value written by the transaction.
+the transaction's records returns the value written by the transaction.
 Lemma \ref{lemma:si-samevalue} ensures that any read or validation to any one of these
 records returns the same value.
 It is interesting to note that at the linearization point the transaction is not
 guaranteed to commit, but lemmas \ref{lemma:si-abort} and \ref{lemma:si-samevalue}
 ensure that in the case the transaction does abort, it still appears to have not happened
 at all.
-The reason for this is to ensure the progress of non-transactional operations they might
-need to abort a transaction in the process of committing in order to ensure correctness.
+This is done in order to ensure the progress and correctness of non-transactional operations that might
+need to abort a transaction who is in the process of committing.
 \end{proof}
 
 
@@ -2207,7 +2225,7 @@ In algorithm \ref{fig:ntops} whenever a NT-read operation encounters
 a transaction in the process of committing it immediately attempts to abort the transaction.
 Interestingly this can be prevented
 in the case that the thread performing the NT-read has not observed a write that is serialized after the transaction
-by serializing the NT-read before the transaction.
+by serializing the current NT-read before the transaction.
 Algorithm \ref{fig:ser} describes the changes to the NT-read operation, line \ref{A03} of
 the original algorithm is modified to become line \ref{A03a} in algorithm \ref{fig:ser}.
 It is important to note that this change means that the NT-reads will no longer be linearizable,
@@ -2216,7 +2234,7 @@ The reason for this is that the NT-read operation could have started after the l
 of a transaction, but before the transaction the transaction's status has been changed from LIVE to
 COMMITTED.
 Then if the NT-read returns the value contained in $\mathit{tmp.last}$ its real time occurrence was
-after the linearization point of the transaction, but it is serialized before the transaction.
+after the linearization point of the transaction, but it is still serialized before the transaction.
 
 
 
