@@ -979,7 +979,7 @@ terminating strong isolation.
 %Therefore, the operations issued by a transaction are simply read and write operations. 
 %For the sake of brevity, implementation details of the algorithm are omitted.  
 
-TL2, aspects of which are used in this paper, has been introduced by Dice, Shalev and Shavit in 2006 \cite{dice06}.
+TL2, aspects of which are used in this paper, has been introduced by Dice, Shalev and Shavit in 2006 \cite{DSS06}.
 The word-based version of the algorithm is used, %which means that the shared variables accessed are memory 
 %words and that the operations issued by a transaction are simply read and write operations. 
 %For the sake of brevity, implementation details of the algorithm are omitted in the following description. 
@@ -1532,7 +1532,7 @@ $\mathit{time}$ value as some transaction.
 When such a situation is recognized where a live transaction has the same time value
 as an NT-record the transaction must be aborted (if recognized during an NT-read operation,
 line \ref{A04}) or perform read set validation (if during a transactional
-read operation, line \ref{C05} of Fig. \ref{fig:tops}).
+read operation, line \ref{C14B} of Fig. \ref{fig:tops}).
 This is done in order to prevent consistency violations
 caused by the NT-writes not updating the $\mathit{GCV}$. %such as the one shown in Figure \ref{fig:timent}.
 
@@ -1559,8 +1559,9 @@ if the status of the transaction for this record is still LIVE and if it is
 the current transaction is aborted (line \ref{C10}).
 This is similar to a transaction in TL2 aborting itself when a locked location is found.
 Next the T-record's $\mathit{time}$ field is checked, and (similar to TL2) if it 
-greater then the process's local $\mathit{rv}$ value the transaction must abort 
-(line \ref{C12}) in order to prevent consistency violations.
+greater then the process's local $\mathit{rv}$ value the transaction must
+either successfully validate its read set (line \ref{C12}) or
+abort (line \ref{C14B}) in order to prevent consistency violations.
 If this succeeds without aborting then the local variable $\mathit{value}$
 is set depending on the stats of the transaction that created the T-record (line \ref{C10}-\ref{C11}).
 
@@ -1571,9 +1572,9 @@ greater or equal to the process local $\mathit{rv}$ value.
 If it is, then this write has possibly occurred after the start of this
 transaction and there are several possibilities.
 In the case of an update transaction validation must be preformed, ensuring
-that none of the values it has read have been updated (line \ref{C05}).
+that none of the values it has read have been updated (line \ref{C14B}).
 In the case of a read only transaction, the transaction
-is aborted and restarted as an update transaction (line \ref{C06}).
+is aborted and restarted as an update transaction (line \ref{C14C}).
 It is restarted as an update transaction so that it has a read set that it can validate
 in case this situation occurs again.
 Finally local variable $\mathit{value}$ is set to be the value
@@ -2065,7 +2066,7 @@ $\sf{begin\_transaction}()$ operation, or before validation on line \ref{H01} th
 
 
 For the $\sf{validate\_by\_value}()$ case we have each location and its corresponding value read so far by the transaction contained
-in the read set (including the current read operation (line \ref{})) before $\mathit{rv}$ is set.
+in the read set (including the current read operation (line \ref{C14})) before $\mathit{rv}$ is set.
 In the $\sf{validate\_by\_value}()$ operation after $\mathit{rv}$ is set, every location in the read set is
 validated.
 This means that when $\mathit{GCV}$ is read and $\mathit{rv}$ is set all of the values are the same as they were when first read.
@@ -2075,7 +2076,7 @@ We will now show that the record at the location currently being accessed by the
 has the same value as when $\mathit{GCV}$ was read in $\sf{begin\_transaction}()$.
 
 \paragraph{NT record} If the object dereferenced on line \ref{C01} of $\sf{transactional\_read}()$ is an NT record then we must have $\mathit{tmp.time} < \mathit{rv}$
-as otherwise a validation would have been called, updating $\mathit{rv}$ (lines \ref{}-\ref{}).
+as otherwise a validation would have been called, updating $\mathit{rv}$ (lines \ref{C14A}-\ref{C14}).
 Now on line \ref{B03} of the $\sf{non\_transactional\_write}()$ operation $\mathit{addr}$ is set to reference the NT record, following this
 $\mathit{GCV}$ is read whose value is then used to update the record's $\mathit{time}$ field.
 As previously stated this value must be smaller then $\mathit{rv}$, and given that the value of $\mathit{rv}$
@@ -2084,13 +2085,13 @@ this NT record before $\mathit{rv}$ was set, and has not changed up to the point
 
 \paragraph{T record} If the object dereferenced on line \ref{C01} of $\sf{transactional\_read}()$ is a T record then we must have $\mathit{tmp.time} \leq \mathit{rv}$ and 
 $\mathit{tmp.status} = $ COMMITTED or $\mathit{tmp.status} = $ ABORTED, otherwise the current read operation would have directed the transaction
-to perform a validation (lines \ref{}-\ref{}).
+to perform a validation (lines \ref{C14A}-\ref{C14}).
 Given this, we just need to show that the T record dereferenced was in memory before $\mathit{GCV}$ was incremented to the value
 read in $\sf{begin\_transaction}$ (i.e. before $\mathit{GCV} = \mathit{rv}$).
 First consider the case where $\mathit{tmp.status} = $ COMMITTED, given that $\mathit{tmp}$ is a T record, it was created
 during a $\sf{try\_to\_commit}$ operation.
 During this operation  the compare and swap on line \ref{DA08} ensures  that $\mathit{tmp}$ is referenced by $\mathit{addr}$ before the process
-increases $\mathit{GCV}$ by performing an increment and fetch (lines \ref{}-\ref{}).
+increases $\mathit{GCV}$ by performing an increment and fetch (line \ref{DA12}).
 Then on line \ref{DA15}, the value returned from the increment and fetch is used to set the $\mathit{time}$ field of each T record
 created by the transaction.
 Given this and that we know $\mathit{tmp.time} \leq \mathit{rv}$, $\mathit{tmp}$ must be referenced by $\mathit{addr}$ before

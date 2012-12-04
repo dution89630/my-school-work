@@ -10,49 +10,49 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 
 
 \bf{State of node $n$} \\
-		\line{BA01} \> $\ms{node}$ the same record with an extra field: \\
-		\line{BA01} \>\> $\ms{rem} \in \{\lit{false}, \lit{true}, \lit{true\_by\_left\_rot}\}$ indicate whether physically deleted,  initially $\lit{false}$ \\
+		\line{TABA01} \> $\ms{node}$ the same record with an extra field: \\
+		\line{TABA01} \>\> $\ms{rem} \in \{\lit{false}, \lit{true}, \lit{true\_by\_left\_rot}\}$ indicate whether physically deleted,  initially $\lit{false}$ \\
 
 
 		
 		
 \bf{operation} $\act{find}(k)_p$ \\
-		\line{BA01} \> $\ms{curr} \gets \ms{root}$; $\ms{next} \gets \ms{root}$ \\
-		\line{BA01} \> \bf{while}$(\lit{true})$ \bf{do} \\
-		\line{BA01} \>\> \bf{while}$(\lit{true})$ \bf{do} \\
-		\line{BA01} \>\>\> $\ms{rem} \gets \lit{false}$; $\ms{parent} \gets \ms{curr}$; $\ms{curr} \gets \ms{next}$ ;$\ms{val} \gets \ms{curr.k}$ \\
+		\line{TABA01} \> $\ms{curr} \gets \ms{root}$; $\ms{next} \gets \ms{root}$ \\
+		\line{TABA01} \> \bf{while}$(\lit{true})$ \bf{do} \\
+		\line{TABA01} \>\> \bf{while}$(\lit{true})$ \bf{do} \\
+		\line{TABA01} \>\>\> $\ms{rem} \gets \lit{false}$; $\ms{parent} \gets \ms{curr}$; $\ms{curr} \gets \ms{next}$ ;$\ms{val} \gets \ms{curr.k}$ \\
 					%\State $\ms{rem} \gets \lit{uread}(\ms{curr.rem})$
-		\line{BA01} \>\>\> \bf{if}$(\ms{val} = \ms{k})$ \label{line:eq-find} \\
-		\line{BA01} \>\>\>\> \bf{then if}$(\neg(\ms{rem} \gets \lit{read}(\ms{curr.rem})))$ {\bf then} $\lit{break}$ \bf{end if} \label{line:break1} \label{line:rem-check1} \\
-		\line{BA01} \>\>\> \bf{end if} \\
-		\line{BA01} \>\>\> \bf{if}$(\ms{val} > k \cup \ms{rem} = \lit{true\_by\_left\_rot})$ \label{line:find-rot-check} \\
-		\line{BA01} \>\>\>\> \bf{then} $\ms{next} \gets \lit{uread}(\ms{curr.r})$ \label{line:next-find1} \\
-		\line{BA01} \>\>\>\> \bf{else} $\ms{next} \gets \lit{uread}(\ms{curr.\ell})$ {\bf end if} \label{line:next-find2} \\
-		\line{BA01} \>\>\> \bf{if}$(\ms{next} = \bot)$ \bf{then} \\
-		\line{BA01} \>\>\>\> \bf{if}$(\neg (\ms{rem} \gets \lit{read}(\ms{curr.rem})))$ \bf{then} \label{line:rem-check2} \\
-		\line{BA01} \>\>\>\>\>\> \bf{if}$(\ms{val} > k)$ \bf{then} $\ms{next} \gets \lit{read}(\ms{curr.r})$ \label{line:null-par-find1} \\
-		\line{BA01} \>\>\>\>\>\>\> \bf{else} $\ms{next} \gets \lit{read}(\ms{curr.\ell})$  \bf{end if} \label{line:null-par-find2} \\
-		\line{BA01} \>\>\>\>\>\> \bf{if}$(\ms{next} = \bot)$ \bf{then} $\lit{break}$ \bf{end if}  \label{line:break2} \label{line:null-find} \\
-		\line{BA01} \>\>\>\>\> \bf{else} \\
-		\line{BA01} \>\>\>\>\>\> \bf{if}$(\ms{val} \leq k)$ \bf{then} $\ms{next} \gets \lit{uread}(\ms{curr.r})$ \label{line:rem-find1} \\
-		\line{BA01} \>\>\>\>\>\>\> \bf{else} $\ms{next} \gets \lit{uread}(\ms{curr.\ell})$ \bf{end if} \label{line:rem-find2} \\
-		\line{BA01} \>\>\>\> \bf{end if} \\
-		\line{BA01} \>\>\> \bf{end if} \\
-		\line{BA01} \>\> \bf{end while} \\
-		\line{BA01} \>\> \bf{if}$(\ms{curr.k} > \ms{parent.k})$ \bf{then} $\ms{tmp} \gets \lit{read}(\ms{parent.r})$\label{line:par-read1} \\
-		\line{BA01} \>\>\> \bf{else} $\ms{tmp} \gets \lit{read}(\ms{parent.\ell})$  \bf{end if} \label{line:par-read2} \\
-		\line{BA01} \>\> \bf{if}$(\ms{curr} = \ms{tmp})$ \bf{then} $\lit{break}$ \label{line:par-check1} \\
-		\line{BA01} \>\>\> \bf{else} $\ms{next} \gets \ms{curr}$; $\ms{curr} \gets \ms{parent}$  {\bf end if} \label{line:par-check2}  \label{line:par-check3} \\
- 		\line{BA01} \> \bf{end while} \\
-		\line{BA01} \> $\sf{return}(\ms{curr})$. \label{line:find-return} \\
+		\line{line:eq-find} \>\>\> \bf{if}$(\ms{val} = \ms{k})$ \\%\label{line:eq-find} \\
+		\line{line:rem-check1} \>\>\>\> \bf{then if}$(\neg(\ms{rem} \gets \lit{read}(\ms{curr.rem})))$ {\bf then} $\lit{break}$ \bf{end if} \\%\label{line:rem-check1} \label{line:break1}  \\
+		\line{TABA01} \>\>\> \bf{end if} \\
+		\line{line:find-rot-check} \>\>\> \bf{if}$(\ms{val} > k \cup \ms{rem} = \lit{true\_by\_left\_rot})$ \\%\label{line:find-rot-check} \\
+		\line{line:next-find1} \>\>\>\> \bf{then} $\ms{next} \gets \lit{uread}(\ms{curr.r})$ \\%\label{line:next-find1} \\
+		\line{line:next-find2} \>\>\>\> \bf{else} $\ms{next} \gets \lit{uread}(\ms{curr.\ell})$ {\bf end if} \\%\label{line:next-find2} \\
+		\line{TABA01} \>\>\> \bf{if}$(\ms{next} = \bot)$ \bf{then} \\
+		\line{line:rem-check2} \>\>\>\> \bf{if}$(\neg (\ms{rem} \gets \lit{read}(\ms{curr.rem})))$ \bf{then}\\% \label{line:rem-check2} \\
+		\line{line:null-par-find1} \>\>\>\>\>\> \bf{if}$(\ms{val} > k)$ \bf{then} $\ms{next} \gets \lit{read}(\ms{curr.r})$ \\%\label{line:null-par-find1} \\
+		\line{line:null-par-find2} \>\>\>\>\>\>\> \bf{else} $\ms{next} \gets \lit{read}(\ms{curr.\ell})$  \bf{end if} \\%\label{line:null-par-find2} \\
+		\line{line:null-find} \>\>\>\>\>\> \bf{if}$(\ms{next} = \bot)$ \bf{then} $\lit{break}$ \bf{end if} \\%\label{line:null-find} \label{line:break2}  \\
+		\line{TABA01} \>\>\>\>\> \bf{else} \\
+		\line{line:rem-find1} \>\>\>\>\>\> \bf{if}$(\ms{val} \leq k)$ \bf{then} $\ms{next} \gets \lit{uread}(\ms{curr.r})$ \\%\label{line:rem-find1} \\
+		\line{line:rem-find2} \>\>\>\>\>\>\> \bf{else} $\ms{next} \gets \lit{uread}(\ms{curr.\ell})$ \bf{end if} \\%\label{line:rem-find2} \\
+		\line{TABA01} \>\>\>\> \bf{end if} \\
+		\line{TABA01} \>\>\> \bf{end if} \\
+		\line{TABA01} \>\> \bf{end while} \\
+		\line{line:par-read1} \>\> \bf{if}$(\ms{curr.k} > \ms{parent.k})$ \bf{then} $\ms{tmp} \gets \lit{read}(\ms{parent.r})$ \\%\label{line:par-read1} \\
+		\line{line:par-read2} \>\>\> \bf{else} $\ms{tmp} \gets \lit{read}(\ms{parent.\ell})$  \bf{end if} \\%\label{line:par-read2} \\
+		\line{line:par-check1} \>\> \bf{if}$(\ms{curr} = \ms{tmp})$ \bf{then} $\lit{break}$ \\%\label{line:par-check1} \\
+		\line{line:par-check2} \>\>\> \bf{else} $\ms{next} \gets \ms{curr}$; $\ms{curr} \gets \ms{parent}$  {\bf end if} \\%\label{line:par-check2}  \label{line:par-check3} \\
+ 		\line{TABA01} \> \bf{end while} \\
+		\line{line:find-return} \> $\sf{return}(\ms{curr})$. \\%\label{line:find-return} \\
 
 		
 \end{tabbing}
 \normalsize
 \end{minipage}
 }
-\caption{Algorithm for the operations of the protocol}
-\label{fig:ttc-protocol}
+\caption{Find procedure for the optimized tree}
+\label{fig:tree-opt-find}
 }
 \end{figure}
 
@@ -70,42 +70,42 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 
 		
 \bf{operation} $\act{remove}(\ms{parent}, \ms{left-child})_p$ \\
-		\line{BA01} \> $\lit{begin\_transaction}()$ \\
-		\line{BA01} \> \bf{if}$(\lit{read}(\ms{parent.rem}))$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \label{line:rem-par-rem} \\
-		\line{BA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
-		\line{BA01} \>\> \bf{else} $\ms{n} \gets \lit{read}(\ms{parent.r})$ \bf{end if} \\
-		\line{BA01} \> \bf{if}$(\ms{n = \bot} \vee \neg\lit{read}(\ms{n.deleted}))$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\
-		\line{BA01} \> \bf{if}$((\ms{child} \gets \lit{read}(\ms{n.\ell})) \neq \bot)$ \label{line:rem-start} \\
-		\line{BA01} \>\> \bf{then if}$(\lit{read}(\ms{n.r}) \neq \bot)$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\
-		\line{BA01} \>\> \bf{else} $\ms{child} \gets \lit{read}(\ms{n.r})$ \bf{end if} \label{line:rem-mid} \\
-		\line{BA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\lit{write}(\ms{parent.\ell}, \ms{child})$ \label{line:rem-write} \\
-		\line{BA01} \>\> \bf{else} $\lit{write}(\ms{parent.r}, \ms{child})$ \bf{end if} \label{line:rem-end} \\
-		\line{BA01} \> $\lit{write}(\ms{n.\ell}, \ms{parent})$; $\lit{write}(\ms{n.r}, \ms{parent})$; $\lit{write}(\ms{n.rem}, \lit{true})$  \label{line:child-par-rem1} \label{line:child-par-rem2} \label{line:rem-rem} \\
-		\line{BA01} \> $\act{update-balance-values()}$ \label{line:u-b-v3} \\
-		\line{BA01} \> $\lit{try\_to\_commit}()$ \\
-		\line{BA01} \> $\sf{return}(\lit{true})$. \\
+		\line{TABA01} \> $\lit{begin\_transaction}()$ \\
+		\line{line:rem-par-rem} \> \bf{if}$(\lit{read}(\ms{parent.rem}))$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\%\label{line:rem-par-rem} \\
+		\line{TABA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
+		\line{TABA01} \>\> \bf{else} $\ms{n} \gets \lit{read}(\ms{parent.r})$ \bf{end if} \\
+		\line{TABA01} \> \bf{if}$(\ms{n = \bot} \vee \neg\lit{read}(\ms{n.deleted}))$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\
+		\line{line:rem-start} \> \bf{if}$((\ms{child} \gets \lit{read}(\ms{n.\ell})) \neq \bot)$ \\%\label{line:rem-start} \\
+		\line{TABA01} \>\> \bf{then if}$(\lit{read}(\ms{n.r}) \neq \bot)$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\
+		\line{line:rem-mid} \>\> \bf{else} $\ms{child} \gets \lit{read}(\ms{n.r})$ \bf{end if} \\%\label{line:rem-mid} \\
+		\line{line:rem-write} \> \bf{if}$(\ms{left-child})$ \bf{then} $\lit{write}(\ms{parent.\ell}, \ms{child})$ \\%\label{line:rem-write} \\
+		\line{line:rem-end} \>\> \bf{else} $\lit{write}(\ms{parent.r}, \ms{child})$ \bf{end if} \\%\label{line:rem-end} \\
+		\line{line:child-par-rem1} \> $\lit{write}(\ms{n.\ell}, \ms{parent})$; $\lit{write}(\ms{n.r}, \ms{parent})$; $\lit{write}(\ms{n.rem}, \lit{true})$ \\% \label{line:child-par-rem1} \label{line:child-par-rem2} \label{line:rem-rem} \\
+		\line{line:u-b-v3} \> $\act{update-balance-values()}$ \\%\label{line:u-b-v3} \\
+		\line{TABA01} \> $\lit{try\_to\_commit}()$ \\
+		\line{TABA01} \> $\sf{return}(\lit{true})$. \\
 
 		
 		
 		
 \bf{operation} $\act{right\_rotate}(\ms{parent}, \ms{left-child})_p$ \\
-		\line{BA01} \> $\lit{begin\_transaction}()$ \\
-		\line{BA01} \> \bf{if}$(\lit{read}(\ms{parent.rem}))$ \bf{then} $\sf{return}(\lit{false})$ \bf{end if} \label{line:rot-par-rem} \\
-		\line{BA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
-		\line{BA01} \>\> \bf{else} $\ms{n} \gets \lit{read}(\ms{parent.r})$ {\bf end if} \\
-		\line{BA01} \> \bf{if}$(\ms{n = \bot})$ \bf{then} $\sf{return}(\lit{false})$ \bf{end if} \\
-		\line{BA01} \> $\ms{\ell} \gets \lit{read}(\ms{n.\ell})$ \\
-		\line{BA01} \> \bf{if}$(\ms{\ell = \bot})$ \bf{then} $\sf{return}(\lit{false})$ \bf{end if} \label{line:l-child-rot} \\
-		\line{BA01} \> $\ms{\ell{}r} \gets \lit{read}(\ms{\ell.r})$; $\ms{r} \gets \lit{read}(\ms{n.r})$ \\
-		\line{BA01} \> \sf{allocate a new node}\label{line:new-node-ret} \\
-		\line{BA01} \> $\ms{new.k} \gets \ms{n.k}$; $\ms{new.\ell} \gets \ms{\ell{}r}$; $\ms{new.r} \gets \ms{r}$ \label{line:rot-path1} \label{line:rot-path2} \\
-		\line{BA01} \> $\lit{write}(\ms{\ell.r}, \ms{new})$; $\lit{write}(\ms{n.rem}, \lit{true})$ \label{line:rot-path3} \label{line:rem-rot} \\
-		\line{BA01} \> \sf{In the case of a left rotate set n.rem to true\_by\_left\_rot} \\
-		\line{BA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\lit{write}(\ms{parent.\ell}, \ms{\ell})$ \label{line:rot-write} \\
-		\line{BA01} \> \bf{else} $\lit{write}(\ms{parent.r}, \ms{\ell})$ \bf{end if} \label{line:rot-end} \\
-		\line{BA01} \> $\act{update-balance-values()}$ \label{line:u-b-v4} \\
-		\line{BA01} \> $\lit{try\_to\_commit}()$ \\
-		\line{BA01} \> $\sf{return}(\lit{true})$. \\
+		\line{TABA01} \> $\lit{begin\_transaction}()$ \\
+		\line{line:rot-par-rem} \> \bf{if}$(\lit{read}(\ms{parent.rem}))$ \bf{then} $\sf{return}(\lit{false})$ \bf{end if}\\% \label{line:rot-par-rem} \\
+		\line{TABA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
+		\line{TABA01} \>\> \bf{else} $\ms{n} \gets \lit{read}(\ms{parent.r})$ {\bf end if} \\
+		\line{TABA01} \> \bf{if}$(\ms{n = \bot})$ \bf{then} $\sf{return}(\lit{false})$ \bf{end if} \\
+		\line{TABA01} \> $\ms{\ell} \gets \lit{read}(\ms{n.\ell})$ \\
+		\line{line:l-child-rot} \> \bf{if}$(\ms{\ell = \bot})$ \bf{then} $\sf{return}(\lit{false})$ \bf{end if} \\%\label{line:l-child-rot} \\
+		\line{TABA01} \> $\ms{\ell{}r} \gets \lit{read}(\ms{\ell.r})$; $\ms{r} \gets \lit{read}(\ms{n.r})$ \\
+		\line{line:new-node-ret} \> \sf{allocate a new node} \\%\label{line:new-node-ret} \\
+		\line{line:rot-path1} \> $\ms{new.k} \gets \ms{n.k}$; $\ms{new.\ell} \gets \ms{\ell{}r}$; $\ms{new.r} \gets \ms{r}$ \\%\label{line:rot-path1} \label{line:rot-path2} \\
+		\line{line:rot-path3} \> $\lit{write}(\ms{\ell.r}, \ms{new})$; $\lit{write}(\ms{n.rem}, \lit{true})$ \\%\label{line:rot-path3} \label{line:rem-rot} \\
+		\line{TABA01} \> \sf{In the case of a left rotate set n.rem to true\_by\_left\_rot} \\
+		\line{line:rot-write} \> \bf{if}$(\ms{left-child})$ \bf{then} $\lit{write}(\ms{parent.\ell}, \ms{\ell})$ \\%\label{line:rot-write} \\
+		\line{line:rot-end} \> \bf{else} $\lit{write}(\ms{parent.r}, \ms{\ell})$ \bf{end if} \\%\label{line:rot-end} \\
+		\line{line:u-b-v4} \> $\act{update-balance-values()}$ \\%\label{line:u-b-v4} \\
+		\line{TABA01} \> $\lit{try\_to\_commit}()$ \\
+		\line{TABA01} \> $\sf{return}(\lit{true})$. \\
 		
 		
 
@@ -113,7 +113,7 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 \normalsize
 \end{minipage}
 }
-\caption{Algorithm for the operations of the protocol}
-\label{fig:ttc-protocol}
+\caption{Maintenance operations for the optimized tree}
+\label{fig:tree-opt-maintenance}
 }
 \end{figure}

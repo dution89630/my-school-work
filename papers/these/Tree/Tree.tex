@@ -430,7 +430,7 @@ If the flag is $\lit{false}$ the operation returns $\lit{true}$, otherwise it re
 If the key of the returned node is not equal to the key being searched for then a node with the key being searched for is not in the tree and $\lit{false}$ is returned (lines~\ref{sline:cont-neq} and \ref{sline:cont-return}).
 
 \paragraph{Insertion} The $\act{insert}(k,v)$ operation uses the $\act{find}$ procedure that returns a node (line~\ref{sline:find-ins}).
-If a node is found with the same $key$ as the one being searched for then the $\ms{deleted}$ flag is checked using a transactional read (line~\ref{sline:del-ins}).
+If a node is found with the same $key$ as the one being searched for then the $\ms{deleted}$ flag is checked using a transactional read (line~\ref{sline:del-false-ins}).
 If the flag is $\lit{false}$ then the tree already contains $\ms{k}$ and $\lit{false}$ is returned (lines~\ref{sline:false-ins} and~\ref{sline:insert-return}).
 If the flag is $\lit{true}$ then the flag is updated to $\lit{false}$ (line \ref{sline:del-false-ins}) and $\lit{true}$ is returned.
 Otherwise if the $key$ of the node returned is not equal to $\ms{k}$ then a new node is allocated and added as the
@@ -438,7 +438,7 @@ appropriate child of the node returned by the $\act{find}$ operation (lines \ref
 Notice that only in this final case does the operation modify the structure of the tree.
 
 \paragraph{Logical deletion} The $\act{delete}$ uses also the $\act{find}$ procedure in order to locate the node to be deleted (line \ref{sline:del-find}).
-A transactional read is then performed on the $\ms{deleted}$ flag (line \ref{sline:del-del}).
+A transactional read is then performed on the $\ms{deleted}$ flag (line \ref{sline:del-false}).
 If $\ms{deleted}$ is $\lit{true}$ then the operation returns $\lit{false}$ (lines~\ref{sline:del-false} and \ref{sline:del-return}), if $\ms{deleted}$
 is $\lit{false}$ it is set to $\lit{true}$ (line \ref{sline:del-set}) and the operation returns $\lit{true}$.
 If the $\act{find}$ procedure does not return a node with the same $key$ as the one being searched for then $\lit{false}$ is returned (line \ref{sline:del-false2} and \ref{sline:del-return}).
@@ -546,7 +546,7 @@ A rotation at the root will only conflict with a $\act{contains}$/$\act{insert}$
 Figure~\ref{sfig:tree3} displays the result of the new rotation that is slightly different than the previous one.
 Instead of modifying $j$ directly, $j$ is unlinked from its parent (effectively removing it from the tree, lines~\ref{line:rot-write}--\ref{line:rot-end})
 and a new node $j'$ is created (line \ref{line:new-node-ret}), taking $j$'s place in the tree (lines~\ref{line:rot-write}--\ref{line:rot-end}).
-During the rotation $j$ has a removed flag that is set to $\lit{true}$ (line~\ref{line:rem-rot}), letting concurrent operations know that $j$ is no longer in the tree but its deallocation is postponed. 
+During the rotation $j$ has a removed flag that is set to $\lit{true}$ (line~\ref{line:rot-path3}), letting concurrent operations know that $j$ is no longer in the tree but its deallocation is postponed. 
 Now consider a concurrent operation that is traversing the tree and is preempted on $j$ during the rotation.
 If a normal rotation is performed the concurrent operation will either have to backtrack or the transaction would have to abort (as the node it is searching for might be in the subtree $A$).
 Using the new rotation, the preempted operation will still have a path to $A$.
@@ -570,12 +570,12 @@ Next, if the node is a leaf, a transactional read must be performed on the appro
 the transaction (lines \ref{line:null-par-find1}--\ref{line:null-par-find2}).
 If this read does not return $\bot$ then the operation continues traversing the tree.
 Otherwise the operation then leaves the nested while loop 
-(lines \ref{line:break1} and \ref{line:break2}), but the $\act{find}$ operation does not return yet.
+(lines \ref{line:rem-check1} and \ref{line:null-find}), but the $\act{find}$ operation does not return yet.
 
 One additional transactional read must be performed to ensure safety.
 This is the read of the parent's pointer to the node about to be returned (lines \ref{line:par-read1}--\ref{line:par-read2}).
 If this read does not return the same node as found previously, the $\act{find}$ operation continues parsing the tree 
-starting from the parent (lines \ref{line:par-check2}--\ref{line:par-check3}).
+starting from the parent (line \ref{line:par-check2}).
 Otherwise the process leaves the while loop (line~\ref{line:par-check1}) and the node is returned (line~\ref{line:find-return}).
 By performing a transactional read on the parent's pointer we ensure the STM system performs a validation before continuing.
 
@@ -591,9 +591,9 @@ The $\act{contains}$/$\act{insert}$/$\act{delete}$ operations themselves are ide
 The $\act{remove}$ operation requires some modification to ensure safety when using $\act{uread}$s during the traversal phase.
 Normally if a $\act{contains}$/$\act{insert}$/$\act{delete}$ operation is preempted on a node that is removed then that operation will have to backtrack or abort the transaction.
 This can be avoided as follows.
-When a node is removed, its left and right child pointers are set to point to its previous parent (lines \ref{line:child-par-rem1}--\ref{line:child-par-rem2}).
+When a node is removed, its left and right child pointers are set to point to its previous parent (line \ref{line:child-par-rem1}).%--\ref{line:child-par-rem2}).
 This provides a preempted operation with a path back to the tree.
-The removed node also has its $\ms{removed}$ flag set to $\lit{true}$ (line \ref{line:rem-rem}) 
+The removed node also has its $\ms{removed}$ flag set to $\lit{true}$ (line \ref{line:child-par-rem1}) 
 letting preempted operations know it is no longer in the tree (the node is left to be freed later by garbage collection).
 
 \subsection{Garbage collection}\label{ssec:gc}
@@ -701,6 +701,9 @@ For transaction that commits a failed $\act{insert}$ operation of key $k$, befor
 For transaction that commits a failed $\act{contains}$ operation of key $k$, before and after the commit $k$ was not in the set.
 
 
+
+\line{test}
+
 %\subsection{Lemmas and Theorems}
 %---------------------------
 \begin{lemma}
@@ -713,7 +716,7 @@ Assume by contradiction that a node has more then one parent with $\ms{removed} 
 There are three operation where a node can be given a new parent.
 First during the $\act{insert}$ operations on lines~\ref{sline:start-ins}--\ref{sline:end-ins}, but this is a new node so before this line it has no parent.
 Second during the $\act{remove}$ operation on lines~\ref{line:rem-write}--\ref{line:rem-end}, but by line~\ref{line:rem-par-rem} the other parent has $\ms{removed}$ set to $\lit{true}$.
-Third during the $\ms{right-rotate}$ operation the node $l$ gets a new parent on lines~\ref{line:rot-write}--\ref{line:rot-end}, but by line \ref{line:rem-rot} the other parent has $\ms{removed}$ set to $\lit{true}$.
+Third during the $\ms{right-rotate}$ operation the node $l$ gets a new parent on lines~\ref{line:rot-write}--\ref{line:rot-end}, but by line \ref{line:rot-path3} the other parent has $\ms{removed}$ set to $\lit{true}$.
 Also during the $\act{right\_rotate}$ operation the node $n2$ gets $l$ as a parent (line~\ref{line:rot-path3}), but since it is a new node it has no other parent.
 (This holds for the $\act{left\_rotate}$ operation by symmetry)
 Given this, a node will have at most one parent with $\ms{removed}=\lit{false}$.
@@ -745,7 +748,7 @@ Otherwise this is a $\act{rotate}$ operation.
 First consider right rotations.
 By induction we know that node $n$ only has paths to nodes with $\ms{removed}=\lit{false}$.
 After the rotation node $l$ points to nodes that had paths from $n$ before the rotation as well as $n2$ (line~\ref{line:rot-path3}) which has $\ms{removed}=\lit{false}$.
-$n2$ points to nodes that had paths from $n$ before the rotation (lines~\ref{line:rot-path1}--\ref{line:rot-path2}).
+$n2$ points to nodes that had paths from $n$ before the rotation (line~\ref{line:rot-path1}).%--\ref{line:rot-path2}).
 By symmetry this holds for left rotations.
 %\renewcommand{\toto}{lemma:false-rem}
 \end{proof}
@@ -758,7 +761,7 @@ A node with $\ms{removed}=\lit{false}$ has at least one parent with $\ms{removed
 \begin{proof}
 Assume by contradiction that there is no parent with $\ms{removed}=\lit{false}$.
 When a node is first added to the tree it has a parent with $\ms{removed}=\lit{false}$ (line~\ref{line:rem-check2} of the $\act{find}$ operation).
-The only operations that removes links from nodes are the $\act{remove}$ (line \ref{line:rem-rem}) and $\act{rotate}$ (line \ref{line:rem-rot}) operations,
+The only operations that removes links from nodes are the $\act{remove}$ (line \ref{line:child-par-rem1}) and $\act{rotate}$ (line \ref{line:rot-path3}) operations,
 but in each case when a link is removed, a new link from a different node with $\ms{removed}=\lit{false}$ is added
 (lines~\ref{line:rem-write}--\ref{line:rem-end} of $\act{remove}$ and \ref{line:rot-write}--\ref{line:rot-end} of $\act{rotate}$).
 %\renewcommand{\toto}{lemma:false-rem-par}
@@ -877,7 +880,7 @@ From a node with $\ms{removed}=\lit{true}$ there is always a path to some node w
 \begin{proof}
 There are two places where a node can be set to $\ms{removed}=\lit{true}$.
 First during the $\act{remove}$ operation, in this case the node that is removed has both of the nodes child pointers are set to a node
-with $\ms{removed}=\lit{false}$ (lines~\ref{line:child-par-rem1}--\ref{line:child-par-rem2}).
+with $\ms{removed}=\lit{false}$ (line~\ref{line:child-par-rem1}).%--\ref{line:child-par-rem2}).
 Second during the $\act{rotate}$ operation, in this case the node that is removed does not have its child pointers changed.
 By line~\ref{line:l-child-rot} $n$ must have at least $1$ child and using lemma \ref{lemma:false-rem} this child must have $\ms{removed}=\lit{false}$.
 
@@ -902,7 +905,7 @@ it is clear that there is a path from this node to a leaf node.
 
 Now consider a node with $\ms{removed}=\lit{true}$.
 There are two places where a node's $\ms{removed}$ flag can be set to $\lit{true}$.
-It can either be set in the $\act{remove}$ operation, but in this case the node's left and right pointers  are set to a node with $\ms{removed}=\lit{false}$ (lines~\ref{line:child-par-rem1}--\ref{line:child-par-rem2}).
+It can either be set in the $\act{remove}$ operation, but in this case the node's left and right pointers  are set to a node with $\ms{removed}=\lit{false}$ (line~\ref{line:child-par-rem1}).%--\ref{line:child-par-rem2}).
 
 Or it can be set in the $\act{rotation}$ operation, first notice that in this case the node's left and right pointers are not changed.
 Then before the rotation the node has $\ms{removed}=\lit{false}$ and therefore by lemma~\ref{lemma:false-rem} the (node's left and right) pointers will point
@@ -962,8 +965,9 @@ Assume that the node $n$ (where $n$ is the node to be removed) has key $k$.
 Assume that $n$ has a parent node $p$ with range $[a, b]$ with key $j$.
 This leaves $n$ with range $[a, k]$ if $n$ is the left child (or $[k, b]$ if $n$ is the right child, the proof of this case will follow by symmetry).
 
-After the removal $\ms{removed}$ will be set to $\lit{true}$ (line~\ref{line:rem-rem} of $\act{remove}$) for $n$ and both its child pointers will point
-to $p$ (lines~\ref{line:child-par-rem1}-\ref{line:child-par-rem2} of $\act{remove}$).
+After the removal $\ms{removed}$ will be set to $\lit{true}$ (line~\ref{line:child-par-rem1} of $\act{remove}$) for $n$ and both its child pointers will point
+to $p$ (line~\ref{line:child-par-rem1}%-\ref{line:child-par-rem2}
+of $\act{remove}$).
 Node $p$ will still have a range of $[a, b]$ and will be reachable from $n$, which completes the proof.
 %\renewcommand{\toto}{lemma:remove-range}
 \end{proof}
@@ -1050,7 +1054,7 @@ or it returns a node in the tree that has $\bot$ for the child where $k$ must be
 
 First consider the case where a node with key $k$ is returned.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
-Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-ins}) ensuring that this value will remain the same throughout the transaction.
+Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false-ins}) ensuring that this value will remain the same throughout the transaction.
 If the read on $\ms{deleted}$ returns $\lit{false}$ then the $\act{insert}$ operation can return $\lit{false}$ because the node exists in the set.
 % The transactional reads on $\ms{removed}$ and $\ms{deleted}$ ensure that $k$ exists in the set for the duration of the transaction.
 Otherwise if the read on $\ms{deleted}$ returns $\lit{true}$ then a transaction performs a transactional write setting $\ms{deleted}$ to $\lit{false}$ (line \ref{sline:del-false-ins}).
@@ -1104,7 +1108,7 @@ A $\act{delete}$ operation is valid.
 The $\act{delete}$ operation is almost the same as the $\act{contains}$ operation.
 The only difference is in the case where a node with key $k$ is returned from the $\act{find}$ operation.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
-Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-del}) ensuring that this value will remain the same throughout the transaction.
+Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false}) ensuring that this value will remain the same throughout the transaction.
 If the read on $\ms{deleted}$ returns $\lit{true}$ then the $\act{delete}$ operation can return $\lit{false}$ because the node does not exist in the set.
 Otherwise $k$ is in the set and a transactional write is performed setting the nodes $\ms{deleted}$ variable to $\lit{true}$.
 Since $\ms{removed}$ is $\lit{false}$ this node is part of the valid tree so it is the only place where key $k$ can be so by setting
