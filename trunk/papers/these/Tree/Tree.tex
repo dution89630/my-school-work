@@ -965,7 +965,7 @@ Node $\ms{n}$ still has the same right child who still has the same range, $[k, 
 \label{lemma:left-rotation-range}
 A node $n$ with key $k$ that has $\ms{removed}=\lit{true\_by\_left\_rot}$ from a $left\_rotation$ operation has,
 for its \textbf{right} child, a path to a range of keys at least as large as
-$\ns{n}$ did before the rotation (including the new node $\ms{new}$ with key $\ms{k}$), and has, for its \textbf{left} child
+$\ms{n}$ did before the rotation (including the new node $\ms{new}$ with key $\ms{k}$), and has, for its \textbf{left} child
 either a path to a range of keys at least as large as the left child of $\ms{n}$ had before the rotation, or $\bot$.
 \end{lemma}
 \begin{proof}
@@ -1039,26 +1039,27 @@ all nodes with $\ms{removed}=\lit{false}$ (lemma~\ref{lemma:false-rem-root}).
 \item Now the induction step.
 Assume that after $n-1$ nodes have been traversed the operation has a path to a range of keys that includes the key $k$ that is being searched for.
 If the $n-1^{th}$ node is the correct location
-meaning that a non-removed node with key $\ms{k}$ (line \ref{}) or a leaf has been reached (line \ref{})
+meaning that a non-removed node with key $\ms{k}$ (line \ref{line:rem-check1}) or a leaf has been reached (line \ref{line:null-find})
 the the proof is done, otherwise the operation must travel to the $n^{th}$ node.
 Now it must be shown that the after the operation travels to the $n^{th}$ node it is still on the correct path.
 %
 There are $2$ possibilities.
 \begin{enumerate}
 \item The operation can move from a node with $\ms{removed}=\lit{false}$ (at the time of the load of the child pointer, lines~\ref{line:next-find1}--\ref{line:next-find2}).
-By lemma~\ref{lemma:false-rem} the child must also have $\ms{removed}=\lit{false}$ (at the time of the load of the child pointer),
+By lemma~\ref{lemma:false-rem} the child must also have $\ms{removed}=\lit{false}$ (also at the time of the load of the child pointer),
 in this case the traversal is performed on a valid binary tree (lemma~\ref{lemma:binary-tree}).
-Since the choice of the the child is based on a standard tree traversal the operation must still be on the correct path.
+Since the choice of the the child is based on a standard tree traversal (lines \ref{line:find-rot-check}-\ref{line:next-find2}) the operation must still be on the correct path.
 
 \item The operation can move from a node with $\ms{removed}=\lit{true}$.
-By the assumption given by induction the $n-1^{th}$ node has a path to the range of keys that includes $k$.
+By the assumption given by induction the $n-1^{th}$ node has a path to the range of keys that includes $\ms{k}$.
 From the $n-1^{th}$ node either the right or left child must be chosen.
 The node is chosen based on a standard tree traversal with one exception:
-If the node has the same key $k$ that is being searched for and the node was removed by a left rotation then the right child is chosen (lines~\ref{line:find-rot-check}--\ref{line:next-find1}).
-With this exception then in all cases if the node is not $\bot$ then by lemma \ref{lemma:range} it must have a path to the same range as when it has $\ms{removed}=\lit{false}$, which includes $k$
-(the $n-1^{th}$ node's range includes $k$ so the $n^{th}$ node's range must also).
+If the node has the same key $\ms{k}$ that is being searched for and the node was removed by a left rotation
+($\ms{removed}=\lit{true\_by\_left\_rot}$) then the right child is chosen (lines~\ref{line:find-rot-check}--\ref{line:next-find1}).
+With this exception then in all cases if the node is not $\bot$ then by lemma \ref{lemma:range} it must have a path to the same range as when it has $\ms{removed}=\lit{false}$, which includes $\ms{k}$
+(the $n-1^{th}$ node's range includes $\ms{k}$ so the $n^{th}$ node's range must also).
 Otherwise if one child is $\bot$ then the other child is chosen (lines~\ref{line:rem-find1}--\ref{line:rem-find2}), which must have a path to a range at
-least as large as the $n-1^{th}$ node by lemma~\ref{lemma:range} (which includes $k$).
+least as large as the $n-1^{th}$ node by lemma~\ref{lemma:range} (which includes $\ms{k}$).
 \end{enumerate}
 \end{itemize}
 %\renewcommand{\toto}{lemma:find}
@@ -1066,56 +1067,57 @@ least as large as the $n-1^{th}$ node by lemma~\ref{lemma:range} (which includes
 
 \begin{theorem}
 \label{theorem:insert-valid2}
-An $\act{insert}$ operation is valid.
+An $\act{insert}$ operation is linearizable.
 \end{theorem}
 \begin{proof}
 The $\act{insert}$ operation starts by performing a $\act{find}$ operation (line \ref{sline:find-ins}).
-From lemma \ref{lemma:find} we know that the $\act{find}$ operation will return the correct place.
-There are two possibilities, either the $\act{find}$ operation returns a node in the tree with key $k$ (line \ref{line:eq-find}),
-or it returns a node in the tree that has $\bot$ for the child where $k$ must be inserted (line \ref{line:null-find}).
+From lemma \ref{lemma:find} we know that the $\act{find}$ operation will return the correct location in the tree for key $\ms{k}$.
+There are two possibilities, either the $\act{find}$ operation returns a node in the tree with key $\ms{k}$ (line \ref{line:eq-find}),
+or it returns a node in the tree that has $\bot$ for the child where $\ms{k}$ must be inserted (line \ref{line:null-find}).
 
-First consider the case where a node with key $k$ is returned.
+First consider the case where a node with key $\ms{k}$ is returned.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
 Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false-ins}) ensuring that this value will remain the same throughout the transaction.
 If the read on $\ms{deleted}$ returns $\lit{false}$ then the $\act{insert}$ operation can return $\lit{false}$ because the node exists in the set.
 % The transactional reads on $\ms{removed}$ and $\ms{deleted}$ ensure that $k$ exists in the set for the duration of the transaction.
 Otherwise if the read on $\ms{deleted}$ returns $\lit{true}$ then a transaction performs a transactional write setting $\ms{deleted}$ to $\lit{false}$ (line \ref{sline:del-false-ins}).
-The transactional read on $\ms{deleted}$ ensures that $k$ is not in the set before the transaction commits.
-The transactional write on $\ms{deleted}$ ensures that $k$ is in the set after the transaction commits.
+The transactional read on $\ms{deleted}$ ensures that $\ms{k}$ is not in the set before the transaction commits.
+The transactional write on $\ms{deleted}$ ensures that $\ms{k}$ is in the set after the transaction commits.
 
-Second consider the case where a node with $\ms{key} \neq k$ is returned.
+Second consider the case where a node with $\ms{key} \neq \ms{k}$ is returned.
 On lines~\ref{line:null-par-find1}--\ref{line:null-par-find2} of the $\act{find}$ operation a transactional read has been done on the child pointer of this node, returning $\bot$, which must be valid throughout the transaction.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check2} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
-By lemma~\ref{lemma:binary-tree} this node belongs to a correct binary tree, this along with lemma~\ref{lemma:find} ensures that the child of this node is the only place where a node with key $k$ could exist
-(and since the value of the child pointer of $\bot$ a node with key $k$ is not in the tree).
-A new node with key $k$ is created and then added to the tree using a transactional write to the child pointer (lines~\ref{sline:start-ins}--\ref{sline:end-ins}).
-The $\ms{removed}$ and $\ms{deleted}$ fields of a newly created node can only be $\lit{false}$ so when the transaction commits the new node will be in the tree and $k$ will be in the set.
+By lemma~\ref{lemma:binary-tree} this node belongs to a correct binary tree, this along with
+lemma~\ref{lemma:find} ensures that the child of this node is the only valid location in the tree where a node with key $\ms{k}$ could exist
+(and since the value of the child pointer of $\bot$ a node with key $\ms{k}$ is not in the tree).
+A new node with key $\ms{k}$ is created and then added to the tree using a transactional write to the child pointer (lines~\ref{sline:start-ins}--\ref{sline:end-ins}).
+The $\ms{removed}$ and $\ms{deleted}$ fields of a newly created node can only be $\lit{false}$ so when the transaction commits the new node will be in the tree and $\ms{k}$ will be in the set.
 %\renewcommand{\toto}{lemma:insert-valid2}
 \end{proof}
 
 
 \begin{theorem}
 \label{theorem:contains-valid}
-A $\act{contains}$ operation is valid.
+A $\act{contains}$ operation is linearizable.
 \end{theorem}
 \begin{proof}
 The $\act{contains}$ operation starts by performing a $\act{find}$ operation (line \ref{sline:cont-find}).
-From lemma~\ref{lemma:find} we know that the $\act{find}$ operation will return the correct place.
-There are two possibilities, either the $\act{find}$ operation returns a node in the tree with key $k$ (line \ref{line:eq-find}),
-or it returns a node in the tree that has $\bot$ for the child where $k$ could exist (line \ref{line:rem-check2}).
+From lemma~\ref{lemma:find} we know that the $\act{find}$ operation will return the correct location in the tree for key $\ms{k}$.
+There are two possibilities, either the $\act{find}$ operation returns a node in the tree with key $\ms{k}$ (line \ref{line:eq-find}),
+or it returns a node in the tree that has $\bot$ for the child where $\ms{k}$ would exist (line \ref{line:rem-check2}).
 
-First consider the case where a node with key $k$ is returned.
+First consider the case where a node with key $\ms{k}$ is returned.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
 Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-cont}) ensuring that this value will remain the same throughout the transaction.
 If the read on $\ms{deleted}$ returns $\lit{false}$ then the $\ms{contains}$ operation can return $\lit{true}$ because the node exists in the set
 otherwise $\lit{false}$ can be returned because the node does not exist in the set.
 
-Second consider the case where a node with $\ms{key} \neq k$ is returned.
+Second consider the case where a node with $\ms{key} \neq \ms{k}$ is returned.
 On lines~\ref{line:null-par-find1}--\ref{line:null-par-find2} of the $\act{find}$ operation a transactional read has been done on the child pointer of this node, returning $\bot$, and due to the transactional read the pointer must remain as $\bot$
 throughout the transaction.
 The transactional read on $\ms{removed}$ (line~\ref{line:rem-check2} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
-By lemma~\ref{lemma:binary-tree} this node belongs to a correct binary tree, this along with lemma~\ref{lemma:find} ensures that the child of this node is the only place where a node with key $k$ could exist
-(and since the value of the child pointer is $\bot$ a node with key $k$ is not in the tree).
+By lemma~\ref{lemma:binary-tree} this node belongs to a correct binary tree, this along with lemma~\ref{lemma:find} ensures that the child of this node is the only place where a node with key $\ms{k}$ could exist
+(and since the value of the child pointer is $\bot$ a node with key $\ms{k}$ is not in the tree).
 The $\act{contains}$ operation can then return $\lit{false}$.
 %\renewcommand{\toto}{lemma:contains-valid}
 \end{proof}
@@ -1124,19 +1126,78 @@ The $\act{contains}$ operation can then return $\lit{false}$.
 
 \begin{theorem}
 \label{theorem:delete-valid}
-A $\act{delete}$ operation is valid.
+A $\act{delete}$ operation is linearizable.
 \end{theorem}
 \begin{proof}
 The $\act{delete}$ operation is almost the same as the $\act{contains}$ operation.
-The only difference is in the case where a node with key $k$ is returned from the $\act{find}$ operation.
+The only difference is in the case where a node with key $\ms{k}$ is returned from the $\act{find}$ operation.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
 Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false}) ensuring that this value will remain the same throughout the transaction.
 If the read on $\ms{deleted}$ returns $\lit{true}$ then the $\act{delete}$ operation can return $\lit{false}$ because the node does not exist in the set.
-Otherwise $k$ is in the set and a transactional write is performed setting the nodes $\ms{deleted}$ variable to $\lit{true}$.
-Since $\ms{removed}$ is $\lit{false}$ this node is part of the valid tree so it is the only place where key $k$ can be so by setting
-$\ms{deleted}$ to $\lit{true}$ $k$ must not be in the set.
+Otherwise $\ms{k}$ is in the set and a transactional write is performed setting the nodes $\ms{deleted}$ variable to $\lit{true}$.
+Since $\ms{removed}$ is $\lit{false}$ this node is part of the valid tree (lemma \ref{lemma:binary-tree}) so it is the only place where key $\ms{k}$ can be, then by setting
+$\ms{deleted}$ to $\lit{true}$, $\ms{k}$ is no longer in the set after the transaction commits.
 %\renewcommand{\toto}{lemma:delete-valid}
 \end{proof}
+
+
+
+
+
+
+\section{Rotation Cost}
+
+\input{Tree/alg/maint.tex}
+
+As previously mentioned we use a method for local rotations introduced in \ref{IRISAppr}.
+This method works by propagating local estimated balance information from a child to a parent,
+performing rotations based on what is observed.
+This method only requires that a node knows when it has a child subtree of height zero
+(i.e. a child pointer with value $\bot$) in order to ensure
+the distributed local rotations and propagations provide eventual balance.
+In fact in \ref{IRISAppr} they prove that in the absence of concurrent insertions and deletions,
+a tree in any configuration is guaranteed to be balanced after $O(n^2)$ local rotations
+and propagations.
+Interestingly this holds no matter the sequence or concurrency pattern of the rotations
+and propagations, meaning 
+Even though that in \ref{IRISAppr} different synchronization methods are used,
+the results from the report also apply here as the rotations and
+propagations done in the speculation friendly tree have the same effect and keep track of
+balance information in the same way.
+
+Before discussing how balance information is propagated in the speculation friendly tree
+is should be noted that balance information is also updated during the $\act{remove}$ operation
+(line \ref{}).
+When a node is removed and a $\bot$ subtree takes its place at the parent then height
+for that subtree at the parent is set to zero.
+This along with the fact that new nodes are inserted with left and right child heights of zero (line \ref{})
+ensures the requirement from \ref{IRISAppr} that a nodes know when it has a $\bot$ subtree.
+The algorithm showing how balance information is propagated and when rotations are performed
+is shown in figure \ref{}.
+The bulk of the work takes place in the $\act{recursive\_traversal}$ procedure.
+This procedure is repeatably called by the maintenance thread with each iteration traversing
+the tree in a depth first manner propagating balance information and performing rotations
+as it travels up the tree.
+This operation starts at the left child of the root, recursively calling itself on the left
+and right children of the node (lines \ref{}-\ref{}) before updating the current node.
+The recursive calls return an integer value of the estimated height of the subtree rooted
+at the node it was called on.
+This values are then used to update the current nodes $\ms{left\_h}$, $\ms{right\_h}$, and $\ms{local\_h}$
+values, which are also then used to check if any rotations should be performed at the current node.
+Note that during rotation, these balance values are also updated for the nodes modified during the rotation
+(line \ref{}).
+
+\subsection{Proof of balance}
+We already know (thanks to the result from \ref{IRISAppr}) in the absence of concurrent insert and removal
+operations the tree is guaranteed to be balance after $O(n^2)$ distributed local rotations and propagations.
+In the speculation friendly tree this upper bound can be tightened as rotations and propagations are not
+performed randomly, instead they are performed from the bottom up.
+In the following proof we will show that balanced is achieved after a single complete traversal of the tree
+by the maintenance thread performing the $\act{recursive\_balance}$ operation starting from the left child of the root.
+
+
+
+
 
 \section{Experimental Evaluation}\label{sec:expe}
 We experimented our library by integrating it in (i)~a micro-benchmark of the synchrobench suite % integer set 
@@ -1170,7 +1231,7 @@ We carefully verified that the variance was sufficiently low for the result to b
 
 \begin{figure}[t]
 	\begin{center}
-	\includegraphics[scale=1.8,clip=true,viewport=9 0 192 228]{Tree/fig/microbench/microbench_avg_4096}
+	\includegraphics[scale=1.2,clip=true,viewport=9 0 192 228]{Tree/fig/microbench/microbench_avg_4096}
 	\caption{Comparing the AVL tree (AVLtree), the red-black tree (RBtree), the no-restructuring tree (NRtree) against the speculation-friendly tree (SFtree) on an integer set micro-benchmark with from 5\% {\bf (top)} to 20\% updates {\bf (bottom)} under normal {\bf (left)} and biased {\bf (right)}  workloads\label{fig:microbench}}
 	\end{center}
 \end{figure}
@@ -1198,7 +1259,7 @@ The speculation-friendly tree is less prone to contention than AVL and red-black
 
 \begin{figure}
 	\begin{center}
-	\includegraphics[scale=1.8,clip=true,viewport=0 0 200 83]{Tree/fig/microbench/microbench_avg_4096_u10_estm}
+	\includegraphics[scale=1.6,clip=true,viewport=0 0 200 83]{Tree/fig/microbench/microbench_avg_4096_u10_estm}
 	\caption{The speculation-friendly library running with {\bf (left)} another TM library (${\mathcal E}$-STM) and with {\bf (right)} the previous TM library in a different configuration (TinySTM-ETL, i.e., with eager acquirement)\label{fig:estm}} 
 	\end{center}
 \end{figure}
@@ -1239,8 +1300,8 @@ thus leading to inconsistencies.
 
 \begin{figure}[t]
 	\begin{center}
-	\subfigure[Elastic transaction speedup vs. speculation-friendly tree speedup\label{fig:move1}]{\includegraphics[scale=1.6,clip=true,viewport=0 0 84 78]{Tree/fig/microbench/microbench_65536_elastic_move}}\hspace{1em}
-	\subfigure[Performance when reusing the speculation-friendly tree\label{fig:move2}]{\includegraphics[scale=1.6,clip=true,viewport=89 0 200 78]{Tree/fig/microbench/microbench_65536_elastic_move}}
+	\subfigure[Elastic transaction speedup vs. speculation-friendly tree speedup\label{fig:move1}]{\includegraphics[scale=1.1,clip=true,viewport=0 0 84 78]{Tree/fig/microbench/microbench_65536_elastic_move}}\hspace{1em}
+	\subfigure[Performance when reusing the speculation-friendly tree\label{fig:move2}]{\includegraphics[scale=1.1,clip=true,viewport=89 0 200 78]{Tree/fig/microbench/microbench_65536_elastic_move}}
 	\caption{Elastic transaction comparison and reusability}
 	\end{center}
 \end{figure}
@@ -1270,7 +1331,7 @@ more, to increase the duration and the contention of the benchmark without using
 
 \begin{figure}[t]	
 	\begin{center}
-	\includegraphics[scale=0.6,clip=true,viewport=49 5 580 750]{Tree/fig/vacation/vacation_avg2}
+	\includegraphics[scale=0.4,clip=true,viewport=49 5 580 750]{Tree/fig/vacation/vacation_avg2}
 	\caption{The speedup (over single-threaded sequential) and the corresponding duration of the vacation application built upon the red-black tree (RBtree), the optimized speculation-friendly tree (Opt SFtree) and the no-restructuring tree (NRtree) on  {\bf (left)} high contention and  {\bf (right)} low contention workloads, and with  {\bf (top)} the default number of transaction,  {\bf (middle)} $8\times$ more transactions and {\bf (bottom)} $16\times$ more transactions\label{fig:vacation-threads}}	
 	\end{center}
 \end{figure}
