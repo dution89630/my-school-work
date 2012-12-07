@@ -1159,9 +1159,9 @@ In fact in \ref{IRISAppr} they prove that in the absence of concurrent insertion
 a tree in any configuration is guaranteed to be balanced after $O(n^2)$ local rotations
 and propagations.
 Interestingly this holds no matter the sequence or concurrency pattern of the rotations
-and propagations, meaning 
-Even though that in \ref{IRISAppr} different synchronization methods are used,
-the results from the report also apply here as the rotations and
+and propagations, meaning they can take place in a completely distributed fashion.
+Even though in \ref{IRISAppr} different synchronization methods are used then are used here,
+the results still apply as the rotations and
 propagations done in the speculation friendly tree have the same effect and keep track of
 balance information in the same way.
 
@@ -1194,6 +1194,31 @@ In the speculation friendly tree this upper bound can be tightened as rotations 
 performed randomly, instead they are performed from the bottom up.
 In the following proof we will show that balanced is achieved after a single complete traversal of the tree
 by the maintenance thread performing the $\act{recursive\_balance}$ operation starting from the left child of the root.
+
+
+\begin{lemma}
+\label{lemma:range}
+Performing a right (resp left) rotation on a tree with a balanced left subtree of height $h$ and a balanced right subtree of height $h$
+\end{lemma}
+\begin{proof}
+The proof follows using lemmas~\ref{lemma:right-rotation-range}, \ref{lemma:left-rotation-range}, and \ref{lemma:remove-range} as well as induction on the length
+of the path from the node to a node with $\ms{removed}=\lit{false}$.
+%\renewcommand{\toto}{lemma:range}
+\end{proof}
+
+
+
+\subsection{Multiple balance threads}
+The implementation and proof of the balance presented here is based off having a single thread
+responsible for the balance.
+If multiple threads were to be used the same code could be used, but we would not longer have balance
+after $O(n)$ rotations and propagations, instead we would have the smaller of either $O(n^2)$ or $O(n*m)$ where $m$ is the
+number of threads executing the balancing.
+When the insert and removal operations on the tree stop, each balance thread could be at a
+different location in their traversal of the tree, meaning that they might not be using the most up-to-date balance information
+when performing rotations.
+As soon as one of these treads propagates the correct balance information from the bottom, the resulting rotations will
+balance the tree.
 
 
 
