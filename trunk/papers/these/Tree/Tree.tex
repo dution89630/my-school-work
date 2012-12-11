@@ -1149,18 +1149,18 @@ $\ms{deleted}$ to $\lit{true}$, $\ms{k}$ is no longer in the set after the trans
 
 \input{Tree/alg/maint.tex}
 
-As previously mentioned we use a method for local rotations introduced in \ref{IRISAppr}.
+As previously mentioned we use a method for local rotations introduced in \cite{IRISAppr}.
 This method works by propagating local estimated balance information from a child to a parent,
 performing rotations based on what is observed.
 This method only requires that a node knows when it has a child subtree of height zero
 (i.e. a child pointer with value $\bot$) in order to ensure
 the distributed local rotations and propagations provide eventual balance.
-In fact in \ref{IRISAppr} they prove that in the absence of concurrent insertions and deletions,
-a tree in any configuration is guaranteed to be balanced after $O(n^2)$ local rotations
+In fact in \cite{IRISAppr} they prove that in the absence of concurrent insertions and deletions,
+a tree in any configuration is guaranteed to be balanced after $O(n^2)$ successful local rotations
 and propagations.
 Interestingly this holds no matter the sequence or concurrency pattern of the rotations
 and propagations, meaning they can take place in a completely distributed fashion.
-Even though in \ref{IRISAppr} different synchronization methods are used then are used here,
+Even though in \cite{IRISAppr} different synchronization methods are used then are used here,
 the results still apply as the rotations and
 propagations done in the speculation friendly tree have the same effect and keep track of
 balance information in the same way.
@@ -1171,7 +1171,7 @@ is should be noted that balance information is also updated during the $\act{rem
 When a node is removed and a $\bot$ subtree takes its place at the parent then height
 for that subtree at the parent is set to zero.
 This along with the fact that new nodes are inserted with left and right child heights of zero (line \ref{})
-ensures the requirement from \ref{IRISAppr} that a nodes know when it has a $\bot$ subtree.
+ensures the requirement from \cite{IRISAppr} that a nodes know when it has a $\bot$ subtree.
 The algorithm showing how balance information is propagated and when rotations are performed
 is shown in figure \ref{}.
 The bulk of the work takes place in the $\act{recursive\_traversal}$ procedure.
@@ -1188,8 +1188,8 @@ Note that during rotation, these balance values are also updated for the nodes m
 (line \ref{}).
 
 \subsection{Proof of balance}
-We already know (thanks to the result from \ref{IRISAppr}) in the absence of concurrent insert and removal
-operations the tree is guaranteed to be balance after $O(n^2)$ distributed local rotations and propagations.
+We already know (thanks to the result from \cite{IRISAppr}) in the absence of concurrent insert and removal
+operations the tree is guaranteed to be balance after $O(n^2)$ successful distributed local rotations and propagations.
 In the speculation friendly tree this upper bound can be tightened as rotations and propagations are not
 performed randomly, instead they are performed from the bottom up.
 In the following proof we will show that balanced is achieved after a single complete traversal of the tree
@@ -1201,9 +1201,7 @@ by the maintenance thread performing the $\act{recursive\_balance}$ operation st
 Performing a right (resp left) rotation on a tree with a balanced left subtree of height $h$ and a balanced right subtree of height $h$
 \end{lemma}
 \begin{proof}
-The proof follows using lemmas~\ref{lemma:right-rotation-range}, \ref{lemma:left-rotation-range}, and \ref{lemma:remove-range} as well as induction on the length
-of the path from the node to a node with $\ms{removed}=\lit{false}$.
-%\renewcommand{\toto}{lemma:range}
+
 \end{proof}
 
 
