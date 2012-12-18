@@ -1204,6 +1204,15 @@ The following sections will describe the protocol.
 %===================================================================
 \subsection{Memory Set-up and Data Structures.}
 
+Section \ref{sec:model-and-conditions} of the introduction defines a
+structure of memory and transactions used traditionally in TM where
+transaction are restricted to access a specific set of memory.
+Like in previous chapters, this chapter defines a transaction by a $\sf{begin\_transaction}()$ operation
+followed by a series of reads and writes and finished by a $\sf{try\_to\_commit}()$ operation,
+but differently this chapter uses a model
+of memory that allows any location shared memory to be read and written concurrently
+both inside and outside of transactions.
+The specifics of this memory model are described as follows:
 
 \paragraph{Memory Set-up.}
 The underlying memory system is made up of atomic read/write registers. 

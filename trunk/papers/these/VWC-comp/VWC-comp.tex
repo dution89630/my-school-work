@@ -406,10 +406,96 @@ consistency condition if this were not true.
 
 
 This  section  defines  formally opacity  \cite{GK08} and virtual  world
-consistency \cite{IR09}. First, we  define some properties of STM executions. 
+consistency \cite{IR09}.
+Section \ref{sec:model-and-conditions} of the first chapter described the general model of transactions that will
+be used in these definitions and throughout this chapter.
+Before getting into the formal definitions, here first we define some additional properties
+of STM executions necessary for completeness.
 Then, based on these definitions, opacity and  virtual world consistency
-are defined. 
- 
+are be defined.
+
+
+An application is made up of  an  arbitrary number  of  processes  and  $m$
+shared  objects.  The processes are denoted $p_i$, $p_j$, etc., 
+while the  objects are  denoted $X,Y,\ldots$, where each id $X$ is such 
+that $X \in \{1,\cdots,m\}$.   Each process consists of  a sequence of 
+transactions (that are not known in advance).
+Each of shared objects is an atomic read/write object. 
+This means  that the read and  write operations issued on  such an  object
+$X$  appear as  if they have  been executed  sequentially, and this 
+``witness sequence'' is  legal (a read returns the value written by the  
+closest write  that precedes it in this sequence) and respects the real time 
+occurrence  order on the operations on $X$ (if  $op1(X)$  terminates  before
+$op2(X)$  starts, $op1$ appears before $op2$ in the witness sequence 
+associated with $X$). 
+
+
+The notations $\exists~ X.{\sf read}_T(v)$  and $\exists~ X.{\sf write}_T(v)$ 
+are  used as  predicates to  state whether a transaction  $T$ has issued a
+corresponding read or write operation. 
+
+\paragraph{Incremental snapshot}
+As  in \cite{BSW79},  we assume  that the behavior of a transaction $T$  
+can be decomposed in  three sequential steps:  
+it first reads  data objects,  then does local computations and 
+finally   writes  new values  in some  objects, which means
+that  a  transaction can  be  seen as  a software 
+${\sf read\_modify\_write()}$ operation that is 
+dynamically defined  by  a process. (This model is for 
+reasoning, understand and  state properties on STM systems.  
+It only requires that everything appears as described  in the model.)
+
+
+The read set is  defined  incrementally,  which  means  that a 
+transaction  reads  the objects of  its read set  asynchronously  one after
+the other (between  two consecutive reads, the transaction 
+can  issue local  computations   that  take  arbitrary, but finite,
+durations). We  say  that the  transaction $T$ computes an  {\it incremental
+snapshot}.  This snapshot has to be {\it consistent} which
+means that there is a time frame in which these values have co-existed 
+(as we will see later, different consistency conditions consider different  
+time frame  notions). 
+
+If it reads  a  new  object whose  current  value makes  inconsistent  its 
+incremental snapshot, the transaction   is  directed to  abort. 
+If the transaction is not aborted during its read 
+phase, $T$ issues local computations. Finally,  if the transaction  is  
+an update transaction, and its  write operations  can be issued 
+in  such a way that the transaction  appears as  being executed
+atomically,   the objects of its write set are updated  and the transaction
+ commits.   Otherwise, it  is  aborted.
+
+\paragraph{Read prefix of an aborted transaction}
+A read prefix is associated with every transaction that aborts.
+This read prefix contains all its read operations if the transaction 
+has not been aborted  during its read phase.  If it has been  aborted during 
+its read phase, its read prefix contains all read operations it has issued 
+before the read that entailed the abort.  Let us observe that the values 
+obtained by the read operations of the read prefix of an aborted transaction 
+are mutually consistent (they are from a consistent global state). 
+
+
+%---------------------------------------------------------------------------
+\Xomit{%  OMITTED%%%%%%%%%%%
+\subsection{The incremental read + deferred update model}
+In this transaction system model, each transaction $T$ uses a local working
+space.  
+When  $T$ invokes $X.{\sf  read}_T()$  for  the first   time, it  reads the
+value of $X$ from  the shared  memory and copies it into its  local working
+space. Later  $X.{\sf  read}_T()$ invocations  (if any)  use this copy.
+So, if $T$  reads $X$ and then $Y$, these reads  are done incrementally, and
+the state of the shared memory may  have changed in between. 
+As already said, one usually says  that the  transaction $T$ 
+computes an  {\it incremental snapshot}.
+
+
+When  $T$ invokes $X.{\sf write}_T(v)$,  it writes  $v$ into  its working
+space (and does not access the  shared memory). 
+Finally, if $T$ is not aborted, 
+it copies  the values written (if  any) from its
+local working  space to  the shared memory.  (A  similar   deferred  update
+model  is used  in some  database transaction systems.)  
+} % end of omit 
 
 %-------------------------------------------------------------------------
 

@@ -49,7 +49,8 @@
 \usepackage{flushend}
 \usepackage[table]{xcolor}
 \usepackage{mathptmx}
-% \usepackage{hyperref} 
+\usepackage{hyperref} 
+%\usepackage{href} 
 
 \usepackage{fancyvrb}
 
@@ -259,8 +260,8 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 %\begin{abstract}
 \subsection*{Abstract}
 \anote{Update abstract}
-Writing concurrent programs is well know difficult task and because
-if this there exists many abstractions designed with the intetion to make concurrent programming
+Writing concurrent programs is a well know difficult task and because
+of this there exists many abstractions designed with the intention to make concurrent programming
 easier. Traditionally locks have been used to write concurrent programs, unfortunately it is
 difficult to write correct concurrent programs using locks that perform efficiently. In addition
 to this, locks present other problems such as scalability issues. Transactional memory has been
@@ -268,7 +269,7 @@ proposed as a possible promising solution to these difficulties of writing concu
 Using transactions can be viewed as a different methodology for concurrent programming, allowing
 the programmer the ability to declare what sections of his code should be executed atomically,
 without having to worry about synchronization details. Unfortunately transactional memory is
-know to suffer from performance and ease of use problems. This thesis specifically focuses on
+known to suffer from performance and ease of use problems. This thesis specifically focuses on
 the ease of use problem by discussing how previous research has coped with these problems so
 far and proposes some ways in which we can address some unanswered problems.
 
@@ -278,7 +279,7 @@ far and proposes some ways in which we can address some unanswered problems.
 Even though the idea of a transaction is clear, how the programmer should interact with the
 abstraction is still not clearly defined.
 The first chapter presents an introduction to this problem
-while following four chapters look at different approces working towards
+while following four chapters look at different approaches working towards
 making transactional memory easier to use, organized as follows:
 \begin{enumerate}
 \item The second chapter presents an STM protocol that satisfies two properties that can be considered good for efficiency.
