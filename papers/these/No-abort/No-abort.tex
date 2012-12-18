@@ -859,7 +859,8 @@ multiprocessor where the processors  communicate through
 a shared memory that provides them with atomic read/write registers, 
 compare\&swap registers and fetch\&increment registers. 
 
-As we will see, the underlying multiprocessor system  consists of 
+As suggested in the indroduction and described specifcally later in this chapter,
+the underlying multiprocessor system  consists of 
 $m$  processors where each processor is in charge  of a  subset of  processes.
 The  multiprocess program, defined  by the  programmer, is  made up  of $n$
 processes  where each process is a separate thread of execution.
@@ -1144,13 +1145,13 @@ More precisely,  we have the following.
 \begin{itemize}
 %\vspace{-0.2cm}
 \item
-A  write of a value $v$ into a $t$-object {\sc X}  by a transaction 
+A  write of a value $v$ into a $t$-object {\sc X} (denoted $X.{\sf write}_T(v)$) by a transaction 
 appears as the  pair  $\langle${\sc X}$,v \rangle$ contained in the 
 field $ws$ of the descriptor  that is added to the list when the
 corresponding transaction is committed. 
 %\vspace{-0.2cm}
 \item
-A read of a $t$-object {\sc X} by a transaction is implemented by 
+A read of a $t$-object {\sc X} (denoted $X.{\sf read}_T()$) by a transaction is implemented by 
 scanning  downwards (from a fixed local pointer variable $current$ towards $\mathit{FIRST}$)
 the  descriptor list until encountering 
 the first pair $\langle${\sc X}$,v \rangle$, the value $v$ being then 
@@ -1165,7 +1166,8 @@ then the first  value read  was not overwritten when the second one was read).
 \subsection{Behavior of a processor: initialization}
 Initially a   processor $P_x$ executes the non-transactional  code (if any)
 of each process $p_i$ it owns  
-until $p_i$'s first transaction and then 
+until $p_i$'s first transaction (as defined by the programmer with the
+${\sf begin\_transaction}()$ operation) and then 
 initializes accordingly the  atomic register
 $\mathit{STATE}[i]$. 
 Next  $P_x$ invokes  ${\sf select}(\mathit{OWNED\_BY}[x])$
@@ -1491,7 +1493,8 @@ the local set $ws$. This is a transaction's speculative execution by $P_x$.
 
 \paragraph{Try to commit the transaction}
  (Lines \ref{CBA18}-\ref{CBA32}) Once $P_x$ has performed a speculative
- execution of $p_i$'s  last transaction, it tries to commit  it by adding it
+ execution of $p_i$'s  last transaction by reaching the ${\sf try\_to\_commit}_T()$
+ operation as defined by the programmer it tries to commit the transaction by adding it
 to the descriptor list, but only if certain conditions are satisfied.
 To that end, $P_x$  enters a loop (lines \ref{CBA19}-\ref{CBA24}). 
 There are two reasons for not trying to commit the transaction.
@@ -1551,8 +1554,10 @@ Then, $P_x$ proceeds to  the next loop iteration.
 Given that $P_x$ is responsible for  $p_i$'s progress, 
 if $committed$ is  equal to $\mathit{true}$ then $P_x$ executes the  
 non-transactional code
-(if any) that appears after the transaction (line \ref{CBA39}).
-Next, if  $p_i$ has terminated (finished its execution), $i$ is 
+(if any) that appears after the transaction (line \ref{CBA39})
+until it either reaches a new transaction (as denoted by the user
+with the ${\sf begin\_transaction}()$ operation) or it reaches the termination of $p_i$'s code.
+If  $p_i$ has terminated (finished its execution), $i$ is 
 suppressed from $\mathit{OWNED\_BY}[x]$
 (line \ref{CBA41}). Otherwise, $P_x$ updates $\mathit{STATE}[i]$ 
 in order for it 
