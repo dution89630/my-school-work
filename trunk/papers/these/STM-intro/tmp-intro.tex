@@ -350,13 +350,13 @@ Still it is not obvious how implement composability correctly and efficiently in
 
 The term \emph{nesting} is used to describe the execution of transactions within other transactions.
 Different way of implementing nesting have been studied with varying properties.
-The simplest way to implement nesting is called \emph{flattening} \cite{},
-\anote{Where is this citation from??}
+The simplest way to implement nesting is called \emph{flattening} \cite{ALS06},
+% \anote{Where is this citation from??}
 in this model a nested
  transaction is combined together with its parent, so it and its parent execute as if it were a single transaction.
 This is nice because it is simple and it is composable, but it creates larger and larger transactions, limiting performance.
 
-A slightly more complex model \emph{closed nesting} \cite{1133985} allows a transaction $C$ to run as a separate
+A slightly more complex model \emph{closed nesting} \cite{1133985,Mos81} allows a transaction $C$ to run as a separate
  transaction within its parent $P$, but when $C$ commits, its changes are only visible 
 to $P$ and not visible to the rest of the system until $P$ itself commits.
 Running $C$ as a separate transaction allows it to abort itself without aborting $P$, 
@@ -366,7 +366,7 @@ from being consistency issues or roll backs of shared memory in the case that $P
 % \cite{1133985} givens an implementation of closed nesting is given for the Java language
 %  along with some additional mechanisms that can be used when a nested transaction retries or aborts.
 
-A more complex notation of nesting is \emph{open nesting} which allows for nested 
+A more complex notation of nesting is \emph{open nesting} \cite{Mos06} which allows for nested 
 transactions to write to shared memory upon their commit and not wait until their parent commits.
 The main advantage of open nesting is performance, like closed nesting it has the 
 advantage that if a nested transactions conflicts with another transaction while it 
@@ -426,22 +426,23 @@ In addition to a read set, a \emph{write set} is also maintained by a transactio
 written so far by the transaction.
 Write sets are necessary due to the fact that a transaction might abort.
 
-\paragraph{Write Buffering vs Undo locking}
+\paragraph{Write Buffering vs Undo logging}
 When performing a write within a transaction, to the rest of  the system the value
  written must not known until the transaction is guaranteed to commit,
 i.e. an aborted transaction must not effect the state of memory.
 Traditionally there have been two ways of keeping track of writes before they have committed in memory.
 
-In an implementation that uses \emph{undo locking} \cite{},
-\anote{Citation?} the transaction performs its write
+In an implementation that uses \emph{undo logging},
+% \anote{Citation?}
+the transaction performs its write
  directly to the shared memory, and then in case of an abort, the transaction must
  rollback the state of the memory to where it was before the transaction performed its first write.
 In order to prevent other transactions from writing to the shared memory concurrently
  or reading a value that could be rolled back, a transaction will use some sort of locking mechanism of each piece of memory before it writes to it.
 This is usually implemented as \emph{visible writers}, which are described later in this section.
 
-In an implementation that uses \emph{write buffering} \cite{}
-\anote{Citation?}
+In an implementation that uses \emph{write buffering}
+% \anote{Citation?}
 when a transaction wants to perform
  a write to a shared memory location first it will make a local copy of that variable only visible to the transaction.
 Any subsequent writes this transaction does will be preformed on this local copy,
@@ -463,14 +464,18 @@ Often one type performs better then the other depending on the workload.
 
 \subsection{Conflict Detection}
 The definition of a conflict in transactional memory is straightforward, two 
-transactions conflict if they are run concurrently and they both access the same 
-shared memory location with at least one being a write.
+transactions conflict if they execute concurrently and both access the same 
+shared memory location with at least one access being a write.
+Given this definition we can separate conflicts into three specific types based
+on the order and types of operations that caused the conflict, more precisely we have
+read/write, write/read, and write/write conflicts.
 % Earlier in this survery in the section on liveness it was shown that deciding
 %  what to do after detecting a conflict is no easy task.
 % This section will discuss some of the ways transactional memory implementations
 %  detect conflicts, and like conflict resolution, there is no simple answer to conflict detection.
 Once a conflict happens, the system must deal with it in some way in order to ensure
-safety and progress, this can done directly by the STM or a contention manager \cite{HLMS03} can be called.
+safety and progress, possibly aborted one or both of the conflicting transactions,
+this can done directly by the STM or a contention manager \cite{HLMS03} can be called.
 Many different solutions for detecting and dealing with conflicts have been proposed and depend
 on the STM protocol.
 
@@ -505,77 +510,93 @@ With visible reads, when a location that has been read gets overwritten
 % map addresses to indexes in the local write set.
 % They show this gives negligible overhead for write set lookup when comparted to visible writes.
 
-\anote{Should clean up this section}
+% \anote{Should clean up this section}
 \paragraph{Eager vs Lazy}
-There are two basic concepts for conflict detection, \emph{eager} and \emph{lazy} \cite{HLMS03}.
-  An eager scheme will detect conflicts as soon as they happen, while a lazy scheme will detect conflicts at commit time.
-Write/write, read/write, and write/read conflict detection can be eager or lazy.
-  Depending on which combination of these is chosen makes an impact on many different parts of a TM.
+There are two basic concepts for detecting conflicts between transactions, \emph{eager} and \emph{lazy} \cite{HLMS03}.
+While precisely how eagerly a conflict is detected depends on the specific TM implementation, here we will
+we use the term eager to describe conflicts that are detected before either of the conflicting transactions has
+reached the committal phase and the term lazy to describe conflicts that are not detected until after one of
+the conflicting transactions starts committing.
+The choice of visibility for the read and write operations of an STM implementation directly effect the
+possibilities of the eagerness of detection.
+% An eager scheme detects conflicts as soon as they happen, while a lazy scheme detects conflicts at commit time.
+% Write/write, read/write, and write/read conflict detection can be eager or lazy.
+%Depending on which combination of these is chosen makes an impact on many different parts of a TM.
 
 \paragraph{Eager}
-An implementation can detect read/write, write/read, and write/write conflicts eagerly.
-Eager read/write conflict detection requires that the implementation use 
-visible reads, and eager write/write conflict detection requires that the implementation 
-use visible writes, while eager write/read conflict detection can use either visible reads or visible writes.
-\anote{Not sure about write/read}
+%An implementation can detect read/write, write/read, and write/write conflicts eagerly.
+Eager conflict detection obviously requires that an implementation use visible operations.
+Specifically, eager read/write conflict detection requires that the implementation use 
+visible reads while eager write/read and write/write conflict detection requires that the implementation 
+use visible writes.
+% , while eager write/read conflict detection can use either visible reads or visible writes.
+% \anote{Not sure about write/read}
 
-If visible writes are used than read/write conflicts are detected sooner than if invisible writes are used.
-With visible writes the conflict is detected as soon as the writing transaction
- performs its write and acquires the lock for the memory location, while with invisible
- writes the conflict is only detected when the writing transaction tries to commit.
-Read/write conflicts are detected because when a write occurs (or the writing
- transaction tries to commit) the writing transaction checks to see if there are
- any active readers in the list for this memory location, and if there are, then
- a read/write conflict has occurred and is dealt with according to the implementation and contention manager.
+% If visible writes are used than read/write conflicts are detected sooner than if invisible writes are used.
+Visible writes allow write/read and write/write conflicts to be detected eagerly.
+Read/write conflicts are detected eagerly when the write operation takes place, observing that the location
+had been previously read by another live transaction.
+Similarly, write/write conflicts are detected eagerly when the latter write takes place, observing that
+the location  had been previously written by a separate live transaction.
+% because when a write occurs (or the writing
+%  transaction tries to commit) the writing transaction checks to see if there are
+%  any active readers in the list for this memory location, and if there are, then
+%  a read/write conflict has occurred and is dealt with according to the implementation and contention manager.
 
-The visibility of writes and reads effect write/read conflicts.
-If a write is visible then from when a transaction acquires the write lock until
- it commits (or aborts), if a separate transaction performs a read at this location
- then a write/read conflict is detected and the conflict is dealt with.
-With invisible writes, write/read conflicts can still be detected eagerly,
- but require visible reads and are not detected until the writing transaction commits.
-When the writing transaction commits it will check if there are any 
-readers for the memory location, and if there are then a write/read conflict has occurred and is dealt with.
+Visible reads allow read/write conflicts to be detected eagerly.
+When the write occurs it detects that the location has been read allowing
+the conflict to be dealt with eagerly.
 
-When a write occurs the transaction checks to see if there is another 
-transaction that owns the lock on this memory location, and if there it
- means a write/write conflict has occurred, and the conflict is dealt with according to the implementation.
+% The visibility of writes and reads effect write/read conflicts.
+% If a write is visible then from when a transaction acquires the write lock until
+%  it commits (or aborts), if a separate transaction performs a read at this location
+%  then a write/read conflict is detected and the conflict is dealt with.
+% With invisible writes, write/read conflicts can still be detected eagerly,
+%  but require visible reads and are not detected until the writing transaction commits.
+% When the writing transaction commits it will check if there are any 
+% readers for the memory location, and if there are then a write/read conflict has occurred and is dealt with.
+% 
+% When a write occurs the transaction checks to see if there is another 
+% transaction that owns the lock on this memory location, and if there it
+%  means a write/write conflict has occurred, and the conflict is dealt with according to the implementation.
 
 \paragraph{Lazy}
-Read/write, write/read, and write/write conflicts can also be detected lazily.
-This means they are not detected until commit time or when the read would
- cause the transaction to see an inconsistent view of the memory (depending on the consistency condition).
-They all use invisible reads and writes.
+Read/write, write/read, and write/write conflicts can be detected lazily,
+using invisible reads and writes.
+%  cause the transaction to see an inconsistent view of the memory (depending on the consistency condition).
+% They all use invisible reads and writes.
 
-The lazy detection of a write/read or read/write conflict is done by the transaction that does the read.
-The conflict is not detected at the time of the read, but instead either
- when the transaction tries to perform its next read, or tries to commit.
-In order to be able to tell if a conflict has occurred the transaction
- will \emph{validate} its read set at each read and at commit time 
-(again depending on consistency criterion), which means to check 
-if the combination of reads it has done so far are still consistent with
- respect to the chosen consistency criterion.
-Since the transaction doing the write has no idea the read has occurred 
-it is usually unaffected by the read.
+The lazy detection of a write/read or read/write conflict is done by the transaction performing the read.
+In the case of a write/read conflict, if the transaction performing the write has already committed then the
+conflict is detected at the time of the read, otherwise
+the conflict is detected later, either
+during the reading transaction's next read operation or during its committal.
+Read/write conflicts are also detected during the first transactional read
+or commit to follow the committal of the writing transaction.
+In order to detect either of such conflicts, the reading transaction
+ must \emph{validate} its read set any time a transactional read is performed as well as during committal, 
+ensuring that the set of reads done by this transaction have a serialization point where
+they are all valid according to the consistency criterion.
+% Since the transaction doing the write has no idea the read has occurred 
+% it is usually unaffected by the read.
 
-If write/write conflicts are detected lazily then they are found at the 
-commit time of the transaction that commits last.
-The transaction that commits first has no idea there is a conflict so 
-it is usually unaffected.
-When the second transaction commits it must make sure that by committing 
-with the write/write conflict it will not violate the consistency criterion.
-Many implementations choose their serialization point as time of their 
-commit operation and it is easy to see that in this case a write/write 
-conflict by itself will not violate consistency and in this case it is not
- necessary to worry about these types of conflicts.
+Lazy write/write conflict detection occurs at the commit time of the
+later writing transaction.
+% The transaction that commits first has no idea there is a conflict so 
+% it is usually unaffected.
+When the later transaction commits it must make sure that the consistency criterion is not violated
+by the conflict.
+Interestingly, many TM implementations choose their serialization point to be at the time of their 
+commit operation, meaning that if the transaction did not perform a transactional read to the location
+of the write/write conflict (in addition to the read) then the conflict will clearly not violate consistency.
 
-In order to make sure its operations are viewed a atomic when a writing transaction
- is committing in most implementation it will grab some sort of lock or set a flag
- for the memory locations it is going to write preventing other concurrently committing
- transactions from writing to these locations.
-When a concurrent transaction tries to commit, but notices that some other
- transaction is also committing to the same memory, a write/write conflict 
-also occurs and must be handled by the TM implementation.
+% In order to make sure its operations are viewed a atomic when a writing transaction
+%  is committing in most implementation it will grab some sort of lock or set a flag
+%  for the memory locations it is going to write preventing other concurrently committing
+%  transactions from writing to these locations.
+% When a concurrent transaction tries to commit, but notices that some other
+%  transaction is also committing to the same memory, a write/write conflict 
+% also occurs and must be handled by the TM implementation.
 
 
 \subsubsection{Dealing with conflicts}
@@ -1302,7 +1323,7 @@ discussing further possible steps to make.
 \section{STM computation model and base definitions}
 \label{sec:model-and-conditions}
 
-\anote{Need to ensure this stuff is true for all the protocols}
+%\anote{Need to ensure this stuff is true for all the protocols}
 
 
 Before getting into the content we will introduce the model of STM that will be used
