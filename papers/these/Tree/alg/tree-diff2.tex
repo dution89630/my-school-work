@@ -3,20 +3,20 @@
 \begin{minipage}[t]{150mm}
 \footnotesize 
 \renewcommand{\baselinestretch}{2.5} 
-\resetline
+%\resetline
 \begin{tabbing}
 aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 
 
 
-\bf{State of node $n$} \\
+\bf{State of node $n$}: \\
 		\line{TABA01} \> $\ms{node}$ the same record with an extra field: \\
 		\line{TABA01} \>\> $\ms{rem} \in \{\lit{false}, \lit{true}, \lit{true\_by\_left\_rot}\}$ indicate whether physically deleted,  initially $\lit{false}$ \\
-
+\\
 
 		
 		
-\bf{operation} $\act{find}(k)_p$ \\
+\bf{operation} $\act{find}(k)_p$: \\
 		\line{TABA01} \> $\ms{curr} \gets \ms{root}$; $\ms{next} \gets \ms{root}$ \\
 		\line{TABA01} \> \bf{while}$(\lit{true})$ \bf{do} \\
 		\line{TABA01} \>\> \bf{while}$(\lit{true})$ \bf{do} \\
@@ -45,7 +45,7 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 		\line{line:par-check2} \>\>\> \bf{else} $\ms{next} \gets \ms{curr}$; $\ms{curr} \gets \ms{parent}$  {\bf end if} \\%\label{line:par-check2}  \label{line:par-check3} \\
  		\line{TABA01} \> \bf{end while} \\
 		\line{line:find-return} \> $\sf{return}(\ms{curr})$. \\%\label{line:find-return} \\
-
+{\bf end operation}.
 		
 \end{tabbing}
 \normalsize
@@ -63,13 +63,13 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 \begin{minipage}[t]{150mm}
 \footnotesize 
 \renewcommand{\baselinestretch}{2.5} 
-\resetline
+%\resetline
 \begin{tabbing}
 aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 
 
 		
-\bf{operation} $\act{remove}(\ms{parent}, \ms{left-child})_p$ \\
+\bf{operation} $\act{remove}(\ms{parent}, \ms{left-child})_p$: \\
 		\line{TABA01} \> $\lit{begin\_transaction}()$ \\
 		\line{line:rem-par-rem} \> \bf{if}$(\lit{read}(\ms{parent.rem}))$ \bf{then} ${\sf return}(\lit{false})$ \bf{end if} \\%\label{line:rem-par-rem} \\
 		\line{TABA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
@@ -84,11 +84,12 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 		\line{line:u-b-v3} \> $\act{update-balance-values()}$ \\%\label{line:u-b-v3} \\
 		\line{TABA01} \> $\lit{try\_to\_commit}()$ \\
 		\line{TABA01} \> $\sf{return}(\lit{true})$. \\
-
+{\bf end operation}. \\
+\\
 		
 		
 		
-\bf{operation} $\act{right\_rotate}(\ms{parent}, \ms{left-child})_p$ \\
+\bf{operation} $\act{right\_rotate}(\ms{parent}, \ms{left-child})_p$: \\
 		\line{TABA01} \> $\lit{begin\_transaction}()$ \\
 		\line{line:rot-par-rem} \> \bf{if}$(\lit{read}(\ms{parent.rem}))$ \bf{then} $\sf{return}(\lit{false})$ \bf{end if}\\% \label{line:rot-par-rem} \\
 		\line{TABA01} \> \bf{if}$(\ms{left-child})$ \bf{then} $\ms{n} \gets \lit{read}(\ms{parent.\ell})$ \\
@@ -106,7 +107,7 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 		\line{line:u-b-v4} \> $\act{update-balance-values()}$ \\%\label{line:u-b-v4} \\
 		\line{TABA01} \> $\lit{try\_to\_commit}()$ \\
 		\line{TABA01} \> $\sf{return}(\lit{true})$. \\
-		
+		{\bf end operation}. 
 		
 
 \end{tabbing}

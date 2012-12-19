@@ -1186,7 +1186,7 @@ $\mathit{VAR} \equiv (\uparrow  \mathit{VAR}) \downarrow)$.
 \renewcommand{\baselinestretch}{2.5} 
 \resetline
 \begin{tabbing}
-aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
+aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
 
 
 {\bf operation} ${\sf begin}_T()$:\\
@@ -1195,8 +1195,9 @@ aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
 	       $lrs_T \gets \emptyset$;
                $lws_T \gets \emptyset$. \\
 
-
-~~~====================================================================================\\
+{\bf end operation}. \\
+\\
+% ~~~====================================================================================\\
 
 {\bf operation}  $X.{\sf read}_T()$: \\
 
@@ -1240,9 +1241,10 @@ aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
 
 \line{BA13} \>   ${\sf return}~(lcell(X).value)$. \\
 
-
+{\bf end operation}. \\
+\\
 %~\\
-~~~~====================================================================================\\
+%~~~~====================================================================================\\
 
 
 {\bf operation}  $X.{\sf write}_T(v)$: \\
@@ -1259,11 +1261,12 @@ aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
 
 \line{BA17} \> ${\sf return}(ok)$.\\
 
+{\bf end operation}. \\
+\\
 
 
 
-
-~~~====================================================================================\\
+% ~~~====================================================================================\\
 
 
 {\bf operation} ${\sf try\_to\_commit}_T()$: \\
@@ -1325,6 +1328,8 @@ aaaaa\=aa\=aaaaa\=aa\=\kill ~\\
 	
 \line{BA34} \> ${\sf return}(commit)$. \\
 
+{\bf end operation}. 
+% \\
 
 \end{tabbing}
 \normalsize
@@ -1929,7 +1934,7 @@ The new/modified  parts are the followings.
 \renewcommand{\baselinestretch}{2.5} 
 %\resetline
 \begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=\kill ~\\
+aaaaaaa\=aa\=aaaaa\=aa\=\kill %~\\
 
 {\bf operation} ${\sf try\_to\_commit}_T()$: \\
 
@@ -2022,6 +2027,9 @@ $\mathit{x\_forbid_T}[X] \leftarrow \mathit{x\_forbid_T}[X] \cup
                $last\_commit_i \leftarrow commit\_time_T$;\\
 	
 (\ref{BA34}) \> ${\sf return}(commit)$. \\
+
+{\bf end operation}.
+% \\
 
 \end{tabbing}
 \normalsize
@@ -2414,7 +2422,7 @@ oldest value of $X$ that is currently accessed by a transaction
 \renewcommand{\baselinestretch}{2.5} 
 \resetline
 \begin{tabbing}
-aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill ~\\
+aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill %~\\
 
 \line{BT45} \> {\bf init: for every} $X$ {\bf do} 
                 $last\_valid\_pt[X]  \leftarrow  PT[X]$ {\bf end for}.\\  ~\\
@@ -2455,7 +2463,7 @@ aaaaaaaa\=aaaa\=aaaaa\=aa\=\kill ~\\
 
 \line{BT55} \>\> {\bf end for}\\ 
 
-\line{BT56} \> {\bf end repeat}.\\
+\line{BT56} \> {\bf end repeat}.
 \end{tabbing}
 \normalsize 
 \end{minipage}
