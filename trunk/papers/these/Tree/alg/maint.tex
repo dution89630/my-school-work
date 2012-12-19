@@ -3,12 +3,12 @@
 \begin{minipage}[t]{150mm}
 \footnotesize 
 \renewcommand{\baselinestretch}{2.5} 
-\resetline
+%\resetline
 \begin{tabbing}
 aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 
 
-\bf{operation} $\act{recursive\_balance}(parent, n, left-child)_p$ \\
+\bf{operation} $\act{recursive\_balance}(\ms{parent, n, left-child})_p$: \\
 		\line{MB01} \> \bf{if} ($\ms{n} = \bot$) \bf{then} $\act{return}(0)$ \bf{end if}; \\
 		\line{MB01} \> $\ms{\ell} \gets \ms{n.\ell}$; $\ms{r} \gets \ms{n.r}$; \\
 		\line{MB01} \> $\ms{n.left-h} \gets \act{recursive\_balance}(\ms{n}, \ms{\ell}, \lit{true})$; \\
@@ -25,7 +25,7 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 		\line{MB01} \>\> \bf{else} $\act{left-rotation}(\ms{parent}, \ms{n}, \ms{left-child})$ {\bf end if}; \\
 		\line{MB01} \> \bf{end if} \\
 		\line{MB01} \> $\act{return}(\ms{n.local-h})$. \\
-
+{\bf end operation}.
 \end{tabbing}
 \normalsize
 \end{minipage}

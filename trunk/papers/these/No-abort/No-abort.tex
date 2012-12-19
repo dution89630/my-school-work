@@ -1623,7 +1623,7 @@ period,  requires help from the other processors.
 aaaaaaa\=aaaaaaa\=aaaaa\=aa\=\kill %~\\
 
 {\bf procedure} 
-${\sf select\_next\_process}()$ ${\sf returns}$ (process id) =\\
+${\sf select\_next\_process}()$: \\ %${\sf returns}$ (process id) =\\
 
 \line{CA01} \> 
 {\bf let} $set~=~ \{~ i~|~   
@@ -1689,8 +1689,10 @@ $\mathit{STATE}[j]\leftarrow$\\
 
 \line{CA17}  \>   {\bf end if};\\ 
 
-\line{CA18} \>   ${\sf return}(i)$.  %\\ 
+\line{CA18} \>   ${\sf return}(i)$. \\ 
 
+{\bf end procedure}.
+% \\
 
 \end{tabbing}
 \normalsize
@@ -1756,7 +1758,7 @@ some   schedulers  to prevent process  starvation.
 \begin{tabbing}
 aaaaaaa\=aa\=aaaaa\=aa\=\kill %~\\
 
-{\bf procedure}  ${\sf prevent\_endless\_looping}(i)$;\\ 
+{\bf procedure}  ${\sf prevent\_endless\_looping}(i)$:\\ 
 
 
 
@@ -1781,7 +1783,9 @@ $\mathit{STATE}[i]\leftarrow
 \line{DA06} \>\> {\bf end if} \\
 
 
-\line{DA07} \> {\bf end if}.  %\\
+\line{DA07} \> {\bf end if}.  \\
+
+{\bf end procedure}.
 
 \end{tabbing}
 \normalsize

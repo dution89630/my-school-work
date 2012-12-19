@@ -1433,13 +1433,13 @@ the compiler or dynamically at runtime.
 %\footnotesize 
 \scriptsize
 \renewcommand{\baselinestretch}{2.5} 
-%\resetline
+\resetline
 %\setcounter{linecounter}{200}
 \begin{tabbing}
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
-{\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
+{\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$:\\% {\bf is}\\
 \line{A01} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\ 
 \line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge (\downarrow \mathit{tmp.status}) \neq$ COMMITTED ) \\
 %\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  (\downarrow \mathit{tmp.status}) = $ LIVE) \\
@@ -1457,7 +1457,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{A12} \> ${\sf return}$ ($\mathit{value}$) \\
 {\bf end operation}. \\
 \\
-{\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$ {\bf is}\\
+{\bf operation}  ${\sf non\_transactional\_write}(\mathit{addr, value})$:\\% {\bf is}\\
 \line{B01} \> allocate new variable $\mathit{next\_write}$ of type NT; \\
 \line{B02} \> $\mathit{next\_write} \gets \mathit{(addr, value, \infty)}$; \\
 \line{B03} \> $\mathit{addr} \gets (\uparrow \mathit{next\_write})$ \\
@@ -1619,7 +1619,7 @@ and the value of the local variable $\mathit{value}$  is returned.
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
-{\bf operation}  ${\sf transactional\_read}(\mathit{addr})$ {\bf is}\\
+{\bf operation}  ${\sf transactional\_read}(\mathit{addr})$:\\% {\bf is}\\
 \line{C01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
 \line{C02} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; $\mathit{validate} \gets \sf{false}$;\\
 
@@ -1660,7 +1660,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{C15} \> ${\sf return}$ ($\mathit{value}$) \\
 {\bf end operation}. \\
 \\
-{\bf operation}  ${\sf transactional\_write}(\mathit{addr, value})$ {\bf is}\\
+{\bf operation}  ${\sf transactional\_write}(\mathit{addr, value})$:\\% {\bf is}\\
 \line{D01} \> {\bf if} $\mathit{addr} \not\in \mathit{ws}$  \\
 \line{D02} \>\> {\bf then} \> allocate a new variable $item$ of type $T$; \\
 \line{D03} \>\>\> $\mathit{item}  \gets (\mathit{value, (\uparrow status), \infty})$; 
@@ -1717,7 +1717,7 @@ which are initialized as empty sets.
 \begin{tabbing}
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
-{\bf operation}  ${\sf begin\_transaction}()$ {\bf is}\\
+{\bf operation}  ${\sf begin\_transaction}()$:\\% {\bf is}\\
 \line{START1} \> determine whether transaction is update transaction based on compiler/user input \\
 \line{START2} \> $\mathit{rv} \gets \mathit{GVC}$; 
                  Allocate new variable $\mathit{status}$; \\
@@ -1725,7 +1725,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 %\line{DA03} \> more??? \\
 {\bf end operation}. \\
 \\
-{\bf operation}  ${\sf try\_to\_commit}()$ {\bf is}\\
+{\bf operation}  ${\sf try\_to\_commit}()$:\\% {\bf is}\\
 \line{DA01} \> {\bf if} $(\mathit{ws} = \emptyset)$ {\bf then} ${\sf return}$ (COMMITTED) {\bf end if}; \\
 
 % \line{DA01a} \> $\mathit{abort} \gets \lit{false}$; \\
@@ -1844,7 +1844,7 @@ it must abort and restart.
 \begin{tabbing}
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
-{\bf operation} ${\sf validate\_by\_value}()$ {\bf is}\\
+{\bf operation} ${\sf validate\_by\_value}()$:\\% {\bf is}\\
 \line{H01} \> $\mathit{rv} \gets \mathit{GVC}$; \\
 \line{H02} \> {\bf for each} $\tuple{\mathit{addr, value}}$ in $\mathit{rs}$ {\bf do} \\
 \line{H03} \>\> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
@@ -1860,12 +1860,12 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{H10} \> $\sf{return}(\sf{false})$. \\
 {\bf end operation}. \\
 \\
-{\bf operation} ${\sf abort}()$ {\bf is}\\
+{\bf operation} ${\sf abort}()$:\\% {\bf is}\\
 \line{AB01} \> $\mathit{status} \gets $ ABORTED; \\
 \line{AB02} \> the transaction is aborted and restarted \\
 %\line{H21} \> free items in $\mathit{ws}$, $\mathit{rs}$, and $\mathit{ntrs}$; \\
 %\line{H22} \> jump to line \ref{START1} \\
-{\bf end operation}. \\
+{\bf end operation}.
 \end{tabbing}
 \normalsize
 \end{minipage}
@@ -2209,12 +2209,12 @@ and \ref{lemma:si-commit}.
 \scriptsize
 \renewcommand{\baselinestretch}{2.5} 
 %\resetline
-%\setcounter{linecounter}{200}
+\setcounter{linecounter}{02}
 \begin{tabbing}
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
-\line{A03a}  \>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  (\downarrow \mathit{tmp.status}) = $ LIVE) \\
+\line{A03a}  \>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  (\downarrow \mathit{tmp.status}) = $ LIVE) 
 
 \end{tabbing}
 \normalsize
@@ -2237,7 +2237,7 @@ Interestingly this can be prevented
 in the case that the thread performing the NT-read has not observed a write that is serialized after the transaction
 by serializing the current NT-read before the transaction.
 Algorithm \ref{fig:ser} describes the changes to the NT-read operation, line \ref{A03} of
-the original algorithm is modified to become line \ref{A03a} in algorithm \ref{fig:ser}.
+the original algorithm is modified to become the line displayed in algorithm \ref{fig:ser}.
 It is important to note that this change means that the NT-reads will no longer be linearizable,
 instead they become serializable.
 The reason for this is that the NT-read operation could have started after the linearization point
