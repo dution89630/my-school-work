@@ -132,15 +132,20 @@ but make no considerations about the difficulties of writing correct concurrent 
 \paragraph{Libraries}
 A different partial  solution to making concurrent programming easier consists of providing 
 the programmer with an appropriate 
-library where  he  can  find  correct  and  efficient  implementations  of  
-the most popular concurrent data structures (e.g., \cite{HS08,MS96}). 
+library where  he  can  find  correct  and  efficient concurrent implementations  of  
+the most popular data structures (e.g., \cite{HS08,MS96}). 
+For example Oracle's Java SDK provides several concurrent implementations of different abstractions in its
+\emph{java.util.concurrent} package, including several queue implementations,
+skip lists \cite{Pug90} implementing the set and map abstractions, a hash map, among others.
 Albeit very attractive, this approach does not solve entirely the problem  
 as it does not allow the programmer to define  specific concurrent executions 
 that take into account  his particular  synchronization issues,
 even simply composing several operations of the provided implementation
 to create a new operation is usually not possible using these libraries.
+A libraries' use is then restricted to the specific functionality of each abstraction's implementation,
+leaving the responsibility of dealing with any separate synchronization to the programmer.
 
-\anote{Should mention more things here???}
+% \anote{Should mention more things here???}
 
 \section{The Software Transactional Memory approach}
 The concept of {\it Software Transactional  Memory}   (STM)  is  a possible answer  
@@ -310,27 +315,31 @@ a transaction that took place long after a previous transaction committed can
  be ordered before the other, as long as the ordering creates a valid sequential execution.
 \emph{Lineraizability} \cite{HW90}, the most common criterion used for concurrent objects, is stronger than serializabilty by
 adding the condition that transactions must be ordered according on their occurrence in real time.
-Notice how these conditions only relate to committed transactions, in a database
-system a transaction can run without causing harm in the system even if it 
-accesses an \emph{inconsistent set} of data.
-In transactional memory this is not always the case.
-An inconsistent view of the memory or set of data is one that could not have been
-created by previous committed transactions, meaning the transaction must abort.
-\anote{Should include this example??}
-Consider the following example.  There are two transactions $A$, and $B$, and three 
-shared variables $x$, $y$, and $z$ all initialized to $0$.  Transaction $A$ performs
-the following operations, first it reads $x$, then it reads $y$, then it sets $z$ to 
-the value of $\frac{y}{x}$, then it tries to commit.
-Transaction $B$ writes the value $1$ to $x$, writes the value $1$ to $y$, 
+Importantly these conditions say nothing about aborted transactions.
+A transaction must abort if it has an \emph{inconsistent} view of the memory or set of data
+meaning that there is no time where this transaction could have been viewed as if it was executed atomically when considering
+the state of memory created by previously committed transactions.
+Commonly, in database
+systems a transaction can run without causing harm in the system even if it 
+has an inconsistent view of the data as long as it eventually aborts.
+Unfortunately, in transactional memory this is not always the case.
+% \anote{Should include this example??}
+Consider the following example:  There are two transactions $\ms{T_1}$, and $\ms{T_2}$, and three 
+shared variables $\ms{X}$, $\ms{Y}$, and $\ms{Z}$ all initialized to $0$.  Transaction $\ms{T_1}$ performs
+the following operations, first it reads $\ms{X}$, then it reads $\ms{Y}$, then it sets $\ms{Z}$ to 
+the value of $\frac{\ms{Y}}{\ms{X}}$, before trying to commit.
+Transaction $\ms{T_2}$ writes the value $1$ to $\ms{X}$, writes the value $1$ to $\ms{Y}$, 
 then tries to commit.
-It is obvious that any transaction reading the consistent values of $x$ and $y$ 
+It is obvious that any transaction reading the consistent values of $\ms{X}$ and $\ms{Y}$ 
 will read them as either both $0$ or both $1$.
-Now consider the following execution pattern, where transaction $B$ commits successfully:
-$$start_{B}, start_{A}, read_{A_{X}}, write_{B_{X}}, write_{B_{Y}}, commit_{B}, read_{A_{Y}}, commit_{A}$$
-Now transaction $A$ will access an inconsistent state of the data, reading $x$ as
-$0$ (because $x$ was read before $B$ committed) and $y$ as $1$ (because $y$ was read after $B$ committed).
-Since $A$ now has an inconsistent view of the memory, when it performs the division 
-$\frac{y}{x}$ a divide by $0$ exception is created possibly resulting in undesirable
+Now consider the following execution pattern, where transaction $\ms{T_2}$ commits successfully:
+$$begin\_transaction_{\ms{T_2}}(), begin\_transaction_{\ms{T_1}}(), X.read_{\ms{T_1}}() \to 0, X.write_{\ms{T_2}}(1),$$
+$$ Y.write_{\ms{T_2}}(1), try\_to\_commit_{\ms{T_2}}(), Y.read_{\ms{T_1}}() \to 1, try\_to\_commit_{\ms{T_1}}()$$
+Now transaction $\ms{T_1}$ will access an inconsistent state of the data, reading $\ms{X}$ as
+$0$ (because $\ms{x}$ was read before $\ms{T_2}$ committed) and $\ms{Y}$ as $1$ (because $\ms{Y}$ was read after $\ms{T_2}$ committed).
+%Since $\ms{A}$ now has an inconsistent view of the memory, when it performs the division 
+Now when $\ms{T_1}$ performs the division
+$\frac{\ms{Y}}{\ms{X}}$, a divide by $0$ exception is created possibly resulting in undesirable
  behavior such as crashing the program.
 Divide by zero exceptions are not the only possible undesirable behaviors that can
  be caused by reading inconsistent memory values, some other possible problems include 
@@ -356,37 +365,38 @@ in this model a nested
  transaction is combined together with its parent, so it and its parent execute as if it were a single transaction.
 This is nice because it is simple and it is composable, but it creates larger and larger transactions, limiting performance.
 
-A slightly more complex model \emph{closed nesting} \cite{1133985,Mos81} allows a transaction $C$ to run as a separate
- transaction within its parent $P$, but when $C$ commits, its changes are only visible 
-to $P$ and not visible to the rest of the system until $P$ itself commits.
-Running $C$ as a separate transaction allows it to abort itself without aborting $P$, 
+A slightly more complex model \emph{closed nesting} \cite{1133985,Mos81} allows a transaction $T_C$ to run as a separate
+ transaction within its parent $T_P$, but when $T_C$ commits, its changes are only visible 
+to $T_P$ and not visible to the rest of the system until $T_P$ itself commits.
+Running $T_C$ as a separate transaction allows it to abort itself without aborting $T_P$, 
 hopefully increasing performance over the \emph{flattening} model.
-By not committing $C$'s changes to shared memory until $P$ commits, it prevents there 
-from being consistency issues or roll backs of shared memory in the case that $P$ aborts after $C$ commits.
+By not committing $T_C$'s changes to shared memory until $T_P$ commits, it prevents there 
+from being consistency issues or roll backs of shared memory in the case that $T_P$ aborts after $T_C$ commits.
 % \cite{1133985} givens an implementation of closed nesting is given for the Java language
 %  along with some additional mechanisms that can be used when a nested transaction retries or aborts.
 
 A more complex notation of nesting is \emph{open nesting} \cite{Mos06} which allows for nested 
-transactions to write to shared memory upon their commit and not wait until their parent commits.
-The main advantage of open nesting is performance, like closed nesting it has the 
-advantage that if a nested transactions conflicts with another transaction while it 
-is running and must abort, then it does not have to abort the parent transaction.
-In addition to this open nesting has the advantage that the memory locations accessed
- by a nested transaction need not be shared with the parent transaction when detecting conflicts with concurrent transactions.
-\anote{remove example??}
-For example consider a parent transaction $P$ that accesses memory location $x$ and a 
-nested transaction $N$ that access memory location $y$, and a separate transaction $S$ that also accesses $y$.
-Now consider the execution where $P$ starts, then $N$ starts and commits, then $S$ starts 
-and commits, and finally $P$ completes executing.
-In open nesting, $P$ can still commit, because even though $N$ accesses the same memory
- as $S$, $N$ has already committed to shared memory before $S$ started, so there is no conflict. 
-In closed nesting and flattening, $P$ might have to abort because $N$ has only committed
- within $P$ and not to shared memory, so there is a conflict between $P$ and $S$.
-\cite{Mos06} gives a comprehensive overview of open nesting.
+transactions to write to shared memory immediately upon their commit, not waiting until their parent commits.
+The main advantage of open nesting is performance.
+Like closed nesting it has the 
+advantage that if a nested transaction aborts, it does not require the abort of its parent transaction.
+In addition open nesting has the advantage that the memory locations accessed
+ by a nested transaction need not be included with the parent transaction when detecting conflicts. % with concurrent transactions.
+% \anote{remove example??}
+For example consider a parent transaction $T_P$ that accesses memory location $X$ with a 
+nested transaction $T_N$ that access memory location $Y$, and in addition there exists a separate transaction $T_S$ that also accesses $Y$.
+Now take the execution where $T_P$ starts, then within $T_P$, $T_N$ starts and commits, following this $T_S$ starts 
+and commits, finishing with the try to commit of transaction $T_P$.
+In an STM implementing open nesting $T_P$ is able commit because even though its nested transaction $T_N$ conflicts with transaction
+$T_S$, in this example $T_N$ has already committed before the start of $T_S$, creating no conflict. 
+Alternatively, using closed nesting and flattening, $P$ might have to abort because $N$ has only committed
+ within $T_P$ and not to shared memory, resulting in a conflict between $T_P$ and $T_S$.
+For more details, \cite{Mos06} gives a comprehensive overview of open nesting.
 Allowing a transaction to commit to shared memory from within a transaction 
 obviously violates the idea that everything within a transaction is executed atomically,
-possibly increasing performance, but also making programming transactions more difficult.
-Given this a new consistency model has to be considered, one such model, \emph{abstract} serializability,
+possibly increasing performance, but unfortunately also increasing the difficulty of writing
+correct concurrent programs using transactions.
+Additionally, in order to deal with open nested transactions, a new consistency model has to be considered, one such model, \emph{abstract} serializability,
 is described  in \cite{NMA+07}.
 
 % In open nesting handling the situation where a parent transaction aborts after a nested
