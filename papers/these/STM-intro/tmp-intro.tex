@@ -346,6 +346,7 @@ Divide by zero exceptions are not the only possible undesirable behaviors that c
 infinite loops, and accessing invalid pointers.
 In order to deal with this many STM implementations abort a transaction before it
  can access an inconsistent view of the memory, but it depends on the consistency criterion.
+The differences between database and memory transaction correctness conditions is examined in more detail in \cite{AH12}.
 Chapter \ref{chap:VWC} looks at the problem of correctness in transactional memory in more detail.
 
 
@@ -384,7 +385,7 @@ In addition open nesting has the advantage that the memory locations accessed
  by a nested transaction need not be included with the parent transaction when detecting conflicts. % with concurrent transactions.
 % \anote{remove example??}
 For example consider a parent transaction $T_P$ that accesses memory location $X$ with a 
-nested transaction $T_N$ that access memory location $Y$, and in addition there exists a separate transaction $T_S$ that also accesses $Y$.
+nested transaction $T_N$ that accesses memory location $Y$, and in addition there exists a separate transaction $T_S$ that also accesses $Y$.
 Now take the execution where $T_P$ starts, then within $T_P$, $T_N$ starts and commits, following this $T_S$ starts 
 and commits, finishing with the try to commit of transaction $T_P$.
 In an STM implementing open nesting $T_P$ is able commit because even though its nested transaction $T_N$ conflicts with transaction
