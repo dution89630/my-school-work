@@ -3046,12 +3046,16 @@ left unexamined.
 Importantly this suggests that weakening the transactional model in the interest
 of improving performance might not be necessary, as much of what is possible under the current
 model has yet to be examined.
+Recent research \cite{KR11} has suggested an intereting way to approach this problem by looking at the ammount
+of concurrency certain properties (or even combinations of these properties) might allow.
+They do this by proving the minimum ammount of expensive synchronization operations that are needed
+by an STM in order to ensure these properties safely.
 
 As a final note on ease-of use, it should be said that the research direction suggested in
 this chapter is also similar in a way to that of
 the majority of published work on transactional memory in that it concerns itself with
 designing an efficient protocol without modifying the idea of a transaction.
-Each of the protocols presented in these various works (DSTM, TL2, TinySTM, SwissSTM, RSTM, etc...) have no impact on how the programmer
+Each of the protocols presented in these various works (DSTM \cite{HLMS03}, TL2 \cite{DSS06}, TinySTM \cite{FFR08}, SwissSTM \cite{DGK09}, NOrec \cite{DSS10}, etc...) have no impact on how the programmer
 understands the transaction which, in a way, puts ease-of-use first.
 The following chapters will take a different direction, examining some of what we consider shortcomings
 of the commonly used transactional model and how to improve it.

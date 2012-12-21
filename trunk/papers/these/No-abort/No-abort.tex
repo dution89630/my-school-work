@@ -193,9 +193,9 @@ will make some sort of progress sometimes depending on the amount of contention 
 Let us now look at some of these properties.
 
 \subsection{Progress properties}
-\anote{Need citations for this section}
+% \anote{Need citations for this section}
 This section will give an overview of the most common progress properties defined
-for concurrent algorithms.
+for concurrent algorithms \cite{R13}.
 They are arranged into two categories, blocking and non-blocking.
 
 \subsubsection{Blocking properties}
@@ -203,9 +203,9 @@ The most common way to write concurrent programs is by using locks,
 generally lock based programs satisfy blocking progress properties.
 A property is blocking when a thread's progress can be blocked because it is waiting
 for another thread to perform some action.
-For example thread $A$ might want to acquire lock $l$, but thread $B$ currently owns lock $l$
-so then thread $A$ waits for thread $B$ to release lock $l$.
-In this case thread $A$ is blocked by thread $B$.
+For example thread $\ms{T_A}$ might want to acquire lock $\ms{L_1}$, but thread $\ms{T_B}$ currently owns lock $\ms{L_1}$
+so then thread $\ms{T_A}$ waits for thread $\ms{T_B}$ to release lock $\ms{L_1}$.
+In this case thread $\ms{T_A}$ is blocked by thread $\ms{T_B}$.
 The three most common blocking properties are (from weakest to
 strongest) \emph{deadlock freedom}, \emph{livelock freedom},
 and \emph{starvation freedom}.
@@ -217,9 +217,9 @@ form entering a state of deadlock.
 Deadlock occurs when at least two threads are preventing each other from progressing
 due to each other holding a lock (or resource) that the other wants to acquire.
 A simple example of deadlock would be the following:
-thread $A$ owns lock $l1$ and wants to acquire lock $l2$, concurrently
-thread $B$ owns lock $l2$ and wants to acquire lock $l1$.
-In this case thread $A$ and $B$ will be stuck infinitely, waiting to acquire the lock that the other
+thread $\ms{T_A}$ owns lock $\ms{L_1}$ and wants to acquire lock $\ms{L_2}$, concurrently
+thread $\ms{T_B}$ owns lock $\ms{L_2}$ and wants to acquire lock $\ms{L_1}$.
+In this case thread $\ms{T_A}$ and $\ms{T_B}$ will be stuck infinitely, waiting to acquire the lock that the other
 already owns creating a state of deadlock.
 It is generally considered that every correct concurrent protocol should at least satisfy deadlock
 freedom.
@@ -228,23 +228,26 @@ but this can have negative implications on performance.
 
 \paragraph{Livelock freedom}
 Stronger then deadlock freedom, livelock freedom prevents a state of livelock where threads
-can never progress due to their progress depending on a shared state that is created by another thread.
-Consider the following simple example:
-in order to progress a thread must own locks $l1$ and $l2$ concurrently.
-Thread $A$ runs a protocol that first acquires $l1$ and then $l2$, while thread
-$B$ runs a protocol that first acquires $l2$ then $l1$.
-In order to avoid deadlock when a thread notices that another thread owns a lock it wants, it
-releases all the locks it owns and starts the locking protocol over.
-Consider the events of thread $A$ and $B$ happen in the following order:
-$A.acquire(l1) = success$, $B.acquire(l2) = success$, $A.is\_owned(l2) = true$, $B.is\_owned(l1) = true$,
-$A.release(l1)$, $B.release(l2)$.
+never progress due to their progress depending on a shared state that is created by another thread.
+Consider the following simple example
+where a thread must own locks $\ms{L_1}$ and $\ms{L_2}$ concurrently in order to perform its desired operation.
+Thread $\ms{T_A}$ runs a protocol that first acquires $\ms{L_1}$ and then $\ms{L_2}$, while thread
+$\ms{T_B}$ runs a protocol that first acquires $\ms{L_2}$ then $\ms{L_1}$.
+In order to avoid deadlock a straightforward mechanism is used where when some thread notices that another thread owns a lock it wants, it
+simply releases all the locks it owns and starts the locking protocol over.
+Now consider the following order of events by thread $\ms{T_A}$ and $\ms{T_B}$, each trying to acquire locks $\ms{L_1}$ and $\ms{L_2}$, where the $\ms{L}.acquire_{\ms{T}}()$ operation
+performed on a lock $\ms{L}$ by thread $\ms{T}$ returns $\lit{true}$ if $\ms{T}$ successfully acquired the lock, or $\lit{false}$
+if the acquire failed due to the lock being owned by another thread:
+$$\ms{L_1}.acquire_{\ms{T_A}}() \to \lit{true}, \ms{L_2}.acquire_{\ms{T_B}}() \to \lit{true}, \ms{L_2}.acquire_{\ms{T_A}}() \to \lit{false},$$
+$$\ms{L_1}.acquire_{\ms{T_B}}() \to \lit{false}, \ms{L_1}.release_{\ms{T_A}}(), \ms{L_2}.release_{\ms{T_B}}()$$
 
 
 
-\anote{NEED TO DEFINE THIS HISTORY STRUCTURE}
+% \anote{NEED TO DEFINE THIS HISTORY STRUCTURE}
 
 
-If such an order of events is continually repeated then livelock is observed.
+As we can see, if such an order of events is continually repeated then livelock is observed, as neither
+thread $\ms{T_2}$ nor thread $\ms{T_2}$ will ever acquire both locks.
 Even though the processes are not stalled they are not making progress.
 It should be noted that by definition livelock freedom also ensure deadlock freedom.
 
@@ -285,9 +288,8 @@ In such cases the amount of time a thread might have to wait could be unknown an
 
 The second advantage is when faults are considered.
 If a thread is waiting for a lock that is owned by another thread that has crashed
-then without fault detection and recovery (known to be a very difficult problem to solve \cite{}
-\anote{need citation}
-) this thread will be waiting forever.
+then without fault detection and recovery (known to be a very difficult problem to solve \cite{ACT00})
+this thread will be waiting forever.
 Non-blocking algorithms on the other hand by definition do not have to worry about this.
 Given that fault detection and recovery is a difficult problem especially in massively parallel
 systems this is an obvious advantage of non-blocking algorithms.
@@ -448,7 +450,7 @@ we will now look into how this relates to transactional memory.
 % between universal constructions and transactional memory.
 
 \subsection{Progress properties and transactional memory}
-\anote{Say that That most STM don't ensure progress just for speed's sake.}
+% \anote{Say that That most STM don't ensure progress just for speed's sake.}
 
 The previously mentioned blocking and non-blocking progress
 properties were defined for concurrent code in general
@@ -692,22 +694,33 @@ with transactions that are in the process of committing.
 With only this type of help,  some transaction 
 can be aborted indefinitely without violating safety
 at most satisfying non-blocking global progress.
-Consider for example a thread $T1$ transaction $t1$
-and a separate thread $T2$ that executes an infinite sequence of the
-same transaction $t2$.
-Now simply consider a history as follows that is repeated infinitely, $t2$ starts executing,
-$t1$ starts executing, $t2$ commits, $t1$ notices that it conflicts with
-$t2$ so it must abort.
-In such a history $t1$ will always abort before it reaches the committal phase
+Consider for example a thread $T_A$ executing transaction $T_1$
+and a separate thread $T_B$ that executes repeatedly a transaction $T_2$ (i.e. within
+an non-terminating while loop) that conflicts with transaction $T_1$.
+Now simply consider a history as follows that is repeated infinitely, $T_2$ starts executing,
+$T_1$ starts executing, $T_2$ commits, $T_1$ notices that it conflicts with
+$T_2$ so it must abort.
+In such a history $T_1$ will always abort before it reaches the committal phase
 so if blocking is not allowed, helping only in the committal phase will not
 ensure the committal of every transaction.
 
 
+\paragraph{The cost of non-blocking STM}
+While the incentive of the strong progress guaranteed by non-blocking algorithms
+is alluring, overwhelmingly the efficient of state of the art STM protocols are designed
+using locks.
+In \cite{Ennals06softwaretransactional}, Ennals gives a strong argument for not using non-blocking STM protocols
+when concerned with efficiency, citing things such as increased cache misses and wasted
+work from helping.
+Nonetheless, researchers have explored various ways to create efficient non-blocking STM protocols \cite{FM11, MM08, MSHAESS06} with
+varying levels of success.
+
 \subsection{Ensuring transaction completion}
 As seen, there are many ways to cope with aborted transactions
 and to ensure progress in transactional memory.
-Unfortunately none of these solutions quite realize to goal of ease-of-use for the
-programmer is still concerned with the idea of abort/commit.
+Unfortunately in each of these solutions the programmer must still understand
+concept of abort/commit as a complexity that is assumed when he decides to use
+transactional memory.
 In some cases the programmer has to deal directly with aborted transactions
 in his code, in others a programmer can prioritize certain transactions
 so they will not abort, others allow transactions to be blocked, while
@@ -715,33 +728,66 @@ other allow transactions to be aborted infinitely.
 Absent from these solutions is the case where all transactions are guaranteed to
 commit where the progress of a transaction does not rely on the
 other processes then the one that issued the transaction.
-Such a solution would prioritize ease-of-use as such a protocol would hide
-the concept of aborted transactions from the programmer.
+Such a solution would prioritize ease of use as such a protocol would hide
+the concept of aborted transactions from the programmer when considering
+the progress of the system.
 
-More precisely, a better solution would be a non-blocking STM protocol which ensures that every transaction
-issued by a process is eventually committed wheres its progress only depends
-on the issuing process.
+More precisely, such a solution would be a non-blocking STM protocol that ensures every transaction
+issued by any process is eventually committed with its progress only depending
+on the issuing process and not the concurrency pattern of other processes in the system.
 Then, the job of a
-programmer is then to write her/his concurrent program in terms of cooperating sequential
+programmer is then to write his concurrent program in terms of cooperating sequential
 processes, each process being made up of a sequence of transactions (plus possibly
-some non-transactional code). At the programming level, any transaction invoked by
+some non-transactional code) where,
+at the programming level, any transaction invoked by
 a process is executed exactly once (similarly to a procedure invocation in sequential
-computing). Moreover, from a global point of view, any execution of the concurrent
+computing).
+Moreover, from a global point of view, any execution of the concurrent
 program is linearizable \cite{HW90}, meaning that all the transactions appear as if they have
 been executed one after the other in an order compatible with their real-time occurrence
 order. Hence, from the programmer point of view, the progress condition associated
 with an execution is a very classical one, namely, starvation-freedom.
+While the underlying STM protocol might satisfy a stronger consistency criterion
+designed to deal with aborted transactions,
+such as opacity, the programmer need not worry about this as each transaction
+he writes executes exactly once.
 The remainder of this chapter focuses on the design of a such protocol.
-(As a note it should be said that the presentation of previous approaches
-that deal with aborted transactions are primarily
-efficiency-oriented while our construction is
-more theory-oriented.)
+
+
+\paragraph{A note about system calls and I/O}
+Unfortunately completely hiding aborts from the programmer is not quite so simple.
+Throughout this thesis we have considered transactions to be blocks of code
+performing reads and writes to local and shared memory whose side effects only concern
+the modification of the accessed memory.
+Importantly in a realistic system the programmer can perform additional operations
+that effect things outside of the memory such as input and output to a file
+or access to a communication channel.
+Obviously certain of these operations will not be reversible or abortable,
+the classic example being the sending of a message to launch a missile.
+Several solutions to this have been proposed on how to allow these operations to be performed
+within transactions such as placing all I/O operations
+in irrevocable transactions, but this restricts scalability and progress
+as only one irrevocable transaction can execute at a time.
+Another solution is to perform I/O calls during the commit phase \cite{}, but this also prevents
+the user from performing actions based on what the call returns within his transaction.
+Another interesting solution \cite{VTGSW09} proposes to look at each specific system and I/O call separately
+and create a version of it specifically to run efficiently in transactions.
+Traditionally STM designers just assume that the programmer is not allowed to perform system or I/O calls
+from within his transactions and is what we assume in this thesis.
+An important question to answer by future research would be to know what kind of progress can
+be ensure for transactions when different types of I/O or system calls can be used.
+
+
+% (As a note it should be said that the presentation of previous approaches
+% that deal with aborted transactions are primarily
+% efficiency-oriented while our construction is
+% more theory-oriented.)
 
 
 \subsection{A short comparison with object-oriented universal construction}
 \label{sec:comparison-Herlihy}
 
-First it is important to notice that an STM that hides the concept of
+It is important to notice that an STM that hides the concept of
 commit/abort from the programmer has objectives similar to that of a
 universal construction described earlier in this chapter.
 A universal construction allows a programmer to turn a sequential
