@@ -444,6 +444,17 @@ After privatization, memory can then be publicized to be accessed
 from within transactions again
 by using a publication transaction.
 
+
+Considering the privatization problem, \emph{single lock atomicity} (or \emph{single global lock semantics}) \cite{MBS08} is a widely
+accepted memory model for STM, where transactions execute as if there is 
+a single global lock that each transaction must acquire on
+start and release on commit.
+Obviously if there is only one transaction executing at a time then privatization and publication safety is
+ensured.
+The simple benefit of ensuring this model is that the programmer can view the memory accesses done by transactions
+as if they had been done using a single global lock.
+
+
 A typical  example of privatization would  be the manipulation  of a shared
 linked list. The  removal of a node $n$ by a  transaction $T_i$, for private
 use, through  non-transactional  code,  by  the process $p$ that  invoked $T_i$,  
@@ -485,17 +496,38 @@ accessing data that are no longer valid.
 \end{itemize}
 
 
-\anote{Need to put in citations for these, update this paragraph}
-Several solutions have been proposed for the privatization problem 
-such as using visible reads, conventional means of 
-synchronization such as fences, sandboxing, partitioning by consensus 
-\cite{scott07}, the use of lock-free reference   counters   \cite{afek10}  or   
-by  using private transactions \cite{dice10}, to name a few. 
-Several protocols implementing privatization have been proposed,
-ranging from solutions where a programmer uses a special keyword to mark
-which transactions are privatizing, to others that ensure safety by having
-a privatizing transaction block until all other concurrent transactions
-have finished, to more complex non-blocking solutions.
+% \anote{Need to put in citations for these, update this paragraph}
+Several solutions have been proposed for the privatization problem.
+Probably the most straightforward way to implement privatization
+is to use commit fences.
+In such a case after a thread commits a transaction, it will wait
+until all other concurrent transactions complete before continuing.
+At this point the thread knows that its privatized data is definitely
+not being accesses by any other transactions.
+More complex techniques can be used for deciding when to include
+a fence by using partially visible reads \cite{MSS08} or by using quiescence mechanisms
+where each thread has a shared thread-local counters \cite{MBS08}.
+
+A similar approach to ensuring privatization safety is to leave transactional
+code unmodified and instead modify the non-transactional operation by
+for example adding fences to them \cite{shpeis07}.
+In a different light, similar to the way using a global lock inherently insure privatization
+safety, an STM protocol that uses global shared data structures can often
+ensure privatization safety with little or no additional overhead, such is the case
+with RingSTM \cite{SMP08} and NOrec \cite{DSS10}.
+Other possible solutions include partitioning by consensus 
+\cite{scott07} and the use of lock free reference   counters  \cite{afek10}.
+
+The performance of STMs ensuring privatization through the use of fences
+can be improved by either removing unnecessary fences by analyzing the code
+at compile or run time \cite{SMSA08}, or by requiring the programmer to explicitly
+mention when he is privatizing data through the use of private transactions \cite{dice10}.
+
+% Several protocols implementing privatization have been proposed,
+% ranging from solutions where a programmer uses a special keyword to mark
+% which transactions are privatizing, to others that ensure safety by having
+% a privatizing transaction block until all other concurrent transactions
+% have finished, to more complex non-blocking solutions.
 
 
 A main advantage of privatization is in the case of performance, as when
@@ -539,8 +571,6 @@ has to decide when and what to privatize and publicize.
 
 
 
-\paragraph{Solution from scott/spear}
-\anote{Need to write and cite}
 
 \paragraph{Strong isolation}
 
@@ -604,6 +634,31 @@ the additional operations must be added.
 For example in \cite{shpeis07,SMSA08} memory barriers are added before non-transactional reads and writes
 by the compiler.
 This can also be done dynamically at runtime.
+
+
+
+\paragraph{Other models}
+Transactional memory models ensuring some type of weak or strong isolation or
+global lock semantics using privatization and publication are by far the most
+widely considered models for TM.
+Still, several other models have been proposed, usually presenting a model
+stronger then weak isolation, but still focusing on some
+trade-off of how efficiently the model can be implemented versus how easy
+it is to understand.
+
+On the efficiency side of things there are examples such as \emph{asymmetric lock atomicity} \cite{MBS08}
+which is equivalent to a model in which each location in memory has its own
+reader-writer lock, where read locks are acquired at the beginning of the transaction
+and write lock are acquired just before writing.
+This model aims at lowering the overhead of global lock semantics, but creates a much more complicated
+model for programmers to use.
+An alternative solution called \emph{selective strict serializability} \cite{spear08} also weakens the global lock
+semantics model by saying that non-transactional access only follow the global lock semantics
+with certain transactions as defined by the programmer.
+Towards the models focused more towards being easy to understand, there is the \emph{transactional data-race-free}
+model \cite{DS09} whose aim is to extend the well known Adve and Hill's data-race-free models \cite{AH93} used for concurrency in
+languages such as Java and C++ in order to include transactions in a clear direct way.
+
 
 \paragraph{Precisely Defining Strong Isolation.}
 
@@ -909,6 +964,8 @@ that ensures terminating strong isolation.
 %comes into view when it exists alongside non-transactional code, it is just
 %another means of achieving synchronization,  
 %along with  locks, fences  and other traditional methods.  
+
+
 
 %=======================================================================
 \section{Implementing terminating strong isolation}
