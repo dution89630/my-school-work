@@ -317,8 +317,8 @@ compared against the transactional versions of state-of-the-art tree algorithms.
 We introduce the speculation-friendly binary search tree by describing its implementation of an associative array abstraction, mapping a key to 
 a value. In short, the tree speeds up the access transactions by decoupling two conflict-prone operations: the node deletion and the tree rotation. 
 Although these two techniques have been used for decades in the context of data management~\cite{DLM78,Moh90}, our algorithm novelty lies in applying 
-their combination to reduce transaction aborts. We first depict, in Algorithm~\ref{alg:tree1}, the pseudocode that looks like sequential code encapsulated 
-within transactions before presenting, in Algorithm~\ref{alg:tree2}, more complex optimizations.
+their combination to reduce transaction aborts. We first depict, in Algorithm~\ref{fig:tree-abstract},\ref{fig:tree-maintenance}, the pseudocode that looks like sequential code encapsulated 
+within transactions before presenting, in Algorithm~\ref{fig:tree-opt-find}, \ref{fig:tree-opt-maintenance}, more complex optimizations.
 
 \subsection{Decoupling the tree rotation}
 The motivation for rotation decoupling stems from two separate observations: (i)~a rotation is tied to the modification that triggers it, hence the process 
@@ -493,7 +493,7 @@ lightweight read operation,
 $\act{uread}$, that breaks this interface. This optimization is thus usable only in TM systems providing additional 
 explicit calls 
 and do not aim at replacing but complementing the previous algorithm 
-to preserve its portability. This optimization complementing Algorithm~\ref{alg:tree1} is depicted in Algorithm~\ref{alg:tree2}, it does not
+to preserve its portability. This optimization complementing Algorithm~\ref{fig:tree-maintenance} is depicted in Algorithm~\ref{fig:tree-opt-maintenance}, it does not
 affect the existing $\act{contains}$/$\act{insert}$/$\act{delete}$ operations besides speeding up their internal $\act{find}$ 
 operation. Here the left rotation is not the exact symmetry of the right rotation code. 
 %Please refer to the technical report~\cite{CGR11} for a desciption of this sublety.
@@ -537,7 +537,7 @@ $O(s^2)$,
 where $s$ is the size of the read set, whereas a TM that uses visible reads performs a modification to shared memory for each read.
 
 \paragraph{Rotation}
-Rotations remain conflict-prone in Algorithm~\ref{alg:tree1} as they incur a conflict when crossing the region of the tree traversed by a  $\act{contains}$/$\act{insert}$/$\act{delete}$ operation. 
+Rotations remain conflict-prone in Algorithm~\ref{fig:tree-maintenance} as they incur a conflict when crossing the region of the tree traversed by a  $\act{contains}$/$\act{insert}$/$\act{delete}$ operation. 
 If $\act{uread}$s are used in the $\act{contains}$/$\act{insert}$/$\act{delete}$ operations then rotations will only conflict with these operations if they
 finish at one of the two nodes that are rotated by $\act{rotation}$ operation
 (for example in Figure~\ref{sfig:tree1} this would be the node $i$ or $j$).
@@ -1166,26 +1166,26 @@ propagations done in the speculation friendly tree have the same effect and keep
 balance information in the same way.
 
 Before discussing how balance information is propagated in the speculation friendly tree
-is should be noted that balance information is also updated during the $\act{remove}$ operation
-(line \ref{}).
+it should be noted that balance information is also updated during the $\act{remove}$ operation
+(line \ref{line:u-b-v3}).
 When a node is removed and a $\bot$ subtree takes its place at the parent then height
 for that subtree at the parent is set to zero.
-This along with the fact that new nodes are inserted with left and right child heights of zero (line \ref{})
+This along with the fact that new nodes are inserted with left and right child heights of zero (line \ref{sline:init-childh})
 ensures the requirement from \cite{IRISAppr} that a nodes know when it has a $\bot$ subtree.
 The algorithm showing how balance information is propagated and when rotations are performed
-is shown in figure \ref{}.
+is shown in figure \ref{fig:tree-rec-bal}.
 The bulk of the work takes place in the $\act{recursive\_traversal}$ procedure.
 This procedure is repeatably called by the maintenance thread with each iteration traversing
 the tree in a depth first manner propagating balance information and performing rotations
 as it travels up the tree.
 This operation starts at the left child of the root, recursively calling itself on the left
-and right children of the node (lines \ref{}-\ref{}) before updating the current node.
+and right children of the node (lines \ref{sline:maint-recleft}-\ref{sline:maint-recright}) before updating the current node.
 The recursive calls return an integer value of the estimated height of the subtree rooted
 at the node it was called on.
 This values are then used to update the current nodes $\ms{left\_h}$, $\ms{right\_h}$, and $\ms{local\_h}$
 values, which are also then used to check if any rotations should be performed at the current node.
 Note that during rotation, these balance values are also updated for the nodes modified during the rotation
-(line \ref{}).
+(eg. line \ref{line:u-b-v4} of the $\act{right\_rotate}$ procedure).
 
 \subsection{Proof of balance}
 We already know (thanks to the result from \cite{IRISAppr}) in the absence of concurrent insert and removal

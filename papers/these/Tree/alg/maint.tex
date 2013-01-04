@@ -11,8 +11,8 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 \bf{operation} $\act{recursive\_balance}(\ms{parent, n, left-child})_p$: \\
 		\line{MB01} \> \bf{if} ($\ms{n} = \bot$) \bf{then} $\act{return}(0)$ \bf{end if}; \\
 		\line{MB01} \> $\ms{\ell} \gets \ms{n.\ell}$; $\ms{r} \gets \ms{n.r}$; \\
-		\line{MB01} \> $\ms{n.left-h} \gets \act{recursive\_balance}(\ms{n}, \ms{\ell}, \lit{true})$; \\
-		\line{MB01} \> $\ms{n.right-h} \gets \act{recursive\_balance}(\ms{n}, \ms{r}, \lit{false})$; \\
+		\line{sline:maint-recleft} \> $\ms{n.left-h} \gets \act{recursive\_balance}(\ms{n}, \ms{\ell}, \lit{true})$; \\
+		\line{sline:maint-recright} \> $\ms{n.right-h} \gets \act{recursive\_balance}(\ms{n}, \ms{r}, \lit{false})$; \\
 		\line{MB01} \> $\ms{n.local-h} \gets \act{max}(\ms{n.left-h},\ms{n.right-h}) + 1$; \\
 		\line{MB01} \> \bf{if} ($\ms{n.left-h} > \ms{n.right-h} + 1$) {\bf then} \\
 % 		\line{MB01} \>\> $\ms{\ell} \gets \ms{n.\ell}$; \\
