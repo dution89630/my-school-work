@@ -798,24 +798,30 @@ A universal construction allows a programmer to turn a sequential
 object into a concurrent one where each operation is linearizable
 and completes successfully, while
 the STM protocol we want here is one that allows a programmer to place transactions
-in his code each of which are executed successfully and are linearizable.
-Although similar, the key difference between these lies in the
-difference between an operation and a transaction.
+in his code where each of which is executed successfully and is linearizable.
+% Although similar, the key difference between these lies in the
+% difference between an operation and a transaction.
 
 % This universal  construction (denoted H\_UC in the following) 
 % addresses  the  implementation  of linearizable concurrent objects in 
 % presence  of process crashes. 
 
 %As indicated in Section~\ref{sec:related-work},
-There is an important and fundamental difference between an operation on 
+Although similar, there is an important and fundamental difference between an operation on 
 a concurrent object (e.g.,  a shared queue) and a transaction performed
 by an STM protocol. 
-\anote{update this section}
-Albeit the operations on a queue can have many different implementations, 
-their semantics is  defined once for all. 
-Differently, each transaction is a specific  atomic procedure whose 
-code can be  seen as being any dynamically  defined code.
-What is significant here is that any transaction is  able to read and
+% \anote{update this section}
+Consider for example a queue data structure and its operations enqueue
+and dequeue.
+Albeit these queuing operations can have many different implementations, 
+their semantics is  defined once for all.
+As a result in every implementation the effect of performing an enqueue operation
+abstractly results in adding an element to the back of the queue
+while a dequeue operation results in removing and returning an element from the
+front of the queue.
+Differently considering transactions, each transaction is a specific  atomic procedure whose 
+code can be  seen as being created by the programmer to be any dynamically  defined code.
+What is significant at a lower level is that any transaction is  able to read and
 write to  any location in shared  memory while an operation  in a universal
 construction is fixed to a predefined set, which is often a single instance
 of a  data structure.
