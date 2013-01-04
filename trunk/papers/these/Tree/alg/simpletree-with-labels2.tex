@@ -13,7 +13,7 @@ aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
 	\line{TBA01} \>\> $\ms{k} \in  \mathbb{N}$, the node key \\
 	\line{TBA01} \>\> $\ms{v} \in  \mathbb{N}$, the node value \\
 	\line{TBA01} \>\> $\ms{\ell}, \ms{r} \in \mathbb{N}$, left/right child pointers, initially $\bot$ \\
-	\line{TBA01} \>\> $\ms{left-h}, \ms{right-h} \in \mathbb{N}$, local height of left/right child, initially 0 \\
+	\line{sline:init-childh} \>\> $\ms{left-h}, \ms{right-h} \in \mathbb{N}$, local height of left/right child, initially 0 \\
 	\line{TBA01} \>\> $\ms{local-h} \in \mathbb{N}$, expected local height, initially 1 \\
 	\line{TBA01} \>\> $\ms{del} \in \{\lit{true}, \lit{false}\}$, indicate whether logically deleted, initially $\lit{false}$ \\ \\
    		
@@ -36,7 +36,7 @@ aaaaa\=aa\=aaaaa\=aa\=\kill %~\\
 		\line{sline:del-cont} \>\> \bf{else if} $(\lit{read}(\ms{curr.del}))$ \bf{then} $\ms{result} \gets \lit{false}$ \bf{end if}\\% \label{sline:del-cont} \\
 		\line{TBA01} \> \bf{end if} \\
 		\line{TBA01} \> $\lit{try\_to\_commit}()$ \\
-		\line{TBA01} \> $\sf{return}(\ms{result})$. \\%\label{sline:cont-return} \\
+		\line{sline:cont-return} \> $\sf{return}(\ms{result})$. \\%\label{sline:cont-return} \\
 {\bf end operation}. \\
 \\
    		

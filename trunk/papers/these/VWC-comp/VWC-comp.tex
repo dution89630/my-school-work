@@ -933,37 +933,7 @@ safety).  From this we have that read invisibility, permissiveness,
 and opacity are {\it incompatible} in the sense that any pair of properties 
 can be satisfied only if the third is omitted.
 
-
-
-
-
-
-
-
-
-
-
-\subsection{Invisible reads, virtual world consistency and permissiveness are compatible} 
-\label{sec:opacity-impos}
-
-\anote{UPDATE PROOF}
-
-
-\input{./VWC-comp/vwcinvisperm}
-
-
-\anote{SHOULD ALSO TALK ABOUT PROB PERM FOR THE PROOF}
-
-
-
-\paragraph{Remark}
-The previous section (section \ref{sec:opacity-impos}) shows that opacity is a too strong consistency condition 
-when one wants  both  read invisibility and permissiveness
-while this section shows that virtual world consistency should be used instead.
-
-Let us consider the execution in figure \ref{fig:opacity-impossibility} that was used to show that opacity, invisible reads, and
-permissiveness are incompatible.
-Unsurprisingly this history can be made permissive and virtual world consistent even with read invisibility.
+Importantly this history can be made permissive and virtual world consistent even with read invisibility.
 In order for this to be true, a virtual  world consistency protocol must then
 abort transaction $T_1$. 
 Then it is easy  to see that the  corresponding weak transaction history 
@@ -971,6 +941,44 @@ is virtual world consistent:
  The  read prefix ``$X.{\sf  read}_{T_1}()$;  $Y.{\sf  read}_{T_1}()$'' 
 of the aborted transaction  $T_1$
 can be ordered after $T_2$ (and $T_3$ does not appear in its causal past). 
+In the following sections a protocol is designed that satisfies virtual world consistency,
+invisible reads, and permissiveness.
+
+
+
+
+
+
+
+% 
+% \subsection{Invisible reads, virtual world consistency and permissiveness are compatible} 
+% \label{sec:vwc-pos}
+% 
+% \anote{UPDATE PROOF}
+% 
+% 
+% \input{./VWC-comp/vwcinvisperm}
+% 
+% 
+% \anote{SHOULD ALSO TALK ABOUT PROB PERM FOR THE PROOF}
+% 
+% 
+% 
+% \paragraph{Remark}
+% The previous section (section \ref{sec:opacity-impos}) shows that opacity is a too strong consistency condition 
+% when one wants  both  read invisibility and permissiveness
+% while this section shows that virtual world consistency should be used instead.
+% 
+% Let us consider the execution in figure \ref{fig:opacity-impossibility} that was used to show that opacity, invisible reads, and
+% permissiveness are incompatible.
+% Unsurprisingly this history can be made permissive and virtual world consistent even with read invisibility.
+% In order for this to be true, a virtual  world consistency protocol must then
+% abort transaction $T_1$. 
+% Then it is easy  to see that the  corresponding weak transaction history 
+% is virtual world consistent:  
+%  The  read prefix ``$X.{\sf  read}_{T_1}()$;  $Y.{\sf  read}_{T_1}()$'' 
+% of the aborted transaction  $T_1$
+% can be ordered after $T_2$ (and $T_3$ does not appear in its causal past). 
 
 
 
@@ -2529,80 +2537,91 @@ The following statement is added just between  line \ref{BA19} and line
 It is easy to see that these modifications force the  commit time of a 
 transaction to  lie   between  its starting  time and its end time. 
 Let us  observe that  now the disjoint access  parallelism property  
-remains to be  satisfied  but for  the accesses to the common clock. 
+remains to be  satisfied  except for  the accesses to the common clock. 
 
 
 \subsection{Some additional interesting properties}
 
-\anote{NEED TO INTRO/UPDATE THIS SECTION or maybe should just remove it}
+% \anote{NEED TO INTRO/UPDATE THIS SECTION or maybe should just remove it}
 This chapter has focused on the STM properties of permissiveness, virtual world consistency,
 and invisible reads, but,
-interestingly enough, this  STM protocol  has additional  noteworthy
-features described in the following paragraphs. 
-By satisfying these properties we then know that they are compatible
+interestingly enough, this  STM protocol  satisfies several additional  noteworthy
+features/properties described in the following paragraphs. 
+By satisfying these additional properties we then know that they are compatible
 with permissiveness, virtual world consistency, and invisible reads.
-It is important to realize that some of these properties are not necessarily
+Additionally, it is important to realize that some of these additional properties are not necessarily
 exclusive to STM systems and may be applicable to other concurrent algorithms,
 or even algorithms in general.
-Realizing this, there are countless properties that can be considered whose
-compatibility can be then examined with other properties resulting in a huge
-number of possibilities.
-Given such a huge space of options to examine, people studying
-TM are given the task of deciding which ones might be important and others
-that might not be so much.
+Following this, we must acknowledge that there are nearly countless properties
+to consider (TM specific properties, concurrent algorithm specific properties, or even properties applicable
+generally to algorithms) whose
+compatibility with other properties might be examined when taking TM into account.
+Given such a huge space of options to examine, the STM community
+is given the task of deciding which properties and their combinations might be important and
+others that might not.
 Unfortunately this is not always a straightforward task, especially given
-that we do not know to what extent and for what problems transactional memory
+that we do not know to what extent and for what tasks transactional memory
 might be used for in the future.
-The following are some properties satisfied by the protocol which appear
+The following are some properties satisfied by the protocol discussed in this chapter which appear
 to be important when considering efficient STM protocols.
 
 \paragraph{Base operations and underlying locks}
-The use of expensive  base synchronization operations such as \\
-${\sf Compare\&Swap()}$  or  the use of underlying locks to implement  
-an STM system can make it inefficient  and prevent its  scalability
-compared to just using simple reads and writes.
+The use of expensive  base synchronization operations such as 
+${\sf Compare\&Swap()}$  or  the use of underlying locks are very
+powerful and allow us to implement interesting concurrent algorithms.
+Unfortunately these operations can be quite expensive and their use in
+an STM system can cause inefficiencies  and prevent scalability
+especially when compared to just using simple reads and writes.
 Hence, an STM systems should use  synchronization operations 
 sparingly  (or even not at all) and the use of locks should be  as
 restricted as  possible. 
-The protocol described in this chapter uses only base read/write operations and a lock per object 
-that is  used   at  commit  time   only.
+Following this, the protocol described in this chapter uses only base read/write operations and a lock per object 
+that is  used   at  commit  time   only (no synchronization operations
+are used in the transactional read and write operations).
 
 
 \paragraph{Disjoint access parallelism}
 Ideally, an  STM system should allow transactions that are on distinct 
 objects to execute without interference, i.e., without accessing the same
 base shared variables.
-It may seem like this is a straightforward property to ensure, but due to the
+Any concurrent protocol that satisfies \emph{disjoint access parallelism} ensures that
+non-conflicting operations do not access the same shared data.
+At first glance this seems like an essential and straightforward property to ensure, but due to the
 fact that the locations a transaction might access are not known until they actually happen,
-it can be difficult to design safe disjoint access parallel STM protocols.
+it can be difficult to design safe and efficient disjoint access parallel STM protocols.
 Still, this is a nice property for an STM system to implement for several reasons.
 First is scalability, a program that is written so that each process does not share any
 data with any other process could have its scalability limited by the sharing of data within
 the STM implementation.
-Second is simply efficiency, as shared data that is expensive accessed.
-It addition is helps avoid unnecessary aborts that my be caused by accessing
-shared memory that would not otherwise cause conflicts, such as relying on a global counter.
+Second is simply efficiency, simply because shared data can be expensive to access
+(especially that which is highly contended).
+Additionally, when specifically considering TM, this property helps avoid unnecessary aborts that my be caused by accessing
+shared memory that would not otherwise cause conflicts, such as relying on a global counter for validation.
 
 
 \paragraph{Multi-versioning}
 The  proposed IR\_VWC\_P  protocol  uses multiple  versions 
-(kept in a list) of each  shared object $\ms{X}$.
+of each  shared object $\ms{X}$ (kept in a list).
 Keeping multiple versions of an object does not change they way the programmer
 uses transactions, but instead they can be used by the STM protocol to
 do some interesting things.
-For example when considering permissiveness, by keeping multiple
-versions an STM protocol then has a larger time  line to find valid locations
+For example, specific to the protocol in this chapter, keeping multiple
+versions allows the protocol to have a larger time  line to find valid locations
 to serialize transactions.
-Multi-version systems for STM systems  have  been  proposed  several years  
-ago \cite{CR06} and have recently received a new interest, e.g., 
+In fact, the amount of versions kept is at least enough to ensure that any
+live transaction can be serialized at any valid time starting from the
+time the previous transaction was committed by this thread.
+
+This work is not the first to consider multi-versioning for STM systems, in fact
+such systems
+have  been  proposed  several years ago \cite{CR06} and have recently received a new interest, e.g., 
 \cite{AH11,PFK10} for studying permissiveness.
-In contrast to the work presented in this chapter, none of these papers 
-consider virtual wold consistency  as  consistency condition and,
+Differently than the work presented in this chapter, these papers 
+do not consider virtual wold consistency  as a  consistency condition and,
 in addition, the papers \cite{AH11,PFK10} consider a different  notion of permissiveness
 called multi-version permissiveness that states that read-only 
 transactions are never aborted  and   an update transaction  can be aborted
 only  when in conflict with other transactions writing the same objects.
-%
 More specifically, paper 
 \cite{PFK10} studies inherent properties of STMs that use multiple 
 versions    to   guarantee    successful   commits    of    all   read-only
@@ -2614,16 +2633,18 @@ the disjoint access parallelism property,  requires visible read operations
 and uses $k$-Compare\&single-swap operations. 
 
 \paragraph{Trade-offs}
-Unfortunately a change in one part of the system almost always implies an
-impact on another part of the system and because of this a discussion of properties
+Unfortunately a change in one part of the system, by for example ensuring some new property
+or making a change for efficiency, almost always implies an
+impact on another part of the system.
+Due to this, a discussion of properties
 would not be complete without also examining their trade offs.
 For example a global counter may violate disjoint access parallelism, but it can
-also be used to avoid the revalidation of a transactions read set every time a new read
+also be used to avoid the location-by-location revalidation of a transaction's read set every time a new read
 is performed (efficient state of the art STM algorithms such as TL2 \cite{DSS06} use
 such a technique).
 Or, for example, multi-versioning requires additional memory space and brings up additional
-questions such as how many versions to keep and how to clean up old versions.
-Given this, it is nearly impossible to choose the ``best'' properties for an STM system
+challenges such as how many versions to keep and how to clean up old versions.
+Given this, it is extremely difficult to choose the ``best'' properties for an STM system that works
 across all workloads and consequently encourages the study of various properties in different
 combinations across various workloads.
 As interesting example of this can be found in \cite{DH12} where shorter transactions are treated
