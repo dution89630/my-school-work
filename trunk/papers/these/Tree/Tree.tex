@@ -98,12 +98,64 @@
 
 \section{Introduction}
 
-% multicore data structure
-The multicore era is changing the way we write concurrent programs.
-In such context, concurrent data structures are becoming a bottleneck building 
-block of a wide variety of concurrent applications.
-Generally, they rely on invariants~\cite{Sha2011} which prevent them from scaling with multiple cores: 
-a tree must typically remain sufficiently balanced at any point of the concurrent execution.
+As briefly mentioned in the introduction a partial solution to the difficulty of concurrent programming
+is to provide concurrent libraries of popular abstractions such as data structures.
+Generally these are finely tuned high performance libraries
+providing the programmer with useful operations.
+The implementations of such libraries are often very complex
+and difficult to understand, but are provided with a simple to use
+interface for anyone to use.
+By doing this experts can create algorithms providing strong guarantees
+and good performance that can then be widely reused.
+
+In a perfect world transactional memory would not need such libraries,
+as one could just directly place a sequential implementation of an abstraction
+directly in transactions and it would perform as well and provide the same
+guarantees as a library provided by an expert.
+Unfortunately this is not completely true.
+Due to the general nature
+of the synchronization required by STM, a sequential data structure implementation directly
+placed in transactions will never perform as well as a highly tuned concurrent
+(lock based or non-blocking) implementation of a data structure done by an expert
+given that the expert can consider the specific synchronization needed to implement
+that data structure safely.
+
+This gives us the opportunity to design libraries designed specifically for use inside
+of transactions that take into account the synchronization considerations
+of STM.
+By doing this we can provide a programmer using transactions with abstractions that perform closer
+to highly optimized non-transactional ones.
+
+A further advantage of providing efficient libraries in STM is given by the reusable nature of code implemented using
+transactions, a programmer can use the operations of the abstractions along with his own code
+to create new efficient atomic operations.
+For example a programmer might use a map abstraction that provides an $\lit{insert}$ and a $\lit{delete}$ operation
+to create an atomic $\lit{move}$ operation by simply combing the $\lit{insert}$ and $\lit{delete}$ in a transaction.
+
+By providing a programmer with a large selection of transaction based implementations of commonly used abstractions
+his life becomes much easier.
+Also if these libraries provide good performance it gives an additional reason to use STM as an attractive alternative to
+concurrent code using locks or even highly tuned non-transactional abstractions.
+Furthermore STM has the advantage over these other types of concurrent abstractions that the programmer can reuse
+the libraries in his transactions to create new atomic operations specific to his needs.
+
+This chapter will focus on designing efficient data structures in transactional memory providing the map abstraction.
+
+
+% % multicore data structure
+% The multicore era is changing the way we write concurrent programs.
+\paragraph{Concurrent data structures}
+In this multicore era concurrent data structure are becoming important building blocks
+for programmers writing concurrent programs.
+They present the programmer with a clear interface to a given abstraction allowing
+him to safely perform operations to the abstraction in a concurrent context.
+Due to their importance in organizing data between processes they are increasingly becoming a bottleneck
+in a wide variety of concurrent applications.
+Considering data structures in general, both concurrent and sequential, they often rely on keeping invariants
+in order to ensure their efficiency and big-oh complexity.
+In the case of a tree, it must typically remain sufficiently balanced at any point of the concurrent execution.
+Unfortunately while these invariants are important to keep, they can also prevent
+the performance from scaling with multiple cores~\cite{Sha2011}.
 
 % New programming constructs like transactions~\cite{HM93,ST97} promise 
 % to exploit the concurrency inherent to multicore architectures.
@@ -121,12 +173,16 @@ a tree must typically remain sufficiently balanced at any point of the concurren
 % is harder to program with~\cite{PA11,RHW10} and hampers reusability~\cite{HMPH05,GG11}.
 
 % problem
-Yet it is unclear how one can adapt a data structure to 
-access it efficiently through transactions.
-As a drawback of the simplicity of using transactions, 
-the existing transactional programs spanning from low level libraries to 
+Further aggrandizing this problem, it is unclear how one can adapt a data structure to 
+access it efficiently through transactions in an STM system.
+Potentially as a drawback of the simplicity of using transactions, 
+data structures used in transactional memory are most commonly just
+their sequential versions pasted directly into transactions.
+% as a drawback of the simplicity of using transactions, 
+As a consequence of this, existing transactional programs spanning from low level libraries of data structures to 
 topmost applications directly derive from sequential or pessimistically synchronized programs.
-The impacts of optimistic synchronization on the execution is simply ignored. 
+In this case, not only are the impacts of optimistic synchronization on sequentially defined data structures
+ignored, but their effect on performance is compounded from the bottom level of execution all the way to the top.
 
 \begin{figure}[t]
 	\begin{center}
@@ -150,28 +206,30 @@ may need to execute $\Omega(hr)$ steps, where $r$ is the number of restarts.
 Note that $r$ depends 
 on the probability of conflicts with concurrent transactions that depends, in turn, 
 on the transaction length and $h$.
-Although it is clear that a transaction must be aborted before violating 
-the abstraction implemented by this tree,
-e.g., inserting $k$ successfully in a set where $k$ already exists,
-it is unclear whether a transaction must be aborted before 
-slightly unbalancing the tree implementation to strictly preserve the balance invariant.
 
-We introduce a \emph{speculation-friendly} tree as a tree that transiently breaks its
+
+When implementing a tree using TM it is clear that a transaction must be aborted before violating 
+the abstraction implemented by this tree
+(e.g., inserting $k$ successfully in a set where $k$ has already been inserted by a concurrent transaction),
+it is unclear whether a transaction must be aborted due to
+slightly unbalancing the tree implementation in order to strictly preserve the balance invariant.
+Following this assumption we introduce a \emph{speculation-friendly} tree as a tree that transiently breaks its
 balance structural invariant without hampering the abstraction consistency in order to speed up transaction-based accesses. 
 Here are our contributions.
 
 \begin{itemize}
 \item We propose a speculation-friendly binary search tree data structure
-implementing an associative array and a set abstractions and decoupling
-the operations that modify the abstraction (we call these \emph{abstract transactions}) from operations
+implementing an associative array and set abstractions.
+In this implementation we decoupling the operations that modify the abstraction (we call these \emph{abstract transactions}) from operations
 that modify the tree structure itself but not the abstraction (we call these \emph{structural transactions}).
 An abstract transaction either inserts or deletes an element from the abstraction and 
 in certain cases the insertion might also modify the tree structure.
-Some structural transactions rebalance the tree 
+Structural transactions have two main tasks:
+(1) Certain structural transactions are given the task to rebalance the tree 
 by executing a distributed rotation mechanism: each of these transactions executes a local rotation involving
 only a constant number of neighboring nodes. 
-Some other structural transactions unlink and free a node that was logically deleted 
-by a former abstract transaction.
+(2) Some other structural transactions unlink and free nodes that have been logically deleted 
+by previously committed abstract transactions.
 
 \item We prove the correctness (i.e., linearizability) of our tree and we compare its performance against existing transaction-based versions of an AVL tree and a red-black tree,
 widely used to evaluate transactions~\cite{DSS06,HLMS03,CCKO08,HK08,FFR08,YNW+08,DFGG11}.
@@ -188,7 +246,7 @@ by evaluating elastic transactions.
 It shows that, for a particular data structure, refactoring its algorithm is preferable to refactoring the underlying transaction algorithm.
 \end{itemize}
 
-The paper is organized as follows. In Section~\ref{sec:pb} we describe the problem related
+The chapter is organized as follows. In Section~\ref{sec:pb} we describe the problem related
 to the use of transactions in existing balanced trees. In Section~\ref{sec:tf} we present our 
 speculation-friendly binary search tree. In Section~\ref{sec:expe} we evaluate our tree
 experimentally and illustrate its portability and reusability.
@@ -199,7 +257,7 @@ Section~\ref{sec:conclusion} concludes.
 
 In this section, we focus our attention 
 on the structural invariant of existing tree libraries, namely 
-the \emph{balance}, and enlighten the impact of their restructuring, namely the \emph{rebalancing}, on contention.
+the \emph{balance}, examining the impact of restructuring, namely the \emph{rebalancing}, on contention.
 
 Trees provide logarithmic access time complexity given that they are balanced, 
 meaning that among all downward paths from the root to a leaf, the length of the shortest path 
@@ -254,10 +312,10 @@ targets while being rotated downward. Similarly, rotations cannot access common 
 
 Moreover, the red-black tree does not allow any abstract transaction to access a node that is concurrently being deleted from the abstraction because
 phases (1) and (2) are tightly coupled within the same transaction.
-If this was allowed the abstract transaction might end up on the node that is no longer part of the tree.
+If this was allowed the abstract transaction's traversal might end up on the node that is no longer part of the tree.
 Fortunately, if the modification operation is a deletion then phase (1) can be decoupled from the structural modification of phase (2)
 by marking the targeted node as logically deleted in phase (1) effectively removing it from the set abstraction prior to unlinking it physically in phase (2).
-This improvement is important as it lets a concurrent abstract transaction travel through the node concurrently being logically deleted in phase (1) without conflicting.
+This improvement is important as it lets a concurrent abstract transaction can travel through the node concurrently being logically deleted in phase (1) without conflicting.
 %\tyler{Then remove this: This improvement is important to let a $\act{contains}$ access a node that is concurrently being logically deleted in phase (1).}
 Making things worse, without decoupling these four phases, having to abort within phase (4) would typically require the three previous phases 
 to restart as well. 
@@ -269,7 +327,9 @@ keep track of a large \emph{read set} and \emph{write set},
 i.e., the sets of accessed memory locations that are protected by a transaction. 
 Possessing large read/write sets increases the probability of conflicts and thus reduces concurrency.
 This is especially problematic
-in trees because the distribution of nodes in the read/write set is skewed so that the probability of the node being in the set is much higher for nodes near the root and the root is guaranteed to be in the read set.
+in trees because the distribution of nodes in the read/write set is skewed so that the
+probability of the node being in the set is much higher for nodes near the root and the root is guaranteed to be in the read set,
+resulting in any transaction that modifies the structure at the root creating conflicts with all live transactions.
 
 \paragraph{Illustration}
 
@@ -301,16 +361,20 @@ per operation observed among 48 concurrent threads as we increase the update rat
 
 For all three trees, the transactional read complexity of an operation increases with the update ratio due to the additional aborted efforts induced by the 
 contention. 
-Althought the red-black and the AVL trees objective is to keep the complexity of pessimistic accesses $O(\log_2 n)$ (proportional to 12 in this case), where $n$ is the tree size,
+Although the red-black and the AVL trees objective is to keep the complexity of pessimistic accesses $O(\log_2 n)$ (proportional to 12 in this case), where $n$ is the tree size,
 the read complexity of optimistic accesses grows significantly ($14\times$ more at $10\%$ update than at 0\%, where there are no aborts) as the contention increases.
 As described in the sequel, the speculation-friendly tree succeeds in limiting the step complexity raise ($2.6\times$ more at $10\%$ update) of data structure accesses when 
-compared against the transactional versions of state-of-the-art tree algorithms. An optimization further reducing the number of transactional reads between 2 (for 10\% updates) and 
-18 (for 50\% updates) is presented in Section~\ref{sec:improvements}.
+compared against the transactional versions of state-of-the-art tree algorithms.
+% An optimization further reducing the number of transactional reads between 2 (for 10\% updates) and 
+% 18 (for 50\% updates) is presented in Section~\ref{sec:improvements}.
 
 %\input Tree/alg/simpletree-with-labels.tex
 
 
 \input Tree/alg/simpletree-with-labels2.tex
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 \section{The Speculation-Friendly Binary Search Tree}\label{sec:tf}
 
@@ -520,6 +584,8 @@ until it stops being concurrently modified.
 A first interesting result, is that 
 the read/write set sizes can be kept at a size of $O(k)$ instead of the $O(k\log{n})$ obtained with the previous tree algorithm, 
 where $k$ is the number of nested $\act{contains}$/$\act{insert}$/$\act{delete}$ operations nested in a transaction.
+Looking at Table \ref{table:complexity} taking this optimization account we have a read set size of 2 (for 10\% updates) and 
+18 (for 50\% updates).
 The reasoning behind this is as follow:
 Upon success, a $\act{contains}$ only needs to ensure that the node it found is still in the tree when the transaction commits,
 and can ignore the state of other nodes it had traversed. Upon failure, it only needs to ensure that the node $i$ it is looking 
@@ -708,8 +774,6 @@ For a transaction that commits a failed $\act{insert}$ operation of key $k$, bef
 For a transaction that commits a failed $\act{contains}$ operation of key $k$, before and after the commit $k$ is not in the set.
 
 
-
-\line{test}
 
 %\subsection{Lemmas and Theorems}
 %---------------------------
@@ -1187,36 +1251,36 @@ values, which are also then used to check if any rotations should be performed a
 Note that during rotation, these balance values are also updated for the nodes modified during the rotation
 (eg. line \ref{line:u-b-v4} of the $\act{right\_rotate}$ procedure).
 
-\subsection{Proof of balance}
-We already know (thanks to the result from \cite{IRISAppr}) in the absence of concurrent insert and removal
-operations the tree is guaranteed to be balance after $O(n^2)$ successful distributed local rotations and propagations.
-In the speculation friendly tree this upper bound can be tightened as rotations and propagations are not
-performed randomly, instead they are performed from the bottom up.
-In the following proof we will show that balanced is achieved after a single complete traversal of the tree
-by the maintenance thread performing the $\act{recursive\_balance}$ operation starting from the left child of the root.
-
-
-\begin{lemma}
-\label{lemma:range}
-Performing a right (resp left) rotation on a tree with a balanced left subtree of height $h$ and a balanced right subtree of height $h$
-\end{lemma}
-\begin{proof}
-
-\end{proof}
-
-
-
-\subsection{Multiple balance threads}
-The implementation and proof of the balance presented here is based off having a single thread
-responsible for the balance.
-If multiple threads were to be used the same code could be used, but we would not longer have balance
-after $O(n)$ rotations and propagations, instead we would have the smaller of either $O(n^2)$ or $O(n*m)$ where $m$ is the
-number of threads executing the balancing.
-When the insert and removal operations on the tree stop, each balance thread could be at a
-different location in their traversal of the tree, meaning that they might not be using the most up-to-date balance information
-when performing rotations.
-As soon as one of these treads propagates the correct balance information from the bottom, the resulting rotations will
-balance the tree.
+% \subsection{Proof of balance}
+% We already know (thanks to the result from \cite{IRISAppr}) in the absence of concurrent insert and removal
+% operations the tree is guaranteed to be balance after $O(n^2)$ successful distributed local rotations and propagations.
+% In the speculation friendly tree this upper bound can be tightened as rotations and propagations are not
+% performed randomly, instead they are performed from the bottom up.
+% In the following proof we will show that balanced is achieved after a single complete traversal of the tree
+% by the maintenance thread performing the $\act{recursive\_balance}$ operation starting from the left child of the root.
+% 
+% 
+% \begin{lemma}
+% \label{lemma:range}
+% Performing a right (resp left) rotation on a tree with a balanced left subtree of height $h$ and a balanced right subtree of height $h$
+% \end{lemma}
+% \begin{proof}
+% 
+% \end{proof}
+% 
+% 
+% 
+% \subsection{Multiple balance threads}
+% The implementation and proof of the balance presented here is based off having a single thread
+% responsible for the balance.
+% If multiple threads were to be used the same code could be used, but we would not longer have balance
+% after $O(n)$ rotations and propagations, instead we would have the smaller of either $O(n^2)$ or $O(n*m)$ where $m$ is the
+% number of threads executing the balancing.
+% When the insert and removal operations on the tree stop, each balance thread could be at a
+% different location in their traversal of the tree, meaning that they might not be using the most up-to-date balance information
+% when performing rotations.
+% As soon as one of these treads propagates the correct balance information from the bottom, the resulting rotations will
+% balance the tree.
 
 
 
