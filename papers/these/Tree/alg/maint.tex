@@ -13,17 +13,17 @@ aaaaa\=aa\=aaaaa\=aa\=aa\=aa\=aa\=\kill %~\\
 		\line{MB01} \> $\ms{\ell} \gets \ms{n.\ell}$; $\ms{r} \gets \ms{n.r}$; \\
 		\line{sline:maint-recleft} \> $\ms{n.left-h} \gets \act{recursive\_balance}(\ms{n}, \ms{\ell}, \lit{true})$; \\
 		\line{sline:maint-recright} \> $\ms{n.right-h} \gets \act{recursive\_balance}(\ms{n}, \ms{r}, \lit{false})$; \\
-		\line{MB01} \> $\ms{n.local-h} \gets \act{max}(\ms{n.left-h},\ms{n.right-h}) + 1$; \\
+		\line{sline:maint-rec-updatelh} \> $\ms{n.local-h} \gets \act{max}(\ms{n.left-h},\ms{n.right-h}) + 1$; \\
 		\line{MB01} \> \bf{if} ($\ms{n.left-h} > \ms{n.right-h} + 1$) {\bf then} \\
 % 		\line{MB01} \>\> $\ms{\ell} \gets \ms{n.\ell}$; \\
-		\line{MB01} \>\> \bf{if} ($\ms{\ell} \neq \bot \wedge \ms{\ell.right-h} > \ms{\ell.left-h}$) \bf{then} \\
+		\line{sline:maint-checkrot-start} \>\> \bf{if} ($\ms{\ell} \neq \bot \wedge \ms{\ell.right-h} > \ms{\ell.left-h}$) \bf{then} \\
 		\line{MB01} \>\>\> $\act{left-right-rotation}(\ms{parent}, \ms{n}, \ms{left-child})$; \\
 		\line{MB01} \>\> \bf{else} $\act{right-rotation}(\ms{parent}, \ms{n}, \ms{left-child})$ {\bf end if}; \\
 		\line{MB01} \> \bf{else if} ($\ms{n.right-h} > \ms{n.left-h} + 1$) {\bf then} \\
 		\line{MB01} \>\> \bf{if} ($\ms{r} \neq \bot \wedge \ms{r.left-h} > \ms{r.right-h}$) \bf{then} \\
 		\line{MB01} \>\>\> $\act{right-left-rotation}(\ms{parent}, \ms{n}, \ms{left-child})$; \\
 		\line{MB01} \>\> \bf{else} $\act{left-rotation}(\ms{parent}, \ms{n}, \ms{left-child})$ {\bf end if}; \\
-		\line{MB01} \> \bf{end if} \\
+		\line{sline:maint-checkrot-end} \> \bf{end if} \\
 		\line{MB01} \> $\act{return}(\ms{n.local-h})$. \\
 {\bf end operation}.
 \end{tabbing}
