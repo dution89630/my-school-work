@@ -374,7 +374,6 @@ compared against the transactional versions of state-of-the-art tree algorithms.
 \input Tree/alg/simpletree-with-labels2.tex
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 \section{The Speculation-Friendly Binary Search Tree}\label{sec:tf}
 
@@ -385,11 +384,13 @@ their combination to reduce transaction aborts. We first depict, in Algorithm~\r
 within transactions before presenting, in Algorithm~\ref{fig:tree-opt-find}, \ref{fig:tree-opt-maintenance}, more complex optimizations.
 
 \subsection{Decoupling the tree rotation}
-The motivation for rotation decoupling stems from two separate observations: (i)~a rotation is tied to the modification that triggers it, hence the process 
-modifying the tree is also responsible for ensuring that its modification does not break the balance invariant and (ii)~a rotation affects different 
-parts of the tree, hence an isolated conflict can abort the rotation performed at multiple nodes.
-In response to these two issues we introduce a dedicated rotator thread to complete the modifying transactions faster and we distribute the rotation 
-in multiple (node-)local transactions. 
+The motivation for rotation decoupling stems from two separate observations on traditional tree implementations: (i)~a rotation is tied to the abstract modification
+(either successfully adding or removing a node) that triggers it, hence, after the abstract modification the same process
+is also responsible for ensuring that its modification does not break the balance invariant and (ii)~a rotation affects different 
+parts of the tree apart from where the abstract modification (the location of the node added or removed) took place, hence an isolated conflict can abort the rotation performed at multiple nodes.
+In response to these two issues we introduce a dedicated \emph{rotator} thread responsible for eventually ensuring the balance invariant,
+allowing transactions performing abstract modifications to complete faster faster and we also distribute the multiple rotations needed to ensure balance 
+into single rotation (node-)local transactions. 
 Note that our rotating thread is similar to the collector 
 thread proposed by Dijkstra et al.~\cite{DLM78} to garbage collect stale nodes.
 
@@ -406,12 +407,18 @@ will have a read/write conflict with this transaction.
 In the worst case an $\act{insert}$/$\act{delete}$ operation triggers rotations all the way up to the root resulting in conflicts with all concurrent transactions.
 
 \paragraph{Rotation}
-As previously described, rotations are not required to ensure the atomicity of the $\act{insert}$/$\act{delete}$/$\act{contains}$ operations so it is not necessary to perform rotations in the same transaction as the $\act{insert}$ or $\act{delete}$. Instead we dedicate a separate thread that continuously checks for unbalances and rotates accordingly within its own node-local transactions.
+
+\input{Tree/alg/maint.tex}
+
+As previously described, rotations are not required to ensure the atomicity of the $\act{insert}$/$\act{delete}$/$\act{contains}$ operations
+so it is not necessary to perform rotations in the same transaction as the $\act{insert}$ or $\act{delete}$.
+Instead we dedicate a separate thread that continuously checks for unbalances and rotates accordingly within its own node-local transactions,
+performing a single rotations per transaction.
 
 More specifically, neither do the $\act{insert}$/$\act{delete}$ operations comprise any rotation, nor do the rotations execute
 on a large block of nodes. Hence, local
 rotations that occur near the root can still cause a large amount of conflicts, but rotations performed further down the tree are less subject to conflict.
-If local rotations are performed in a single transaction block then even the rotations that occur further down the tree will be part of a likely conflicting transaction, 
+If several local rotations are performed in a single transaction block then even the rotations that occur further down the tree will be part of a likely conflicting transaction, 
 so instead each local rotation is performed as a single transaction.
 Keeping the $\act{insert}$/$\act{delete}$/$\act{contains}$ and $\act{rotate}$/$\act{remove}$ operations as small as possible allows more operations to execute at the same time without conflicts, increasing concurrency.
 
@@ -425,7 +432,8 @@ With local rotations, each time a rotation is performed it uses the most up-to-d
 The actual code for the rotation is straightforward.
 Each rotation is performed just as it would be performed in a sequential binary tree (see Figure~\ref{sfig:tree1}-\ref{sfig:tree2}), but within a transaction.
 
-Deciding when to perform a rotation is done based on local balance information omitted from the pseudocode.
+Deciding when to perform a rotation is done based on local balance information 
+shown on lines \ref{sline:maint-checkrot-start}-\ref{sline:maint-checkrot-end} of Algorithm \ref{fig:tree-rec-bal}.
 This technique was introduced in~\cite{IRISAppr} and works as follows.
 $\ms{left-h}$ (resp. $\ms{right-h}$) is a node-local variable to keep track of the estimated height of the left (resp. right) subtree.
 $\ms{local-h}$ (also a node-local variable) is always $1$ larger than the maximum value of $\ms{left-h}$ and $\ms{right-h}$.
@@ -437,16 +445,18 @@ Using the propagate operation and local rotations, the tree is guaranteed to be 
 as in~\cite{IRISAppr,BCCO10}.
 
 \paragraph{Propagation}
-The rotating thread executes continuously a depth-first traversal to propagate the balance information.
-Although it might propagate an outdated height information due to concurrency, the tree gets eventually balanced.
-The only requirement is that a node knows when it has an empty subtree (i.e., when $\ms{node.\ell}$ is $\bot$, $\ms{node.left-h}$ must be $0$).
+The rotating thread executes continuously a recursive depth-first traversal to propagate the balance information performing local rotations
+along the way.
+Although it might propagate outdated height information due to concurrency, the tree gets eventually balanced.
+The requirement for eventual balance is that a node knows when it has an empty subtree (i.e., when $\ms{node.\ell}$ is $\bot$, $\ms{node.left-h}$ must be $0$).
 This requirement is guaranteed since a new node is always added to the tree with $\ms{left-h}$ and $\ms{right-h}$ set to $0$
 and these values are updated when 
 a node is removed or a rotation takes place.
-Each propagate operation is performed as a sequence of distributed transactions each acting on a single node.
-Such a transaction
-first travels to the left and right child nodes, checking their $\ms{local-h}$ values and using these values to update
-$\ms{left-h}$, $\ms{right-h}$, and $\ms{local-h}$ of the parent node.
+% Each propagate operation is performed as a sequence of distributed transactions each acting on a single node.
+A propagation is performed during each call to the $\act{recursive\_balance}$ operation on lines \ref{sline:maint-recleft}-\ref{sline:maint-rec-updatelh} of Algorithm \ref{fig:tree-rec-bal}.
+Each call to this operation
+first recursively travels to the left (line \ref{sline:maint-recleft}) and right (line \ref{sline:maint-recright}) child nodes, taking the values returned to update
+$\ms{left-h}$, $\ms{right-h}$, and $\ms{local-h}$ of the parent node, finally the operation returns the updated $\ms{local-h}$ for the node.
 As no abstract transactions access these three values, they never conflict with propagate operations (unless the transactional 
 memory used is inherently prone to false-sharing).
 
@@ -468,8 +478,8 @@ The speculation-friendly binary search tree exploits logical deletion to further
 This two-phase deletion technique has been previously used for memory management 
 like in~\cite{Moh90}, for example, to reduce locking in database indexes.
 Each node has a $\ms{deleted}$ flag, initialized to $\lit{false}$ when the node is inserted into the tree.
-First, the $\act{delete}$ phase consists of removing the given key $k$ from the abstraction---it logically deletes a node by setting a $\ms{deleted}$ flag to $\lit{true}$ (line \ref{sline:del-set}).
-Second, the $\act{remove}$ phase physically deletes the node from the tree to prevent it from growing too large.
+The two-phase process consists of first the \emph{logical delete} phase which removes the given key $k$ from the abstraction---it logically deletes a node by setting a $\ms{deleted}$ flag to $\lit{true}$ (line \ref{sline:del-set}).
+Second, the \emph{physical remove} phase physically removes the node from the tree to prevent it from growing too large.
 Each of these are performed as a separate transaction and the rotating thread is also responsible for garbage collecting nodes (cf. Section~\ref{ssec:gc}).
 
 The deletion decoupling reduces conflicts by two means. 
@@ -477,28 +487,31 @@ First, it spreads out the two deletion phases in two separate transactions, henc
 Second, deleting logically node $i$ simply consists in setting the $\ms{deleted}$ flag to $\lit{true}$ (line \ref{sline:del-set}), thus avoiding conflicts
 with concurrent abstract transactions that have traversed $i$.
 
+\subsection{Operation description}
+
 \paragraph{Find} 
-The $\act{find}$ operation is a helper function called implicitly by other functions within a transaction, 
+The $\act{find}$ procedure is a helper function called implicitly by other functions within a transaction, 
 thus it is never called explicitly by the application programmer.
-This operation looks for a given key $k$ by parsing the tree similarly to a sequential code.
+This procedure looks for a given key $k$ by traversing the tree similarly to a sequential code with the difference that
+transactional reads are performed in the place of normal reads.
 At each node it goes right if the key of the node is larger than $k$ (line \ref{sline:find-right}), otherwise it goes left (line~\ref{sline:find-left}).
 Starting from the root it continues until it either finds a node with $k$ (line~\ref{sline:find-value}) or until it reaches a leaf (line~\ref{sline:find-bot}) 
-returning the node (line \ref{sline:find-return}).
+returning that node (line \ref{sline:find-return}).
 Notice that if it reaches a leaf, it has performed a transactional $\act{read}$ on the child pointer of this leaf (lines~\ref{sline:find-right}--\ref{sline:find-left}), ensuring that 
 some other concurrent transaction will not insert a node with key $k$.
 
 \paragraph{Contains} 
-The $\act{contains}$ operation first executes the $\act{find}$ starting from the root, this returns a node (line~\ref{sline:cont-find}).
+The $\act{contains}$ operation first executes the $\act{find}$ procedure which returns a node (line~\ref{sline:cont-find}).
 If the key of the node returned is equal to the key being searched for, then it performs a transactional read of the $\ms{deleted}$ flag (line~\ref{sline:del-cont}).
 If the flag is $\lit{false}$ the operation returns $\lit{true}$, otherwise it returns $\lit{false}$.
 If the key of the returned node is not equal to the key being searched for then a node with the key being searched for is not in the tree and $\lit{false}$ is returned (lines~\ref{sline:cont-neq} and \ref{sline:cont-return}).
 
-\paragraph{Insertion} The $\act{insert}(k,v)$ operation uses the $\act{find}$ procedure that returns a node (line~\ref{sline:find-ins}).
+\paragraph{Insertion} The $\act{insert}(k,v)$ operation starts by calling the $\act{find}$ procedure which returns a node (line~\ref{sline:find-ins}).
 If a node is found with the same $key$ as the one being searched for then the $\ms{deleted}$ flag is checked using a transactional read (line~\ref{sline:del-false-ins}).
 If the flag is $\lit{false}$ then the tree already contains $\ms{k}$ and $\lit{false}$ is returned (lines~\ref{sline:false-ins} and~\ref{sline:insert-return}).
-If the flag is $\lit{true}$ then the flag is updated to $\lit{false}$ (line \ref{sline:del-false-ins}) and $\lit{true}$ is returned.
-Otherwise if the $key$ of the node returned is not equal to $\ms{k}$ then a new node is allocated and added as the
-appropriate child of the node returned by the $\act{find}$ operation (lines \ref{sline:new-node}-\ref{sline:end-ins}).
+Otherwise if the flag is $\lit{true}$ then the flag is updated to $\lit{false}$ (line \ref{sline:del-false-ins}) and $\lit{true}$ is returned.
+If the $key$ of the node returned is not equal to $\ms{k}$ then a new node is allocated and added as the
+appropriate child of the node returned by the $\act{find}$ procedure (lines \ref{sline:new-node}-\ref{sline:end-ins}).
 Notice that only in this final case does the operation modify the structure of the tree.
 
 \paragraph{Logical deletion} The $\act{delete}$ uses also the $\act{find}$ procedure in order to locate the node to be deleted (line \ref{sline:del-find}).
@@ -528,41 +541,47 @@ Removing a node that has $1$ child is done by just unlinking it from its parent,
 Each of these removal procedures is a very small transaction, only performing a single transactional $\act{write}$.
 This transaction conflicts only with concurrent transactions that read the link from the parent before it is changed.
 
-Upon removal of a node $i$ with two children, the node in the tree with the immediately larger key than $i$'s must be found
-at the bottom of the tree. This performs reads on all the way to the leaf and 
-a write at the parent of $i$, creating a conflict with any operation that has traversed this node.
+In order to remove a node $i$ with two children, the node in the tree with key immediately larger than $i$'s must be found
+at the bottom of the tree. This removal must perform reads all the way to a leaf node, removing the leaf by performing a write, it 
+then performs a write at the parent of $i$ creating a conflict with any operation that has traversed these nodes.
 Fortunately, in practice such removals are not necessary.
-In fact only nodes with no more than one child are removed from the tree 
-(if the node has two children, the $\act{remove}$ operation returns without doing anything, cf. line~\ref{sline:rem-2child}).
+In fact, in the speculation-friendly tree, only nodes with no more than one child are removed from the tree 
+(if the node has two children, the $\act{remove}$ operation simply returns without doing anything, cf. line~\ref{sline:rem-2child}).
 It turns out that removing nodes with no more than one children is enough to keep the tree from growing so large that it affects performance.
 
 The removal operation is performed by the maintenance thread. While it is traversing the tree performing $\act{rotation}$ and $\act{propogate}$ operations it
 also checks for logically deleted nodes to be removed.
 
 \paragraph{Limitations}
-The traversal phase of most functions is prone to false-conflicts, as it comprises read operations that 
+The traversal phase of the abstract operations is prone to false-conflicts as it comprises read operations that 
 do not actually need to return values from the same snapshot. Specifically, by the time a traversal transaction 
 reaches a leaf, the value it read at the root likely no longer matters, thus a conflict 
 with a concurrent root update could simply be ignored. Nevertheless, the standard TM interface
 forces all transactions to adopt the same strongest semantics prone to false-conflicts~\cite{GG11}.
-In the next paragraphs we discuss how to extend the basic TM interface to cope with such false-conflicts. 
+Extending the TM interface admits the creation of more complicated algorithms that can be difficult to understand, but
+since we are creating a library implementation of a given abstraction
+we can use these extensions to create more efficient algorithms without modifying the interface to the abstraction.
+Thus the programmer can still use the abstraction with the same ease of use while enjoying better performance.
+In the next sections we discuss how to extend the basic TM interface to cope with such false-conflicts.
 
-
-\subsection{Optional improvements}\label{sec:improvements}
+\section{Optional improvements}\label{sec:improvements}
 
 In previous sections, we have described a speculation-friendly tree that fulfills the standard TM interface~\cite{abi} 
 for the sake of portability across a large body of research work on TM.
-Now, we propose to further reduce aborts related to the rotation and the $\act{find}$ operation at the cost of an additional 
+Now, we propose to further reduce aborts related to conflicts between rotations and the tree traversal performing during $\act{find}$ operation at the cost of an additional 
 lightweight read operation, 
-$\act{uread}$, that breaks this interface. This optimization is thus usable only in TM systems providing additional 
-explicit calls 
-and do not aim at replacing but complementing the previous algorithm 
-to preserve its portability. This optimization complementing Algorithm~\ref{fig:tree-maintenance} is depicted in Algorithm~\ref{fig:tree-opt-maintenance}, it does not
+$\act{uread}$, that breaks the standard interface. This optimization is thus usable only in TM systems providing this additional 
+explicit call
+and does not aim at replacing but complementing the previous algorithm 
+to preserve its portability. This optimization complementing Algorithm~\ref{fig:tree-maintenance} is depicted in Algorithm~\ref{fig:tree-opt-maintenance}, note that it does not
 affect the existing $\act{contains}$/$\act{insert}$/$\act{delete}$ operations besides speeding up their internal $\act{find}$ 
-operation. Here the left rotation is not the exact symmetry of the right rotation code. 
+operation.
+It should also be noted that the left rotation is not the exact symmetry of the right rotation code,
+this small difference will be described in further sections. 
 %Please refer to the technical report~\cite{CGR11} for a desciption of this sublety.
 
-This change to the algorithm requires that each node has an additional flag indicating whether or not the 
+\paragraph{Removed flag}
+The optimization to the algorithm requires that each node has an additional flag indicating whether or not the 
 node has been physically removed from the tree (a node is physically removed during a successful $\act{rotate}$ or $\act{remove}$ operation).
 This removed flag can be set to $\lit{false}$, $\lit{true}$ or $\lit{true\_by\_left\_rot}$ and is initialized to $\lit{false}$.
 In order not to complicate the pseudo code $\lit{true\_by\_left\_rot}$ is considered to be equivalent to $\lit{true}$, only on line \ref{line:find-rot-check} of the $\act{find}$ operation is this
@@ -572,14 +591,17 @@ parameter value specifically checked for.
 The key idea is to avoid validating superfluous read accesses when an operation traverses the tree structure.
 This idea has been exploited by elastic transactions that use a bounded buffer instead of a read set to 
 validate only immediately preceding reads, thus implementing a form of hand-over-hand locking transaction for 
-search structure~\cite{FGG09}. We could have used different extensions to implement these optimizations.
-%
-DSTM~\cite{HLMS03} proposes early $\act{release}$ to force a transaction stop keeping track of a read set entry.
-Alternatively, the current distribution of TinySTM~\cite{FFR08} comprises 
-unit loads that do not record anything in the read set. While we could have used any of these approaches 
-to increase concurrency we have chosen the unit loads of TinySTM, hence the name $\act{uread}$.
-This $\act{uread}$ returns the most recent value written to memory by a committed transaction by potentially spin-waiting on the location 
-until it stops being concurrently modified.
+search structure~\cite{FGG09}.
+
+The current distribution of TinySTM~\cite{FFR08} comprises 
+unit loads that do not record anything in the read set
+which we have chosen to use to implement these optimizations.
+These reads, designated by the characters $\act{uread}$, are used
+throughout the algorithm in place of certain transactional reads.
+This $\act{uread}$ operation returns the most recent value written to memory by a committed transaction by potentially spin-waiting on the location 
+until it stops being concurrently modified, adding nothing to the transaction's read set.
+It should be noted that we could also have used different extensions to implement these optimizations such as the early $\act{release}$ operation
+of DSTM~\cite{HLMS03} which forces a transaction stop keeping track of a read set entry.
 
 A first interesting result, is that 
 the read/write set sizes can be kept at a size of $O(k)$ instead of the $O(k\log{n})$ obtained with the previous tree algorithm, 
@@ -590,30 +612,41 @@ The reasoning behind this is as follow:
 Upon success, a $\act{contains}$ only needs to ensure that the node it found is still in the tree when the transaction commits,
 and can ignore the state of other nodes it had traversed. Upon failure, it only needs to ensure that the node $i$ it is looking 
 for is not in the tree when the transaction commits, this requires to check whether the pointer from the
-parent that would point to $i$ is $\bot$ (i.e., this pointer should be in the read set of the transaction and its value is $\bot$).
+parent that would point to $i$ is $\bot$ (i.e., this pointer should be in the read set of the transaction and its value is $\bot$)
+and that the parent is still in the tree (i.e. the parent's $\ms{removed}$ flag should have value $\lit{false}$ and be in this transaction's read set.
 In a similar vein, $\act{insert}$ and $\act{delete}$ only need to validate the position in the tree where they aimed at inserting or deleting.
 Therefore, $\act{contains}$/$\act{insert}$/$\act{delete}$ only increases the size of the read/write set by a constant instead of a logarithmic 
 amount.
 
 It is worth mentioning that $\act{uread}$s have a further advantage over normal $\act{read}$s other than making conflicts less likely:
-Classical reads are more expensive to perform than unit reads.
+Classical reads are more expensive to perform than unit loads.
 This is because in addition to needing to store a list keeping track of the reads done so far, 
 an opaque TM that uses invisible reads needs to perform validation of the read set with a worst case cost of 
 $O(s^2)$,
 where $s$ is the size of the read set, whereas a TM that uses visible reads performs a modification to shared memory for each read.
 
+
+\subsection{Operation description}
+This section gives an overview of the modified operations used in the optimized speculation-friendly tree.
+The modified $\act{find}$ operation uses $\act{uread}$ in order to avoid false conflicts, in addition
+modifications to the rotation and removal operations are needed to ensure the correctness of the abstraction.
+
 \paragraph{Rotation}
-Rotations remain conflict-prone in Algorithm~\ref{fig:tree-maintenance} as they incur a conflict when crossing the region of the tree traversed by a  $\act{contains}$/$\act{insert}$/$\act{delete}$ operation. 
-If $\act{uread}$s are used in the $\act{contains}$/$\act{insert}$/$\act{delete}$ operations then rotations will only conflict with these operations if they
+
+Rotations in the non-optimized algorithm remain conflict-prone (Algorithm~\ref{fig:tree-maintenance}) as they incur a conflict when crossing the region of the tree traversed by a  $\act{contains}$/$\act{insert}$/$\act{delete}$ operation. 
+If $\act{uread}$s are used during the traversal done by the $\act{find}$ procedure during the $\act{contains}$/$\act{insert}$/$\act{delete}$ operations then rotations will only conflict with these rotations if they
 finish at one of the two nodes that are rotated by $\act{rotation}$ operation
 (for example in Figure~\ref{sfig:tree1} this would be the node $i$ or $j$).
 A rotation at the root will only conflict with a $\act{contains}$/$\act{insert}$/$\act{delete}$ that finished at (or at the rotated child of) the root, any operations that travel further down the tree will not conflict.
 
+When using $\act{uread}$s to traverse the tree the rotations of the non-optimized algorithm cannot be used because a traversal
+might be rotated downward by a concurrent rotation and end up passing the node it is searching for.
+Due to this, changes to the rotation operations must be made to ensure safety.
 Figure~\ref{sfig:tree3} displays the result of the new rotation that is slightly different than the previous one.
 Instead of modifying $j$ directly, $j$ is unlinked from its parent (effectively removing it from the tree, lines~\ref{line:rot-write}--\ref{line:rot-end})
 and a new node $j'$ is created (line \ref{line:new-node-ret}), taking $j$'s place in the tree (lines~\ref{line:rot-write}--\ref{line:rot-end}).
 During the rotation $j$ has a removed flag that is set to $\lit{true}$ (line~\ref{line:rot-path3}), letting concurrent operations know that $j$ is no longer in the tree but its deallocation is postponed. 
-Now consider a concurrent operation that is traversing the tree and is preempted on $j$ during the rotation.
+Given this, consider a concurrent operation that is traversing the tree and is preempted on $j$ during the rotation.
 If a normal rotation is performed the concurrent operation will either have to backtrack or the transaction would have to abort (as the node it is searching for might be in the subtree $A$).
 Using the new rotation, the preempted operation will still have a path to $A$.
 
@@ -623,9 +656,13 @@ This is necessary to ensure that the $\act{find}$ operation follows the correct 
 left rotation and this node has the same key $k$ as the one being searched for.
 In this case the $\act{find}$ operation must travel to the right child of the removed node otherwise it might miss the node with key $k$ that
 has replaced the removed node from the rotation.
+This is due to the fact that the left child of the removed node is rotated upwards during a right rotation (i.e. node $i$ in Figure~\ref{sfig:tree1}),
+while the right child is rotated upwards during the left rotation.
+For more details see the proof of correctness in section \ref{sec:treeproof}.
 In all other cases the $\act{find}$ operation can follow the child pointer as normal.
 
 \paragraph{Find, contains and delete}
+Like before, the $\act{find}$ operation is responsible for traversing the tree, here using unit loads.
 The interesting point for the $\act{find}$ operation is that the search continues until it finds a node with the $\ms{removed}$ flag set to $\lit{false}$
 (line \ref{line:rem-check1} and \ref{line:rem-check2}).
 Once the leaf or a node with the same key as the one being searched for is reached, a transactional read is performed on the $\ms{removed}$ flag to
@@ -654,6 +691,7 @@ the traversed path cause conflicts, which do not occur in the updated algorithm.
 The $\act{contains}$/$\act{insert}$/$\act{delete}$ operations themselves are identical in both algorithms.
 
 \paragraph{Removal}
+Like before, physical removals are performed by the rotator thread.
 The $\act{remove}$ operation requires some modification to ensure safety when using $\act{uread}$s during the traversal phase.
 Normally if a $\act{contains}$/$\act{insert}$/$\act{delete}$ operation is preempted on a node that is removed then that operation will have to backtrack or abort the transaction.
 This can be avoided as follows.
@@ -676,7 +714,8 @@ completed operations. Before starting a traversal, the rotator thread sets a poi
 the garbage collection list and copies all booleans and counters. After a traversal, if for every thread its counter 
 has increased or if its boolean is false then the nodes up to the previously stored end pointer can be safely 
 freed. Experimentally, we found that the size of the list was never larger than a small fraction of the size of the 
-tree but theoretically we expect the total space required to remain linear in the tree size.
+tree but theoretically assuming that threads do not crash and are progressing
+we expect the total space required to remain linear in the tree size.
 
 %\subsection{Correctness}
 
@@ -688,7 +727,7 @@ tree but theoretically we expect the total space required to remain linear in th
 %time despite concurrent modifications. 
 
 
-\section{Correctness Proof}
+\section{Correctness Proof} \label{sec:treeproof}
 
 %\subsubsection{Linearisability}
 % Here we will give a sketch of the proof of the linearizability of these operations.
@@ -1211,7 +1250,7 @@ $\ms{deleted}$ to $\lit{true}$, $\ms{k}$ is no longer in the set after the trans
 
 \section{Rotation Cost}
 
-\input{Tree/alg/maint.tex}
+
 
 As previously mentioned we use a method for local rotations introduced in \cite{IRISAppr}.
 This method works by propagating local estimated balance information from a child to a parent,
@@ -1500,6 +1539,17 @@ We have illustrated, using a binary search tree, how one can exploit this inform
 to design a speculation-friendly data structure.
 The next challenge is to
 adapt this technique to a large body of data structures to derive a speculation-friendly library.
+Providing such a library would encourage the use of STM for several reasons.
+The most obvious being simply that a programmer would not have to create the data-structures himself,
+preventing him from worrying about the correctness and efficiency of his code.
+Secondly, as previously noted, the library can be designed specifically for optimistic synchronization or take advantage of
+non-standard TM operations such as the unit load that the programmer might not be aware of, allowing him to
+gain performance advantages without knowing the underlying intricacies of the STM system.
+Thirdly the programmer can compose several operations from the library within a transaction, creating
+new operations specific to his needs, something that is normally not possible when using non-transactional data structures.
+
+To finish let us go back to the key phrase stated in the introduction:
+
 
 \section*{Source Code}
 The code of the speculation-friendly binary search tree is available at {\bf http://lpd.epfl.ch/gramoli/php/synchrobench.php}{http://lpd.epfl.ch/gramoli/php/synchrobench.php}.

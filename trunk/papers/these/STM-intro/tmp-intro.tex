@@ -694,44 +694,114 @@ we are really looking for.
 It is important to remember that he primary goal of transactional memory is to make concurrent programming
 easier and more accessible, with performance following closely as a secondary goal.
 In reality unfortunately, neither of these goals have yet been realized.
+As we will see in each chapter of this thesis there are complex aspects
+of the STM abstraction that involve how a programmer interacts with the
+STM system and the system as a whole in a modern concurrent environment.
 While the basic semantics of a transaction are widely agreed on
-(i.e. transaction atomicity with respect to other transactions satisfied by a consistency criterion such as opacity),
-there are many other details to consider,
-some of which are actively debated and some of which remain as open questions.
-Standardizing these semantics and answering these open questions is an important
+(i.e. transaction atomicity with respect to other transactions),
+there are many other details to consider
+some of which are actively debated and remain as open research questions.
+Standardizing these semantics and answering open questions on them is an important
 step in ensuring that the primary goal of making concurrent programming easier
 is realized.
-If the semantics are either too hard to understand, or a programmer has to study
-too many details of one or more STM systems before being able to use them in
+If the semantics are either too hard to understand, or a programmer has to be aware of
+too many details specific to an STM system before being able to use transactions in
 his program then the sight of the original goal has been lost.
-While there is still no agreement on the full semantics of transactional memory,
+
+Interestingly, while no agreement exists on the full semantics of transactional memory,
 there has still been much research that focuses on performance first.
-The reason for this is because even though STM in its current form has been shown
+Likely the reason for this is because even though STM in its current form has been shown
 to be efficient for certain workloads \cite{DFGG11}, many people argue that
 its performance is not good enough to be an attractive alternative to locks, even considering all the
 difficulties that surround using locks.
-
 % This thesis takes the approach of finding the correct semantics for transactional
 % memory before trying to improve performance as why try to improve the performance
 % for something that is not fully defined and might change?
-Given the difficulties that currently exist for finding the correct semantics for transactional memory
-the goal of this thesis is to take a step towards fixed and easy to understand semantics while suggesting further
-ways to continue forward.
+Instead of taking this approach of directly tackling the problem of performance,
+% Given the difficulties that currently exist for finding the correct semantics for transactional memory
+the goal of this thesis is to take a step towards finding and defining fixed and easy to understand semantics
+for transactions while finding efficient protocols satisfying these semantics.
+After defining such semantics, a following important step is to then see what sort of performance they might
+offer and see how easily programmers can use them, taking this information to improve the semantics
+possibly in an iterative fashion.
+This leads us to the following concept that is the focus of the thesis:
+
+\begin{definition}\label{def:stm-def}
+STM is an abstraction designed to simplify concurrent programming that exists as a component of a larger system,
+but the semantics of the STM abstraction and how it interacts with the rest of the system must be clear and easy to understand and use,
+otherwise simplicity is lost.
+\end{definition}
+
+\subsection{Defining a transaction}
+% Even though transactional memory is designed as an abstraction focused on making
+% concurrent programming easier, 
+Before deciding the semantics of an easy to use STM a high level
+definition for a transaction must be decided.
+% As will be shown in each chapter there are complex aspects
+% of the STM abstraction that pose significant open research questions on how the programmer interacts with the
+% STM system in a modern concurrent environment.
+Due to the fact that transactional memory is a high level abstraction designed for ease of use
+that exists in a concurrent system
+a transaction should be defined in a way that minimally impacts the complexity
+of this system.
+% this
+% thesis takes an approach to answering these questions in a way attempting to minimally impact complexity
+% of the system.
+Following this approach the following high level definition for a transaction as follows:
+
+\begin{definition}\label{def:trans-def}
+A transaction is any block of
+code defined by the programmer to be executed by a given process.
+This transaction is executed atomically exactly once
+taking in consideration all parts of the system.
+\end{definition}
+
+This definition is broken down into two key parts.
+The first, more obvious key part is (1) a transaction is defined by the programmer
+and is executed atomically.
+The second, but maybe not so obvious key part is (2) a transaction exists
+as part of a complete system containing many components other then this transaction and a relation between them must be
+defined.
+This second part is important because when a programmer is writing a concurrent program there are many things
+other then the current transaction he is writing to consider.
+This could include things such as the actions of other processes, the interactions
+of objects and memory in the system with this transaction, among other things, many of
+which are explored in this thesis.
+Each chapter in this thesis will then take this definition of a transaction,
+and by helping to formalizing its parts move towards the realization of the
+goal in Definition \ref{def:stm-def}.
+
+
 % As such the goal is to help define the semantics of software transactional memory
 % that a programmer can use without being an expert in the area.
 The grand goal is that someday a programmer can write an efficient concurrent program
 with nearly as much ease as he would write a sequential one.
+While this goal is far from fully achieved here,
+this thesis makes important steps in this direction, while suggesting ways to move forward further.
 
-In reality we can not immediately realize or even know if this goal is possible yet for there are far too many questions left open when dealing
-with the semantics of transactional memory, to many even to introduce in this thesis or let alone solve.
-Instead, this thesis will look at what we
-believe are the main areas of transactional memory research that take the
-ease-of-use as a primary concern.
-In this way, each chapter will separately introduce a research area before looking closely at a specific open
-problem from that area and suggesting an STM protocol as a solution to the problem.
-Finally each chapter will mention some of the well know open questions from each area.
+% In reality we can not immediately realize or even know if this goal is possible yet for there are far too many questions left open when dealing
+% with the semantics of transactional memory, to many even to introduce in this thesis or let alone solve.
+% Instead, this thesis will look at what we
+% believe are the main areas of transactional memory research that take the
+% ease-of-use as a primary concern.
+% In this way, each chapter will separately introduce a research area before looking closely at a specific open
+% problem from that area and suggesting an STM protocol as a solution to the problem.
+% Finally each chapter will mention some of the well know open questions from each area.
 
-\subsection{Plan}
+
+
+
+
+
+
+\subsection{Thesis outline}
+
+Each chapter in this thesis consider a different general area of research around
+the concept of the ease (or difficulty) of concurrent programming while using transactional memory, first introducing
+the area to the reader, following this with a discussion of a specific problem
+and possible solution from the area, each helping to move towards a solution to Definition \ref{def:stm-def}.
+
+
 Traditionally research has taken the view that for a protocol to be considered a valid STM
 implementation then it should ensure transactions
 are atomic with respect to each other and all transactions (aborted transaction included)
@@ -787,7 +857,7 @@ each of these mechanisms.
 % The specific problem that this chapter looks at is the interaction between shared memory
 % accesses inside and outside of transactions.
 This chapter specifically looks at shared memory accesses, attempting to answer the question, ``how should the system act when shared memory
-is accessed inside and outside of a transaction?``
+is accessed inside and outside of a transaction?''
 To answer this we suggest and define a term called \emph{terminating strong isolation} which ensures
 that a transaction's atomicity will not be violated by reads and writes performed
 outside of the transaction by other processes without holding back the progress of
@@ -817,27 +887,11 @@ to write high performance implementations designed specifically for transactions
 It looks into designing efficient data structures implementing the map abstraction.
 
 
-The fifth and final chapter concludes the thesis by providing a closing discussion on
-the contributions presented 
-as well as possible future extensions of the concepts and protocol described in
-earlier chapters.
+The final section concludes the thesis by providing a closing discussion on
+the contributions presented in the chapters
+as well as possible future extensions of the concepts and protocol described in.
 
 
-\paragraph{Position}
-Each of these chapters consider a different general area of research around
-the concept of the ease (or difficulty) of concurrent programming while using transactional memory, first introducing
-the area to the reader, following this with a discussion of a specific problem
-and possible solution from the area.
-Even though transactional memory is designed as an abstraction focused on making
-concurrent programming easier, as we will see in each chapter, there are complex aspects
-of the abstraction that pose significant questions important to how the programmer interacts with 
-transactional memory in a modern concurrent system environment that still remain open research problems.
-Given that transactional memory is already a high level abstraction this thesis takes
-the objective of ease of use as the paramount one by considering that a transaction is any block of
-code defined by the programmer to be executed by a process atomically exactly once in relation to all other aspects of the system
-and no matter the behavior of concurrent processes.
-While this problem is not completely solved in the thesis, it takes important strides towards this goal while
-discussing further possible steps to make.
 
 
 
