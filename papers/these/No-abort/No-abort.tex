@@ -168,23 +168,32 @@ This type of STM research puts first the ease-of-use for the programmer using th
 before considering secondary interests (usually performance).
 In most cases this ease-of-use is ensured by having the protocol satisfy opacity.
 Opacity is used because generally it is considered
-to provide the amount of safety a programmer would expect from an atomic block without having
-to worry about inconsistencies of aborted transactions
+to provide the amount of safety a programmer would expect from an atomic block of code without having
+to worry about inconsistencies
 (Note that in some cases virtual world consistency is used as it does not change
 how the programmer views a transaction).
 This chapter takes a slightly different approach to STM research as it suggest that transactional
 memory might be more usable to a programmer if it satisfied more then just opacity.
 
+
 Opacity and other consistency criterion are sometimes also called safety properties.
 Informally this is because they ensure a protocol that implements them will
 act in a way that a user would expect and not produce any weird behavior.
-For example opacity prevents any transaction from executing on invalid states of memory, preventing
+For example, as previously mentioned, opacity prevents any transaction from executing on invalid states of memory, preventing
 things such as divide by zero exceptions in correct code.
 Even though consistency criterion remove the complexity of having to deal with undefined states of memory,
 they leave open other problems for the programmer to deal with that could make using STM more difficult.
 In this sense we suggest hiding some of these problems from the programmer by dealing with them in the STM
 implementation.
-One important thing such consistency criterion do not consider (among other things) is how often transactions commit.
+
+Again, lets us go back to our Definition \ref{def:trans-def} of a transaction from the inroduction:
+``A transaction is any block of
+code defined by the programmer to be executed by a given process.
+This transaction is executed atomically exactly once
+taking in consideration all parts of the system.''
+Notice how in the previous chapter no mention was made about how often the transactions commit,
+therefore, not taking into account the words ``exactly once'',
+more specifically, consistency criterion do not consider how often transactions commit.
 For example a protocol could satisfy opacity by just aborting every transaction before it performs
 any action, but of course this protocol would be useless.
 In order to avoid this, certain STM protocols satisfy liveness (or progress) properties.
@@ -216,13 +225,13 @@ Deadlock freedom is the weakest blocking property, it prevents the implementing 
 form entering a state of deadlock.
 Deadlock occurs when at least two threads are preventing each other from progressing
 due to each other holding a lock (or resource) that the other wants to acquire.
-A simple example of deadlock would be the following:
+A simple example of deadlock (repeated from section \ref{sec:intro-lockbased} of the introduction for completeness) would be the following:
 thread $\ms{T_A}$ owns lock $\ms{L_1}$ and wants to acquire lock $\ms{L_2}$, concurrently
 thread $\ms{T_B}$ owns lock $\ms{L_2}$ and wants to acquire lock $\ms{L_1}$.
 In this case thread $\ms{T_A}$ and $\ms{T_B}$ will be stuck infinitely, waiting to acquire the lock that the other
 already owns creating a state of deadlock.
 It is generally considered that every correct concurrent protocol should at least satisfy deadlock
-freedom.
+freedom, otherwise the protocol is considered as incorrect.
 A common way to avoid deadlock freedom is by ensuring threads acquire locks in a fixed global order,
 but this can have negative implications on performance.
 
@@ -231,7 +240,7 @@ Stronger then deadlock freedom, livelock freedom prevents a state of livelock wh
 never progress due to their progress depending on a shared state that is created by another thread.
 Consider the following simple example
 where a thread must own locks $\ms{L_1}$ and $\ms{L_2}$ concurrently in order to perform its desired operation.
-Thread $\ms{T_A}$ runs a protocol that first acquires $\ms{L_1}$ and then $\ms{L_2}$, while thread
+Thread $\ms{T_A}$ runs a locking protocol that first acquires $\ms{L_1}$ and then $\ms{L_2}$, while thread
 $\ms{T_B}$ runs a protocol that first acquires $\ms{L_2}$ then $\ms{L_1}$.
 In order to avoid deadlock a straightforward mechanism is used where when some thread notices that another thread owns a lock it wants, it
 simply releases all the locks it owns and starts the locking protocol over.
@@ -247,7 +256,7 @@ $$\ms{L_1}.acquire_{\ms{T_B}}() \to \lit{false}, \ms{L_1}.release_{\ms{T_A}}(), 
 
 
 As we can see, if such an order of events is continually repeated then livelock is observed, as neither
-thread $\ms{T_2}$ nor thread $\ms{T_2}$ will ever acquire both locks.
+thread $\ms{T_1}$ nor thread $\ms{T_2}$ will ever acquire both locks.
 Even though the processes are not stalled they are not making progress.
 It should be noted that by definition livelock freedom also ensure deadlock freedom.
 
@@ -266,7 +275,7 @@ due to it waiting for another thread.
 Inherently this means that it is not possible protocols that use standard locks
 to be non-blocking.
 Instead of using locks, non-blocking protocols generally use atomic operations
-such as test-and-set or compare-and-swap (in a non-blocking fashion) when synchronization between threads is necessary.
+such as test\&set or compare\&swap (in a non-blocking fashion) when synchronization between threads is necessary.
 Generally programming using these operations in this way is considered to be much more difficult then
 programming using locks.
 
@@ -274,15 +283,15 @@ programming using locks.
 If non-blocking algorithms are more difficult to program then why not just use locks?
 When concerning scalability, non-blocking algorithms have two main advantages over their blocking counterparts.
 
-The first most obvious advantage is by definition, in a non-blocking algorithm a thread will never be blocked
+The first most obvious advantage is by definition; in a non-blocking algorithm a thread will never be blocked
 waiting for another thread.
-Normally waiting might seem to be necessary part of synchronization, in our everyday lives when working together
+Normally waiting might seem to be necessary part of synchronization, for example in our everyday lives when working together
 with someone on a project we will wait for a teammate to finish their task before starting ours.
 But then consider a massive project that involves hundreds of people across the world in multiple organizations,
 if one person on this project might have an approaching deadline and he might not want to wait on someone across the
 world that he has never met before in order to start his task.
 Similar situations can exist in largely parallel computer systems, threads might be spread across multiple
-processors or machines, some might be sleeping, some might execute slower then others, the data connection between
+processors or machines, some might be sleeping, some might execute slower then others, the connection between
 some processors might be slower then others.
 In such cases the amount of time a thread might have to wait could be unknown and harmful to scalability.
 
@@ -290,7 +299,7 @@ The second advantage is when faults are considered.
 If a thread is waiting for a lock that is owned by another thread that has crashed
 then without fault detection and recovery (known to be a very difficult problem to solve \cite{ACT00})
 this thread will be waiting forever.
-Non-blocking algorithms on the other hand by definition do not have to worry about this.
+Non-blocking algorithms on the other hand, by definition, do not have to worry about this.
 Given that fault detection and recovery is a difficult problem especially in massively parallel
 systems this is an obvious advantage of non-blocking algorithms.
 
@@ -298,12 +307,12 @@ systems this is an obvious advantage of non-blocking algorithms.
 The first non-blocking property is \emph{obstruction-freedom}.
 A protocol that is obstruction-free ensures that any thread will eventually make progress
 as long as it is able to run by itself for long enough.
-This property ensures that no thread is ever stuck waiting for another thread, but only guarantees
+This property ensures that no thread is ever blocked waiting for another thread, but only guarantees
 progress in the absence of contention.
 
 \paragraph{Lock-freedom}
-For certain tasks progress might be required even in the face of contention, in such cases
-non-blocking is not strong enough.
+For certain tasks progress might be required even in the face of contention, in such cases ensuring
+obstruction freedom is not enough.
 \emph{Lock-freedom} ensures that at any time there is at least one thread who will eventually make progress.
 Even though some threads may starve, in a lock-free algorithm we at least know that the
 system as a whole is making progress.
@@ -369,12 +378,14 @@ can be multiple threads concurrently performing operations on the object
 (i.e. satisfies linearizability)?
 This is ensured simply by each thread operating on a local copy of the object.
 Before a thread starts executing the original sequential code, it makes a copy
-of the object in its local memory and the operation is performed on that object.
+of the object in its local memory and the requested operation is performed on that object.
 Once the sequential operation is complete it must be then made visible so other
 threads can be aware of the modification.
 In order to achieve this there is a single global operation pointer.
-An operation completes by performing a compare and swap on this pointer
-changing it to point to a descriptor of its operation.
+An operation completes by performing a compare\&swap on this pointer
+changing it to point to the descriptor of the calling operation, containing
+the copy of the object with the modification done by the operation
+performed on it.
 The value swapped out must be the same as it was when the operation started,
 if not the operation discards its modifications and starts over with a
 new up to date local copy.
@@ -384,15 +395,15 @@ trade-off for having wait-free progress.
 
 The second key concept has to deal with liveness.
 As described in the previous paragraph an operation completes by
-modifying a global pointer with a compare-and-swap operation,
+modifying a global pointer with a compare\&swap operation,
 but this operation can fail due to a concurrent modification
 to the global pointer by some other thread.
 Now according to the progress guarantee of wait-freedom, every operation
 by every thread must eventually complete successfully without blocking,
-meaning the compare-and-swap must not fail infinitely many times.
+meaning the compare\&swap must not fail infinitely many times.
 The key concept used to ensure this is helping.
-Since a failed compare-and-swap can only be caused by a different thread
-succeeding with its compare-and-swap, why not have this successful
+Since a failed compare\&swap can only be caused by a different thread
+succeeding with its compare\&swap, why not have this successful
 thread help the thread that failed?
 Simply put helping here means that several threads will all execute
 the operation of a thread who's operation has failed in order to ensure
@@ -490,14 +501,14 @@ for transactional memory and
 \emph{local-progress} as a equivalent
 of wait-freedom for transactional memory.
 Informally a protocol that satisfies solo-progress must ensure
-that every process they executes for long enough
+that every process that executes alone for long enough
 must make progress (where progress requires eventually committing
 some live transaction) while a protocol satisfying
 local-progress must ensure that
 ``every process that keeps
 executing a transaction (say keeps retrying it in case it aborts)
 eventually commits it.''
-Additionally in \cite{BGK12} they examine how these properties can be applied
+Additionally they examine how these properties can be applied
 in faulty and fault-free systems with or without parasitic transactions
 (a parasitic transaction is one which is continually executed, but never
 tries to commit).
@@ -514,7 +525,7 @@ In order to ensure levels of progress and cope with aborted transactions,
 several solutions have been proposed with each taking different approaches
 to progress.
 A whole range of solutions have been proposed.
-Some do not directly confront the problem of progress,
+Some do not directly confront the problem of progress and transaction abortion,
 focusing mainly on the performance of the protocols, while
 others  offer   ``best effort semantics'' 
 (which  means that there is no provable  strong guarantee)
@@ -526,17 +537,23 @@ to the application programmer (similarly to  exception handling
 encountered  in  some systems).
 In such systems the programmer has the choice to have the protocol execute 
 a specifically defined set of code when a transaction is aborted one or several times.
-This can be a powerful option for an experience programmer who knows the details
+This can be a powerful option for an experienced programmer who knows the details
 of an transactional memory implementation, but this also provides the programmer
-with additional problems to deal with.
+with additional problems to deal with which would not fit into our
+original Definition \ref{def:trans-def} of a transaction, instead
+complicating it.
 
 
-\paragraph{Contention Management} The idea is here to keep
+\paragraph{Contention Management}
+Contention management in STM is also discussed in the introduction
+in section \ref{sec:intro-contention}, but is again mentioned here focusing
+specifically on progress guarantees.
+The idea of contention management is to have the STM system keep
 track of conflicts between transactions and have a separate entity, usually
 called {\it contention manager}, decide what action to take (if any). 
 Some  of these  actions include  aborting one  or both  of  the conflicting
 transactions, stalling one of the transactions, or doing nothing. 
-The idea  was  first (as far as we know) proposed  in  the dynamic 
+The idea  was  first  proposed  in  the dynamic 
 STM system (called DSTM) \cite{HLMS03} and much research has been done on the
 topic since then. 
 
@@ -567,6 +584,10 @@ transactions  make progress.
 In these blocking solutions, a transaction's eventual commit depends
 on both on the  process that issued this transaction as well as the process
 that issued the transaction  with the oldest time-stamp.
+This does not quite follow our Definition \ref{def:trans-def} of transactions
+as the committal of transactions depends on state of other processes,
+where the definition want transaction to be ``executed atomically exactly once
+taking in consideration all parts of the system''.
 
 Unfortunately even though such contention managers exist that ensure
 all transactions commit in a blocking fashion, most
@@ -580,7 +601,7 @@ number  of times  at  which point greedy contention management is used.
 
 \paragraph{Transactional Scheduling}
 Another approach to dealing with aborts consists in designing  schedulers that decide
-when and how transactions are executed in the system base on certain
+when and how transactions are executed in the system based on certain
 properties.
 One approach is to design schedules that perform 
 particularly well in appropriate workloads, for example the case of
@@ -603,7 +624,8 @@ Like  contention  managers, these  schedulers  can  provide
 progress,  but  none of  them  ensure  the progress  of  a  process with  a
 transaction that conflicts with some  other transaction which has reached a
 point at which it  must not be aborted. This means that  the  progress of a
-process still  depends on the progress  of another process. 
+process still  depends on the progress  of another process thus not following
+Definition \ref{def:trans-def}. 
 
 
 \paragraph{Irrevocable Transactions} 
@@ -626,9 +648,12 @@ are known ahead of time).
 This priority given to the running irrevocable transaction allows it
 to guarantee to succeed, but does so at the cost of preventing other
 transactions from progressing until it finishes.
+Due to the blocking of other transactions and adding a different type of transaction
+to the interface, irrevocable transactions do not quite fit in Definition \ref{def:trans-def}.
 STM protocols supporting irrevocable transactions are proposed and discussed  in 
 \cite{SSDMS08}  and   \cite{WSA08}.  Irrevocable  transactions   suited  to
-deadline-aware scheduling are presented  in \cite{MMFLMR11}. 
+deadline-aware scheduling are presented  in \cite{MMFLMR11}.
+
 
 % The STM system proposed in this paper does not support 
 % irrevocable transactions.
@@ -671,17 +696,19 @@ some of them  are obstruction-free  (e.g., \cite{HLMS03,ST97}),
 while others are lock-free  (in the sense there is no deadlock) \cite{GHS08}.
 
 In an obstruction-free STM system a transaction that is executed alone 
-must eventually commit. So consider some transaction that is always 
+must eventually commit. Still, not every transaction is guaranteed to commit,
+consider some transaction that is always 
 stalled (before its commit operation) and, while it is stalled, 
 some conflicting transaction commits. It is easy to build an execution 
 in which this stalled transaction never commits.
 
 In a lock-free STM system, infinitely many transaction invocations must 
 commit   in  an infinite  execution.  Again it  is  possible  to build   an
-execution in which a transaction is always stalled  
+execution in which a transaction is always stalled 
 (before its commit operation) and is aborted by a concurrent transaction  
 (transactions cannot wait for this stalled transaction because they do not 
-know if it is making progress).
+know if it is making progress) meaning not every transaction is guaranteed to
+commit.
 
 Unfortunately, none of them  provide the property that every issued 
 transaction is committed.
@@ -692,7 +719,7 @@ each other's operations.
 In previously proposed non-blocking STM, helping only occurs
 with transactions that are in the process of committing.
 With only this type of help,  some transaction 
-can be aborted indefinitely without violating safety
+can be aborted indefinitely, 
 at most satisfying non-blocking global progress.
 Consider for example a thread $T_A$ executing transaction $T_1$
 and a separate thread $T_B$ that executes repeatedly a transaction $T_2$ (i.e. within
@@ -724,10 +751,13 @@ transactional memory.
 In some cases the programmer has to deal directly with aborted transactions
 in his code, in others a programmer can prioritize certain transactions
 so they will not abort, others allow transactions to be blocked, while
-other allow transactions to be aborted infinitely.
+others allow transactions to be aborted infinitely.
 Absent from these solutions is the case where all transactions are guaranteed to
 commit where the progress of a transaction does not rely on the
-other processes then the one that issued the transaction.
+other processes then the one that issued the transaction, thus
+fitting within our Definition \ref{def:trans-def} of a transaction
+where every transaction is ``executed atomically exactly once
+taking in consideration all parts of the system''.
 Such a solution would prioritize ease of use as such a protocol would hide
 the concept of aborted transactions from the programmer when considering
 the progress of the system.
@@ -735,7 +765,7 @@ the progress of the system.
 More precisely, such a solution would be a non-blocking STM protocol that ensures every transaction
 issued by any process is eventually committed with its progress only depending
 on the issuing process and not the concurrency pattern of other processes in the system.
-Then, the job of a
+Then as desired, the job of a
 programmer is then to write his concurrent program in terms of cooperating sequential
 processes, each process being made up of a sequence of transactions (plus possibly
 some non-transactional code) where,
@@ -764,6 +794,7 @@ that have side effects outside of the shared and local memory such as input and 
 or access to a communication channel.
 Obviously certain of these operations will not be reversible or abortable,
 the classic example being the sending of a message to launch a missile.
+
 Several solutions have been proposed concerning how to allow these operations to be performed
 within transactions.
 For example, a straightforward solution might be to place all I/O operations
@@ -776,11 +807,14 @@ and create a separate version of it to run efficiently in transactions, but agai
 scalability.
 Traditionally, STM designers assume that the programmer is not allowed to perform system or I/O calls
 from within his transactions and is also, for simplicity, what we assume throughout this thesis.
-Even so, future research must consider these operations and there are still many questions left unanswered.
+Still given this, to follow our high level Definition \ref{def:trans-def} of transactions we must take into account all parts
+of the system, as such we need to consider how these non-reversible operations fit into transactions
+in our definition.
+Since this problem is not focused on in this thesis,
+future research should consider these operations and the surrounding questions left unanswered.
 For example, when considering progress, an important question for
 to answer is what kind of non-blocking progress can
 be ensured for transactions when different types of I/O or system calls are allowed to be performed within them?
-
 
 % (As a note it should be said that the presentation of previous approaches
 % that deal with aborted transactions are primarily
@@ -815,7 +849,7 @@ Consider for example a queue data structure and its operations enqueue
 and dequeue.
 Albeit these queuing operations can have many different implementations, 
 their semantics is  defined once for all.
-As a result in every implementation the effect of performing an enqueue operation
+As a result, for any queue implementation, the effect of performing an enqueue operation
 abstractly results in adding an element to the back of the queue
 while a dequeue operation results in removing and returning an element from the
 front of the queue.
@@ -837,8 +871,8 @@ by Herlihy in \cite{H91} (denoted H\_UC in the following).
 Interestingly H\_UC could be used for STM programs simply  by
 piecing together  all the shared objects objects into a single concurrent object 
 $\mathit{TO}$,  and  considering   all  the   transactions   as  operations
-on this   object 
-$\mathit{TO}$.  This  brute force approach is not conceptually satisfying.  
+on this   object $\mathit{TO}$.
+Unfortunately, this  brute force approach is not conceptually satisfying.  
 When considering lock-based mechanisms,   it is like using a single lock 
 on  the single  ``big'' object $\mathit{TO}$, instead of a lock per object. 
 Moreover, as it  requires each operation on an object to make a copy of 
@@ -857,11 +891,12 @@ in order to ensure correctness.
 % and write sets have the additional benefit of saving us from making copies of
 % the entire shared memory.
 
-Even given the differences,
-the proposed STM protocol in this chapter borrows key ideas from previous
+Still given the differences,
+STM protocols can borrow key ideas from previous
 universal constructions such as helping and using a shared global pointer
-that is modified using a compare-and-swap in order to ensure
-progress and correctness.
+that is modified using a compare\&swap in order to ensure
+progress and correctness, which is what is done later in this
+chapter to design such a protocol.
 
 Another important feature of  STM constructions
 % (which is specifically designed for STM programs)  
@@ -915,7 +950,7 @@ multiprocessor where the processors  communicate through
 a shared memory that provides them with atomic read/write registers, 
 compare\&swap registers and fetch\&increment registers. 
 
-As suggested in the indroduction and described specifcally later in this chapter,
+As suggested in the introduction and described specifically later in this chapter,
 the underlying multiprocessor system  consists of 
 $m$  processors where each processor is in charge  of a  subset of  processes.
 The  multiprocess program, defined  by the  programmer, is  made up  of $n$
@@ -2527,7 +2562,7 @@ So we have $1+1+2+3+\ldots+(m-1)+m$ trials of $T$ which is  $O(m^2)$.
 
 %=============================================================================
 
-\subsection{Additional notes}
+\subsection{A few additional notes}
 \label{sec:discussion} 
 
 The aim of the universal construction for STM that has been presented 
@@ -2543,7 +2578,7 @@ programs  that are time-free (i.e., the semantics of which does not depend
 on real-time constraints). 
 
 \item 
-The construction  is lock-free and  works whatever the concurrency pattern
+The construction  uses no locks and  works whatever the concurrency pattern
 (i.e., it does not require concurrency-related  assumption such as 
 obstruction-freedom). It  works for  both finite  and  infinite
 computations and does not require  specific scheduling assumptions.  
@@ -2569,7 +2604,9 @@ Irrevocability is an implementation property which can be
 demanded by the user for  some of its transactions. It states that 
 the corresponding transaction cannot be aborted (this can be useful when 
 one wants to include inputs/outputs inside a transaction; notice that, 
-in our model, inputs/outputs appear in non-transactional code). 
+in our model, inputs/outputs appear in non-transactional code).
+Unfortunately by providing irrevocability, the system would violate our desired progress
+guarantees.
 
 \item  
 We have considered a failure-free system. It is easy to see that, in a
@@ -2606,6 +2643,11 @@ that directly effect the interaction between the programmer and
 the STM.
 Abstractly, it examines how the semantics are defined between
 the programmer and the STM protocol and suggests they be simplified.
+By removing the concept of aborts from the semantics and
+ensuring that each transaction will commit, no matter the 
+execution pattern of other processes in the system, we move from
+the traditional definition towards the desired one in this thesis
+(Definition \ref{def:trans-def}).
 Previous research has expected some level of interaction
 between the programmer and aborted transactions, while this
 chapter suggests the notion of commit/abort be completely abstracted
@@ -2623,7 +2665,7 @@ issues that could arise in aborted transactions.
 This liveness suggested in this chapter for STM protocols differs
 from previous liveness suggestions in that it frees the programmer from
 having to worry that his transaction might not commit.
-In a way it can be considered the equivalent to opacity except
+In a way it can be considered the equivalent counterpart to opacity except
 opacity considers correctness (bad things happening in aborted transactions),
 while this chapter considers liveness (a transaction that is only aborted).
 
@@ -2638,7 +2680,8 @@ Further research is still needed on how the semantics of a transaction
 can be simplified.
 An important problems in this area yet has a clear solution is the problem
 of what happens when a transaction is nested within another.
-How should these transactions be treated?
+How should these transactions be treated, and how can they fit in our
+high level Definition \ref{def:trans-def} of a transaction?
 Should a separate consistency or liveness condition be considered for these transactions?
 Given that composition is a strong argument for the use of transactions,
 coming up with a simple solution to nesting is vital for the future of STM.
