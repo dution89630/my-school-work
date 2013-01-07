@@ -150,12 +150,15 @@
 \vspace{0.1cm}
 
 \subsection{Software transactional memory (STM) systems}
-The most important goal of the concept of STM is to make concurrent programming
+The most important goal of the STM abstraction is to make concurrent programming
 easier and more accessible to any programmer.
-Arguably all a programmer should need to know in order to use STM abstraction is to know
+By following our goal for STM defined in \ref{def:stm-def} and using our defnintion for a transaction \ref{def:trans-def},
+arguably then all a programmer should need to know in order to use the STM abstraction is to know
 the syntax for writing an atomic block, likely something as simple as
 $$atomic \{ \dots \} $$
-All the complexities and difficult synchronization is then taken care of by the
+The is because follwoing Definition \ref{def:trans-def}, a transaction always executes as an atomic block
+no matter what else is going on in the system,
+all the complexities and difficult synchronization is then taken care of by the
 underlying STM system.
 This means that, when faced to synchronization,  a programmer has 
 to concentrate on where atomicity is required and not on the way it is 
@@ -171,24 +174,24 @@ data structure.  A programmer might want to access and store some data in memory
 and he knows that in order to do this he needs the ${\sf insert}$, ${\sf delete}$, and ${\sf contains}$
 operations provided by the map abstraction.
 He also knows he wants to perform these operations concurrently.
-With this information he should be able to take a take a library providing this
-functionality and use it in his program without knowing any additional information.
+With this information he should be able to find a library providing this
+functionality and use it directly in his program without knowing any additional information.
 
 Now even though this is all that the programmer needs to know, there are many
 more details to consider at a lower level.
 The most obvious is that there are different data structures that can be used to
-provide a map abstraction, with examples such as a skip-list, binary tree, or hash table.
+provide a map abstraction, examples such as a skip-list, binary tree, or hash table.
 Choosing one of these may impact the applications performance or provide additional
 functionality, yet
 to the programmer just interested in the map abstraction he case use each of them the same.
 
-To further complicate things for the people implementing the actual data structures,
+At a lower level things start to get much more complex,
 even when considering a single data structure there are different properties a specific implementation might ensure.
-For example you might have a blocking skip-list or a non-blocking skip-list which provide
+For example one might have a blocking skip-list or a non-blocking skip-list which provide
 different guarantees of the progress of the operations.
 Taking this a step further, different implementations might perform
 better or wore depending on the workload.
-For example you might have a skip-list implementation that is memory efficient, but is slower
+For example there might exist a skip-list implementation that is memory efficient, but is slower
 then another implementation that is less memory efficient.
 Again though a programmer is not required to know these details (but they can still help him).
 
@@ -196,11 +199,12 @@ Each of these points are true in transactional memory as well.
 At the most basic level all a programmer should need to know is where
 to begin and end his atomic blocks.
 Beneath these atomic blocks lies the STM implementation which has many different aspects.
-Since the introduction of transactional memory in 1993 \cite{HM93} dozens of different properties have emerged
+Since the introduction of transactional memory in 1993 \cite{HM93} dozens (if not hundreds) of different properties have emerged
 as well as many different STM algorithms,
 with each of them ensuring a greater or fewer number of these properties and being more or less
 concerned with performance.
 (Some of these properties are discussed in the introduction of this thesis in section \ref{sec:details})
+
 
 In an ideal world there would exist a \emph{``perfect''} STM algorithm that ensures all desirable properties
 without making any sacrifices.
@@ -259,12 +263,12 @@ satisfies the condition is accepted with positive probability \cite{GHS08}.
 %----------------------------------------------------------------------
 \subsection{Two consistency conditions  for STM systems}
 
-As viewed, the recurring theme throughout this document is that
+The recurring theme throughout this document is that
 the most important goal of transactional memory is ease of use,
 and is the subject of this section.
 We already have our syntax defined for the programmer ($atomic\{ \dots \})$) and
 a basic idea of what this means, ``the code in the atomic block will appear as if
-it has been executed instantaneously'', yet we need to precisely define what this
+it has been executed instantaneously with respect to other transactions'', yet we need to precisely define what this
 means for an STM algorithm.
 At the heart of this we have consistency criterion.
 These criterion precisely define the semantics of a transaction and guide the creation
@@ -300,18 +304,23 @@ are usually produced by SQL queries, in  a STM  system the code
 encapsulated in a transaction is not restricted to particular patterns. 
 Consequently  a transaction always has to operate on a consistent state
 (no matter if it is eventually committed or not).
-To be more explicit, let   us consider the following example where 
-a transaction  contains the statement $x\leftarrow a/(b-c)$ 
-(where $a$, $b$ and $c$ are  integer data), and let us assume that 
-$b-c$ is different from $0$  in all  consistent states
-(intuitively, a  consistent state is  a global state that,  considering only
-the committed transactions,  could have existed at some real time instant). 
-If the values of $b$ and $c$ read by a transaction come from 
- different states, it is possible  that the transaction obtains values such
-as $b=c$ (and  $b=c$ defines an inconsistent  state). If this 
-occurs,  the transaction  throws  a divide by zero  exception  that  has to  be
-handled by the process that invoked the corresponding
-transaction. Even worse undesirable  behaviors can  be
+% To be more explicit, let   us consider the following example where 
+% a transaction  contains the statement $x\leftarrow a/(b-c)$ 
+% (where $a$, $b$ and $c$ are  integer data), and let us assume that 
+% $b-c$ is different from $0$  in all  consistent states
+% (intuitively, a  consistent state is  a global state that,  considering only
+% the committed transactions,  could have existed at some real time instant). 
+% If the values of $b$ and $c$ read by a transaction come from 
+%  different states, it is possible  that the transaction obtains values such
+% as $b=c$ (and  $b=c$ defines an inconsistent  state). If this 
+% occurs,  the transaction  throws  a divide by zero  exception  that  has to  be
+% handled by the process that invoked the corresponding
+% transaction.
+If this is not ensured by the STM system then undesirable
+behaviors such as divide by zero exceptions can occur
+(an example of an execution in which such an exception occurs
+is described in section \ref{sec:int-correct} of the introduction).
+Even worse undesirable  behaviors can  be
 obtained when  reading values from inconsistent  states. 
 This occurs for example when an inconsistent state provides a transaction 
 with values that generate infinite loops.
@@ -345,6 +354,20 @@ this sequence respects the transaction real-time occurrence order.
 %Examples  of  protocols  implementing  the  opacity   property,  each  with
 %different additional features, can be found in \cite{DSS06,IR08,IR09,RFF07}. 
 
+Here let us return to our high level Definition \ref{def:trans-def} of a transaction that
+this document is focusing on.
+% Importantly the correctness condition of opacity fits well with this definition.
+The definition says that a transaction is ``executed atomically exactly once
+taking in consideration all parts of the system''.
+Even though the whole system is not considered, the opacity condition fits
+in this definition because
+in an STM such a system, transactions are executed atomically
+with respect to each other and aborted transactions making no visible
+impact on the system.
+Therefore, when considering the interaction between transactions,
+as STM system should use a consistency condition that ensures the same
+level of safety as opacity.
+Other parts of the system and the definition are considered in later chapters.
 
 
 \paragraph{Virtual world consistency}
@@ -394,7 +417,7 @@ So what does this mean for the programmer who plans to use transactional memory
 to write his concurrent program?
 Possible performance implications aside, absolutely nothing,
 The programmer will see no difference between an STM protocol that is opaque
-versus one that is virtual world consistent.
+versus one that is virtual world consistent and, as a result, still keeping within our Definition \ref{def:trans-def}.
 Given the first requirement of transactional memory is ease of use, this is extremely
 important, virtual world consistency would be much less interesting as an STM
 consistency condition if this were not true.
@@ -409,10 +432,10 @@ This  section  defines  formally opacity  \cite{GK08} and virtual  world
 consistency \cite{IR09}.
 Section \ref{sec:model-and-conditions} of the first chapter described the basic model of transactions that will
 be used in these definitions and throughout this chapter.
-Before getting into the formal definitions of consistnecy condiditons the following section describes some additional properties
+Before getting into the formal definitions of the consistency conditions, the following paragraphs describe some additional properties
 of STM executions necessary for completeness.
 Then, based on these definitions, opacity and  virtual world consistency
-is be defined.
+is defined.
 
 \paragraph{Processes and shared objects}
 An application is made up of  an  arbitrary number  of  processes  and  $m$
@@ -796,8 +819,9 @@ the interactions between transactions, an opaque STM protocol will have to abort
 transactions unnecessarily if invisible reads are used.
 We then show that by simply replacing virtual world consistency for opacity
 as the consistency condition no transactions need to be aborted unnecessarily.
-Importantly changing virtual world consistency for opacity makes no difference
-to the meaning of a transaction for the programmer.
+Importantly, as discussed previously, changing virtual world consistency for opacity makes no difference
+to the meaning of a transaction for the programmer, still following
+our high level Definition \ref{def:trans-def} of transactions.
 
 %=========================================================================
 \subsection{Invisible reads, opacity and permissiveness are incompatible} 
@@ -993,10 +1017,10 @@ invisible reads, and permissiveness.
 
 \section{A protocol satisfying permissiveness and virtual world consistency with read invisibility}
 
-Even though the previous section shows that it is possible to have an STM protocol with read invisibility,
-permissiveness, and virtual world consistentency, it does not show that it is realistic to implement.
-In this section we introduce such a protocol that satisfies the above properties efficiently using
-realistic operations available in most hardware.
+% Even though the previous section shows that it is possible to have an STM protocol with read invisibility,
+% permissiveness, and virtual world consistentency, it does not show that it is realistic to implement.
+This section introduces a protocol that satisfies permissiveness and virtual world consistency with read invisibility
+efficiently using realistic operations available in most hardware.
 
 
 \subsection{Step 1: Ensuring virtual world consistency with read invisibility}
@@ -2553,15 +2577,23 @@ Additionally, it is important to realize that some of these additional propertie
 exclusive to STM systems and may be applicable to other concurrent algorithms,
 or even algorithms in general.
 Following this, we must acknowledge that there are nearly countless properties
-to consider (TM specific properties, concurrent algorithm specific properties, or even properties applicable
+to consider (STM specific properties, concurrent algorithm specific properties, or even properties applicable
 generally to algorithms) whose
 compatibility with other properties might be examined when taking TM into account.
-Given such a huge space of options to examine, the STM community
+Given such a huge space of options to examine, the community
 is given the task of deciding which properties and their combinations might be important and
 others that might not.
 Unfortunately this is not always a straightforward task, especially given
 that we do not know to what extent and for what tasks transactional memory
 might be used for in the future.
+
+In any case this thesis suggests studying these properties should be done while still considering
+a consistency condition such as opacity
+or virtual world consistency, keeping in the spirit of our high level Definition \ref{def:trans-def}
+or a transaction.
+While there might be other interesting properties to study when considering
+weaker definitions of transactions and consistency, when doing this the goal of ease of use
+is partially lost and is therefore not examined in this thesis.
 The following are some properties satisfied by the protocol discussed in this chapter which appear
 to be important when considering efficient STM protocols.
 
@@ -2590,8 +2622,8 @@ At first glance this seems like an essential and straightforward property to ens
 fact that the locations a transaction might access are not known until they actually happen,
 it can be difficult to design safe and efficient disjoint access parallel STM protocols.
 Still, this is a nice property for an STM system to implement for several reasons.
-First is scalability, a program that is written so that each process does not share any
-data with any other process could have its scalability limited by the sharing of data within
+First is scalability, a program using STM for synchronization that is written so that each process shares
+very little data with other processes could have its scalability limited by the sharing of data within
 the STM implementation.
 Second is simply efficiency, simply because shared data can be expensive to access
 (especially that which is highly contended).
@@ -2610,7 +2642,8 @@ versions allows the protocol to have a larger time  line to find valid locations
 to serialize transactions.
 In fact, the amount of versions kept is at least enough to ensure that any
 live transaction can be serialized at any valid time starting from the
-time the previous transaction was committed by this thread.
+time the previous transaction was committed by this thread
+(necessary for permissiveness).
 
 This work is not the first to consider multi-versioning for STM systems, in fact
 such systems
@@ -3041,7 +3074,15 @@ secondary, but still important things such as performance.
 This is where different properties such as read invisibility and permissiveness
 come in, a protocol that chooses or not to implement such properties might impact
 the performance of that protocol, but does not change the semantics of a transaction.
-By doing this we are putting the ease-of-use for the programmer as a first class requirement.
+By doing this we are putting the ease of use for the programmer as a first class requirement.
+Furthermore this chapter suggests (following the trend of most STM research)
+not using any consistency criterion for STM, but instead
+using consistency criterion that ensures the atomicity
+of transactions without allowing any transaction to execute in an invalid state of memory
+thus keeping in our high level Definition \ref{def:trans-def}.
+While this chapter only considers the part of this definition having to do with the
+atomicity of transactions, later chapters consider other parts of the definition
+in more detail.
 
 The first contribution of this chapter shows that permissive and read invisibility are
 incompatible with opacity, we then show that we can choose a weaker consistency criterion
@@ -3054,22 +3095,22 @@ then it would not be considered an appropriate consistency criterion for transac
 
 The second contribution of this chapter introduces a realistic algorithm that satisfies
 virtual world consistency, permissiveness, and read invisibility.
-It then shows some ways to optimize the speed of the read operations of the protocol
-by trading-off some permissiveness.
+% It then shows some ways to optimize the speed of the read operations of the protocol
+% by trading-off some permissiveness.
 
-An important distinction of this work from most is that instead of looking at properties independently,
+An important position of this work is that instead of looking at properties independently,
 it considers multiple properties at once.
 More specifically it looks at the compatibility of properties, how realistic protocols can be
 designed to satisfy them, and how trade-offs in these properties can be made for efficiency.
-Hopefully these contributions have convinced the reader that studying such combinations is important for understanding
-transactional memory and will help inspire similar research on the many combinations
+Hopefully these contributions promote the idea that studying such combinations is important for understanding
+transactional memory and will also promote similar research on the many combinations
 left unexamined.
 Importantly this suggests that weakening the transactional model in the interest
 of improving performance might not be necessary, as much of what is possible under the current
-model has yet to be examined.
-Recent research \cite{KR11} has suggested an intereting way to approach this problem by looking at the ammount
+model has yet to be examined (actually further chapters will suggest even simplifying the model).
+Recent research \cite{KR11} has suggested an interesting way to approach this problem by looking at the amount
 of concurrency certain properties (or even combinations of these properties) might allow.
-They do this by proving the minimum ammount of expensive synchronization operations that are needed
+They do this by proving the minimum amount of expensive synchronization operations that are needed
 by an STM in order to ensure these properties safely.
 
 As a final note on ease-of use, it should be said that the research direction suggested in

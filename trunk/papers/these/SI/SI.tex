@@ -169,7 +169,8 @@ Simplified transaction semantics may not be enough.
 In the interest of ease-of-use, each chapter in this takes a 
 different look on transaction semantics.
 The first chapter suggested improving STM
-protocols without changing the semantics of a transaction, the second
+protocols while focusing on the semantics of a transactions
+interaction with other transactions, the second
 chapter suggested simplifying the semantics of a transaction,
 and this chapter will suggest expanding the semantics.
 It will look at how a programmer might use transactions
@@ -187,7 +188,7 @@ in a concurrent setting.
 For example having a concurrent data structure that satisfies linearizability
 means that the operations of a data structure will have a global order
 based on the invocation and completion time of operations.
-This allows, for example, a programmer who is coding some user based service
+This allows, for example, a programmer who is coding some user based Internet service
 to use reasoning such as: if user $A$ who
 is being serviced by thread $T_A$ changes his status to online (adding him
 to the set of online users backed by a linearizable concurrent data structure)
@@ -205,7 +206,7 @@ and each transaction appears to have happened instantly at some point
 in time between its invocation and committal.
 This allows the programmer to create multi-process programs where the processes are
 synchronized using programmer defined atomic operations.
-The most common example of this is a banking application defined by transactions.
+The most common example of a transaction based program is a banking application defined by transactions.
 A programmer writing such a bank application may want to define an operation
 that transfers a given amount of money $m$ from account $A$ to another account $B$.
 In order to do this he creates a transaction that first reads the balance
@@ -217,7 +218,8 @@ Given that the programmer uses an STM protocol that ensures transactions are exe
 atomically, a user of this program will see only valid transfers
 completed, otherwise conditions might arise where a balance is concurrently
 modified by another process during a transaction, resulting in invalid balances
-where someone could loose or gain too much money.
+where someone could loose or gain too much money, giving the programmer
+several undesired situations that he might have to deal with.
 
 As the above examples illustrate, it is necessary for a concurrent protocol
 to satisfy a clear and straightforward consistency condition in order
@@ -239,17 +241,17 @@ a transaction and an operation on a concurrent object.
 For a concurrent object consider the common example of a tree
 data structure implementing the set abstraction.
 This abstraction might provide the following linearizable operations:
-$insert(K)$ which adds $K$ to the set if it does not already exist, returning $true$
-on success, $delete(K)$ which removes $K$, if it exists, from the set
-returning $true$ on success, and $contains(K)$ returning $true$ if $K$
-exists in the set, $false$ otherwise.
+$\act{insert}(\ms{K})$ which adds $\ms{K}$ to the set if it does not already exist, returning $\lit{true}$
+on success, $\act{delete}(\ms{K})$ which removes $\ms{K}$, if it exists, from the set
+returning $\lit{true}$ on success, and $\act{contains}(\ms{K})$ returning $\lit{true}$ if $\ms{K}$
+exists in the set, $\lit{false}$ otherwise.
 Here there are two important things to point out, first is that these operations
-are contained to their data structure implementation, the status of shared
+are contained to their data structure implementation, meaning that the status of shared
 memory outside of the data structure has no affect on these operations.
 Second is that these operations fully implement the desired abstraction
 (in this case a set),
 a user chooses to use this specific implementation because he needs
-the $insert$, $delete$, and $contains$ operations.
+the $\act{insert}$, $\act{delete}$, and $\act{contains}$ operations.
 If he wanted additional functionality such as in-order iteration, then
 he would have to choose a different implementation providing the appropriate
 abstraction.
@@ -264,34 +266,35 @@ synchronization between the processes of his program, this synchronization
 does not have to be based on some predefined abstraction or only access
 some contained structure.
 The concept of the transaction allows the programmer to be free to
-perform any sort of operation, performing reads and write to any
+create any sort of operation by performing reads and write to any
 location in the shared memory.
 In this sense the transaction is a different type of mechanism
 then a concurrent object as transactions are integrated and contained within
 a user's program instead of being separate entities behind
 a fixed interface.
 
-So now we have concurrent objects whose operations follow some correctness condition
-allowing them to be accessed as something interesting to the programmer as
-a separate entity.
-And transactions which appear as atomic blocks (thanks to the STM protocol
-satisfying a correctness condition) built into a users program.
+In summary there are concurrent objects whose operations follow some correctness condition
+allowing them to be accessed as a separate entity.
+Then there are transactions which appear as atomic blocks (thanks to the STM protocol
+satisfying a correctness condition) written directly by a programmer into his program.
 At a low level the difference between a transaction and an operation
 on a shared object might imply separate protocol design choices.
 For example the previous chapter highlighted some of the implementation
 differences between a traditional universal construction and a
 universal construction for transaction based programs.
-But, let us step backwards for a moment and look at a higher level.
-Before we consider implementation details we must consider how
+Differently, this thesis focuses on a high level Definition \ref{def:trans-def}
+of a transaction aimed towards ease of use.
+Therefore, before considering implementation details we must consider how
 how the programmer interacts with a transaction is considered at an abstraction level.
-The previous discussion
-has expressed the view that transactions exist as an integrated part of
-a users program.
-This happens when the programmer places a group of reads and writes
-inside a block of code bounded by the keywords $transaction\_begin$ and
-$transaction\_end$.
+
+
+Given the view that transactions exist as an integrated part of
+a users program, we have
+the programmer placing a group of reads and writes
+inside a block of code bounded by the keywords $\act{transaction\_begin}()$ and
+$\act{transaction\_end}()$ (or alternatively the atomic block $\act{atomic}(\dots)$).
 This atomic operation exists directly as a piece of his code preceded
-and followed by code also written by himself.
+and followed by code also written by the programmer.
 % Inside this block of code reads and writes to shared memory are then
 % treated by the STM protocol as calls to the operations
 % $transaction\_read$ and $transaction\_write$.
@@ -312,19 +315,22 @@ Interestingly, this possibility of the {\it existence of two different paradigms
 two different interpretations of transactional memory: On one hand considering TM as an implementation
 of shared memory, and, on the other hand, considering TM as an additional way of achieving synchronization, 
 to be used alongside with locks, fences, and other traditional methods.
-When putting ease-of-use as the primary requirement of transactional memory
+When putting ease of use as the primary requirement of transactional memory
 as well considering the discussion on transactions vs operations on concurrent objects
-the choice of paradigm seems clear.
-If within a program there are two sets of shared memory, one set for accessing inside
-transactions, and another set for accessing outside of transactions, then we loose a
-bit of the integration concept for a bit more of the separated object concept.
-One way to think of it is that the transactions represent a programmer defined
-interface to one large discrete shared object.
+and going back to our high level Definition \ref{def:trans-def} of transactions,
+transactions should then appear as being atomic to all parts of the system,
+including shared memory that is accessed outside of transactions.
+Conversely, if within a program there are two sets of shared memory, one set for accessing inside
+transactions, and another set for accessing outside of transactions, then we loose 
+the integration concept for more of the separated object concept.
+In the second case the transactions could represent a programmer defined
+interface to one large discrete shared object separate from the rest of the system.
 Transactions are still defined and placed by the programmers, but they are limited
 in what memory they can access.
 On the other hand if the programmer can access shared memory both inside and outside
 of transactions while the system is still ensuring the atomicity of the transactions then
-we have a more straightforward integrated system.
+we have a more straightforward integrated system that follows our high level transaction
+Definition \ref{def:trans-def}.
 
 \subsection{Transaction vs Non-transactional Code.}
 \label{sec:TvNT}
@@ -339,13 +345,12 @@ non-transactional operations. %This  is mostly brought about by  the need to
 In this work we consider that shared memory can be accessed through
 reads and writes either inside or outside of transactions.
 A read (respectively write) performed inside a transaction is consider
-a transactional read (transactional write) while a read (resp. write)
+a transactional read (resp. transactional write) while a read (resp. write)
 performed outside a transaction is considered a non-transactional read
-(non-transactional write).
+(resp. non-transactional write).
 
 The next section will discuss previous solutions on how to deal
-with concurrent accesses to shared memory inside and outside of transactions
-and where we think they fall short on the ease-of-use objective.
+with concurrent accesses to shared memory inside and outside of transactions.
 
 \subsection{Dealing with transactional and non-transactional memory accesses}
 \label{sec:SIsolutions}
@@ -395,7 +400,7 @@ Therefore, in order  to keep consistent with  the spirit of TM  principles a
 system should prevent unexpected   results  from   occurring  
 in presence of  race conditions. 
 Furthermore, concurrency   control should  ideally be implicit  
-and never be delegated to  the programmer~\cite{CIR12,MS12}.
+and never be delegated to  the programmer~\cite{CIR11,MS12}.
 It is for these reasons that when considering transactional and non-transactional accesses
 we want something stronger then weak isolation in order to keep things
 as simple as possible for the programmer.
@@ -426,8 +431,8 @@ transactional abort.
 satisfy a weaker consistency condition then opacity allowing for efficient
 implementations of search data structures.
 While this chapter focuses on the interaction between shared memory accesses
-inside and outside of transactions, we felt it was interesting to mention
-these solutions as in a way they allow a sort of non-transactional read
+inside and outside of transactions, it is interesting to mention
+these solutions here, as one way to view them is that they allow a sort of non-transactional read
 to be preformed from within a transaction.
 
 \paragraph{Privatization}
@@ -438,21 +443,26 @@ to privatize sections memory to a specific process giving it exclusive access to
 memory that was previously shared.
 The programmer does this through the use of what is called a privatizing transaction
 within which he makes some memory unaccessible from other processes' transactions.
-Once a process has privatized some memory then is safe
-to access it outside of transaction within the privatizing thread.
+Once a process has privatized some memory it is then is safe
+to access this memory non-transactionally from within the code of the privatizing thread.
 After privatization, memory can then be publicized to be accessed
 from within transactions again
 by using a publication transaction.
 
 
-Considering the privatization problem, \emph{single lock atomicity} (or \emph{single global lock semantics}) \cite{MBS08} is a widely
+One way to view the privatization problem is through the concept of
+\emph{single lock atomicity} (or \emph{single global lock semantics}) \cite{MBS08} which is a widely
 accepted memory model for STM, where transactions execute as if there is 
 a single global lock that each transaction must acquire on
 start and release on commit.
 Obviously if there is only one transaction executing at a time then privatization and publication safety is
 ensured.
 The simple benefit of ensuring this model is that the programmer can view the memory accesses done by transactions
-as if they had been done using a single global lock.
+as if they had been done using a single global lock,
+thus allowing the programmer to view the system as something likely more familiar to him.
+Unfortunately though this model still makes few guarantees relating to the order
+of shared memory accesses performed both transactionally and non-transactionally,
+allowing non-transactional access to violate the atomicity of transactions.
 
 
 A typical  example of privatization would  be the manipulation  of a shared
@@ -467,7 +477,7 @@ that started before $T_i$ committed who have concurrently accessed $n$.
 % While the privatization is not visible to all processes, inconsistencies may arise, given 
 % that for $T_i${}'s process the node is private but for other processes, the node is 
 % still seen as shared. 
-These problems are closely examined in \cite{spear07}.
+These problems are closely examined in \cite{spear08}.
 Here they show that providing privatization safety is not as
 simple as just implementing an STM protocol that provides opacity as incorrect results due to
 privatization can occur regardless of the update policy
@@ -511,8 +521,8 @@ where each thread has a shared thread-local counters \cite{MBS08}.
 A similar approach to ensuring privatization safety is to leave transactional
 code unmodified and instead modify the non-transactional operation by
 for example adding fences to them \cite{shpeis07}.
-In a different light, similar to the way using a global lock inherently insure privatization
-safety, an STM protocol that uses global shared data structures can often
+In a different light, similar to the way using a global lock inherently insures privatization
+safety, an STM protocol that uses underlying global shared data structures in its implementation can often
 ensure privatization safety with little or no additional overhead, such is the case
 with RingSTM \cite{SMP08} and NOrec \cite{DSS10}.
 Other possible solutions include partitioning by consensus 
@@ -531,13 +541,16 @@ mention when he is privatizing data through the use of private transactions \cit
 
 
 A main advantage of privatization is in the case of performance, as when
-a thread privatizes some memory, it can then access it without overhead.
+a thread privatizes some memory, it can then access it without additional overhead.
 While privatization is an interesting solution, we feel that is does not
-fit in our model of ease-of-use for two main reasons.
+fit in our high level transaction Definition \ref{def:trans-def} and 
+model of ease of use for two main reasons:
 Firstly the separation between the memory safe to access by transactions
-and that safe to access outside of transactions is still separated, privatization/
-publication just gives the user the ability to dynamically move sections of memory
+and that safe to access outside of transactions is still separated, privatization/publication
+just gives the user the ability to dynamically move sections of memory
 from one part to another.
+As a result the concurrent access of memory inside and outside of transactions
+can violate the atomicity of transactions, thus not keeping within Definition \ref{def:trans-def}.
 Secondly it adds an extra layer of complication to the transactional memory
 abstraction, if the programmer wants to takes advantage of privatization he
 has to decide when and what to privatize and publicize.
@@ -582,8 +595,9 @@ that  takes their co-existence  into account.
 % Such an  implementation that
 % provides synchronization  between transactional and  non-transactional code
 % is said to provide strong isolation.
-Strong isolation ensures that the non-transactional accesses to shared memory
-do not violate the atomicity of the transactions.
+Specifically, strong isolation ensures that the non-transactional accesses to shared memory
+do not violate the atomicity of the transactions,
+thus keeping within our high level transaction Definition \ref{def:trans-def}.
 As a result,
 the aforementioned scenarios described in the paragraphs about weak isolation
 and privatization  where non-transactional operations  violate
@@ -624,13 +638,15 @@ Other work has considered strong isolation in hardware transactional memory \cit
 % isolation} while the second case is referred to as \emph{strong  
 % isolation}.
 
-When implementing strong isolation in order to ensure the safety of non transactional reads and writes
-(weather they are implemented as mini-transactions or by using memory barriers)
+When implementing strong isolation, in order to ensure the safety of non transactional reads and writes
+(whether they are implemented as mini-transactions or by using memory barriers)
 they become more then just a single load or store operation when actually being executed on the processor.
 In order not to increase the complexity of using transactional memory we want the programmer to be
-able to perform non-transactional operations in his code just as he would a normal read and write.
+able to perform non-transactional operations in his code just as he would a normal read and write
+(i.e. we do not want him to have to distinguish which reads and writes should to shared memory and which
+should be local only).
 This means at some point after the programmer has written the code and before it is executed
-the additional operations must be added.
+these additional operations must be added.
 For example in \cite{shpeis07,SMSA08} memory barriers are added before non-transactional reads and writes
 by the compiler.
 This can also be done dynamically at runtime.
@@ -655,7 +671,7 @@ model for programmers to use.
 An alternative solution called \emph{selective strict serializability} \cite{spear08} also weakens the global lock
 semantics model by saying that non-transactional access only follow the global lock semantics
 with certain transactions as defined by the programmer.
-Towards the models focused more towards being easy to understand, there is the \emph{transactional data-race-free}
+Towards the models focused more on being easy to understand, there is the \emph{transactional data-race-free}
 model \cite{DS09} whose aim is to extend the well known Adve and Hill's data-race-free models \cite{AH93} used for concurrency in
 languages such as Java and C++ in order to include transactions in a clear direct way.
 
@@ -690,9 +706,9 @@ transactions which contain only a single  read or
 write operation, and (b) the consistency condition for transactions is opacity
 (or virtual world consistency).
 We choose this definition as it is simple and keeps with the spirit of atomic transactions
-without having to separate the memory.
+without having to separate the memory, thus following Definition \ref{def:trans-def}.
  
-Using this definition, the properties referred to as
+When using this definition for strong isolation the properties referred to as
 {\it containment}  and {\it non-interference} are satisfied.
 These properties were defined in \cite{blundell06} in order to describe
 the synchronization issues between concurrent transactional and non-transactional operations.
@@ -801,22 +817,22 @@ transactions. The use  of locks  in a TM algorithm  entails blocking and may
 even lead a process to starvation.
 Previous research on STM protocols has taken the approach that
 these characteristics might acceptable.
-The reason for this is that the
-programmer  accepts the fact that a  transaction has a duration and that it
-may  even  fail: Given that every live transaction has the possibility
-to abort means that the  
-failure to complete can be considered a part of the transaction concept.  
+% The reason for this is that the
+% programmer  accepts the fact that a  transaction has a duration and that it
+% may  even  fail: Given that every live transaction has the possibility
+% to abort means that the  
+% failure to complete can be considered a part of the transaction concept.  
 
 Now if we have non-transactional operations that rely on the same mechanisms
 (either implemented using locks or by mini-transactions) then they are susceptible
 to the same possibility of non-completion.
-However one must consider that a transaction does not have the same semantics
-as a simple read or write operation.
-While the concept of the memory  transaction includes the possibility of failure,
-the concept of a simple read/write operation does not.
+% However one must consider that a transaction does not have the same semantics
+% as a simple read or write operation.
+% While the concept of the memory  transaction includes the possibility of failure,
+However, the concept of a simple read/write operation does not.
 When it  comes to single read or  write accesses  to  a shared
 variable, a  non-transactional operation is normally understood  as an
-event  that  happens   atomically  and   completes.
+event  that  happens   atomically  and always  completes.
 While executing, a  read  or write  operation   is  not 
 expected  to  be de-scheduled, blocked or aborted.  
 Unfortunately   strong
@@ -992,8 +1008,8 @@ The second, less theoretically interesting, but just as important reason
 is performance.
 To the programmer the non-transactional operations as simple reads and
 writes, he should be able to assume that they are efficient.
-In fact, the primary concern of previous research on strong isolation
-is performance, it has even been suggested that 
+% In fact, the primary concern of previous research on strong isolation
+% is performance, it has even been suggested that 
 
 In the previous chapter we were more interested in showing that a concept was
 possible, while in this chapter performance is a just as important concern.
@@ -1014,7 +1030,13 @@ that are to be used
 by the programmer, substituting conventional
 shared memory read and write operations in order to provide
 terminating strong isolation. 
-
+Unfortunately, as with TL2, the protocol described in this chapter
+does not ensure the progress of the transactions themselves which
+was described as necessary in the previous chapter.
+Nevertheless, the design of a protocol that both ensures terminating strong isolation
+as well as guaranteeing that every transaction is committed exactly
+once no mater the actions of other processes in the system
+is left as a future task.
 % TM with strong isolation has also been proposed in
 % software \cite{SMSA08,shpeis07} in hardware \cite{MTCM07}, and has been suggested to be too costly \cite{DS09}.
 % This work differs from other implementations in that it is terminating and
@@ -1095,7 +1117,7 @@ If, on the  contrary, the logical date of a read set  item is larger than the $\
 of the transaction,  then  a concurrent  transaction 
 has updated this item, invalidating the read.
 A transaction must abort if its read set is not valid.  
-Once the read set it verified to be consistent the commit operation performs an increment-and-fetch on $\mathit{GVC}$, and stores the 
+Once the read set it verified to be consistent the commit operation performs an increment\&fetch on $\mathit{GVC}$, and stores the 
 return value in local variable $\mathit{wv}$ (which can be seen as a write version number  or a version timestamp). 
 Should the transaction commit, it will assign its $\mathit{wv}$ as the new logical date of the shared variables in its write set.
 Finally the locks are released completing the commit operation.
@@ -1275,11 +1297,11 @@ The specifics of this memory model are described as follows:
 The underlying memory system is made up of atomic read/write registers. 
 Moreover some of them can also be accessed by the the following two 
 operations. The operation denoted 
-${\sf Fetch\&increment}()$ atomically adds one to the register and 
-returns its previous value. 
+${\sf Increment\&Fetch}()$ atomically adds one to the register and 
+returns its new value. 
  The operation denoted 
-${\sf C\&S}()$ (for compare and swap) is a conditional write. 
-${\sf C\&S}(x,a,b)$ writes $b$ into $x$ iff $x=a$. In that case it 
+${\sf Compare\&Swap}()$ (for compare\&swap) is a conditional write. 
+${\sf Compare\&Swap}(x,a,b)$ writes $b$ into $x$ iff $x=a$. In that case it 
 returns $\mathit{true}$. Otherwise it returns  $\mathit{false}$. 
 
 
@@ -1420,8 +1442,8 @@ of the $\mathit{GVC}$ when the write took place.
 
 Due to this different memory structure a shared lock array is no longer needed,
 instead of locking each location in the write set during the commit operation, this algorithm
-performs a compare and swap directly on each memory location changing the address to point to one of its T-records.
-After a successful compare and swap
+performs a compare\&swap directly on each memory location changing the address to point to one of its T-records.
+After a successful compare\&swap
  and before the transactions status has been set to COMMITTED or ABORTED, the transaction effectively
 owns the lock on this location.
 Like in TL2, any concurrent transaction that reads the location and sees that it is locked ($\mathit{status} = $ LIVE) will
@@ -1501,7 +1523,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge (\downarrow \mathit{tmp.status}) \neq$ COMMITTED ) \\
 %\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  (\downarrow \mathit{tmp.status}) = $ LIVE) \\
 \line{A03}  \>\>  {\bf then if}  $((\downarrow \mathit{tmp.status}) = $ LIVE) \\
-\line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
+\line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{Compare\&Swap}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
 %\line{A05} \>\> {\bf end if} \\
 \line{A06} \>\>\> {\bf if} ($(\downarrow \mathit{tmp.status}) \neq $ COMMITTED)  \\
 \line{A07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
@@ -1802,13 +1824,13 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{DA07} \>\> $\mathit{item.time} \gets \mathit{tmp.time}$; \\
 \line{DA07a} \>\> {\bf if} ($\mathit{item.time} = \infty$) {\bf then} $\mathit{item.time} \gets \mathit{GCV}$ {\bf end if}; \\
 
-\line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{C\&S}}(\mathit{addr, tmp, item}))$ {\bf then} $\sf{abort}()$ {\bf end if}; \\
+\line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{Compare\&Swap}}(\mathit{addr, tmp, item}))$ {\bf then} $\sf{abort}()$ {\bf end if}; \\
 %\line{DA09} \>\>\> {\bf then} ${\sf abort}()$ \\
 %\line{DA10} \>\> {\bf end if} \\
 
 \line{DA11} \> {\bf end for}; \\
 
-\line{DA12} \> $\mathit{time} \gets {\sf increment\&fetch}(\mathit{GVC})$; \bf{if} (${\sf validate\_by\_value}()$) {\bf then} $\sf{abort}()$ {\bf end if}; \\
+\line{DA12} \> $\mathit{time} \gets {\sf Increment\&Fetch}(\mathit{GVC})$; \bf{if} (${\sf validate\_by\_value}()$) {\bf then} $\sf{abort}()$ {\bf end if}; \\
 
 %\line{DA13} \> ${\sf validate\_by\_value}()$;  \\
 
@@ -1825,7 +1847,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 \line{DA17} \> {\bf end for}; \\
 % \line{DA17a} \> {\bf if} $\mathit{abort}$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
-\line{DA18} \> {\bf if} ${\sf \mathit{C\&S}}$($\mathit{status}$, LIVE, COMMITTED) \\
+\line{DA18} \> {\bf if} ${\sf \mathit{Compare\&Swap}}$($\mathit{status}$, LIVE, COMMITTED) \\
 \line{DA19} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
 \line{DA20} \> \> {\bf else} \= ${\sf abort}()$ \\
 \line{DA21} \> {\bf end if};  \\
@@ -1857,11 +1879,11 @@ a transaction could be {}``outrun'' by
 a non-transactional operation that writes to one of those items
 causing the transaction to be required to abort in order to ensure correctness. 
 As described previously, while TL2 locks items in its write set using a
-lock array, this algorithm compare and swaps pointers directly to the T-records
+lock array, this algorithm compare\&swaps pointers directly to the T-records
 in its write set (lines \ref{DA02}-\ref{DA11}) while keeping a reference to the previous value.
-The previous value is stored in the T-record before the compare and swap is performed (lines \ref{DA05}-\ref{DA06})
-with a failed compare and swap resulting in the abort of the transaction.
-If while performing these compare and swaps the transaction notices
+The previous value is stored in the T-record before the compare\&swap is performed (lines \ref{DA05}-\ref{DA06})
+with a failed compare\&swap resulting in the abort of the transaction.
+If while performing these compare\&swaps the transaction notices
 that another LIVE transaction is updating this memory, it aborts itself
 (line \ref{DA05}).
 By using these T-records instead of locks concurrent operations have access to necessary metadata
@@ -1884,7 +1906,7 @@ Finally the
 transaction can mark its updates as valid by 
 changing its 
 $\mathit{status}$ variable from LIVE to COMMITTED (line \ref{DA18}).
-This is done using a compare and swap as there could be
+This is done using a compare\&swap as there could be
 a concurrent non-transactional operations trying to abort the transaction.  
 If this succeeds then the transaction has successfully committed, otherwise
 it must abort and restart.
@@ -1978,6 +2000,9 @@ appears to have taken place.
 Note that we do not use an STM specific consistency criterion
 such as opacity or virtual world consistency to prove correctness as traditionally they do not consider
 non-transactional operations.
+For clarity, the term \emph{referenced by} which is used in phrases such as \emph{record $\ms{A}$ is referenced by
+a shared pointer at address $\ms{addr}$} means that the value stored in memory at address $\ms{addr}$
+is the address of record $\ms{A}$, thus dereferencing this pointer will return the object $\ms{A}$.
 
 Before detailing the linearization points of the operations we will introduce a few lemmas that will help
 with the proofs.
@@ -1994,7 +2019,7 @@ For a T record, allocation happens on line \ref{D02} of $\sf{transactional\_writ
 then the $\mathit{value}$ field is set on lines \ref{D03} and \ref{D04} of the same operation.
 The $\mathit{last}$ field is set later on line \ref{DA05} or \ref{DA06} of the $\sf{try\_to\_commit}()$ operation,
 but the record is not referenced by a shared pointer until later in this operation
-by performing a compare and swap on line \ref{DA08}.
+by performing a compare\&swap on line \ref{DA08}.
 \end{proof}
 
 
@@ -2010,10 +2035,10 @@ The status variable is then accessible by the process that is executing the tran
 transaction (line \ref{D03} of $\sf{transaction\_write}()$) after they are added to shared memory during $\sf{try\_to\_commit}()$.
 $\mathit{status}$ can be modified in three places:
 On line \ref{A04} of $\sf{non\_transactional\_read}$ and on line \ref{DA18} of $\sf{try\_to\_commit}$, but in both these cases
-the value of $\mathit{status}$ is changed from LIVE to either COMMITTED or ABORTED by a compare and swap.
+the value of $\mathit{status}$ is changed from LIVE to either COMMITTED or ABORTED by a compare\&swap.
 The third place is on line \ref{AB01} of the $\sf{abort}$ where $\mathit{status}$ is set to ABORTED by a normal write, but
 here $\mathit{status}$ must either still be LIVE, or already ABORTED.
-The reason for this is that the only place $\mathit{status}$ can be changed to COMMITTED is after a successful compare and swap
+The reason for this is that the only place $\mathit{status}$ can be changed to COMMITTED is after a successful compare\&swap
 during the $\sf{try\_to\_commit}()$ operation, but in this case the transaction is completed (lines \ref{DA18}--\ref{DA20}).
 \end{proof}
 
@@ -2023,17 +2048,17 @@ An aborted transaction makes no changes to the state of memory.
 \end{lemma}
 \begin{proof}
 For this proof we only need to consider transactions that abort after they have performed
-at least one successful compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ as transactions
+at least one successful compare\&swap on line \ref{DA08} of $\sf{try\_to\_commit}$ as transactions
 that have aborted before this have not made any modifications to shared memory.
 On line \ref{DA08} the transaction compares and swaps each of its T records from its write set into
 shared memory.
-What is important here is that before the compare and swap the transaction updates the $\ms{last}$
+What is important here is that before the compare\&swap the transaction updates the $\ms{last}$
 field of its T record for $\mathit{addr}$ using either the $\mathit{value}$ or the $\mathit{last}$ field of the current
 record at $\mathit{addr}$.
 The $\mathit{value}$ field is used if the record is of type NT or comes from a committed transaction, otherwise the $\mathit{last}$
 field is used, this follows the same pattern as the read and validate operations which were shown to all use the same value
 from a record in lemma \ref{lemma:si-samevalue}.
-Now the compare and swap on line \ref{DA08} used to add the T record to memory ensures that the record referenced by $\mathit{addr}$ has not
+Now the compare\&swap on line \ref{DA08} used to add the T record to memory ensures that the record referenced by $\mathit{addr}$ has not
 changed since the $\mathit{last}$ field of the new record was set.
 Now given that the transaction will abort (setting its $\mathit{status}$ to aborted), any read or validation that dereferences
 this record will use the $\mathit{last}$ field which is the same value that was in memory previously.
@@ -2041,7 +2066,8 @@ this record will use the $\mathit{last}$ field which is the same value that was 
 
 
 
-
+The following lemma is used to show that only a single value is every used from
+a record, which is necessary to prove later lemmas.
 \begin{lemma}
 \label{lemma:si-samevalue}
 For any T or NT record that is referenced by some shared address $\mathit{addr}$, any read operation
@@ -2061,7 +2087,7 @@ even though $\mathit{value}$ is not returned, linearizability is not violated
 as aborted transactions appear to have not executed at all.
 \paragraph{T Record} This case is a bit more difficult as the value returned depends on the $\mathit{status}$ of the transaction
 that created this record.
-First consider any $\sf{non\_transactional\_read}()$ that has dereferenced this object, on line \ref{A04} the compare and swap ensures that the status of the transaction is
+First consider any $\sf{non\_transactional\_read}()$ that has dereferenced this object, on line \ref{A04} the compare\&swap ensures that the status of the transaction is
 no longer LIVE.
 Now by lemma \ref{lemma:si-statusonce} we know that $\mathit{status}$ will only change from LIVE once.
 So if $\mathit{status}$ is ABORTED then the $\ms{last}$ field is returned, otherwise if COMMITTED then the $\mathit{value}$ field is returned.
@@ -2073,7 +2099,7 @@ the record being validate in the write set of the current transaction.
 In this case the process executing the validation is also the process who owns the record,
 so here the $\mathit{last}$ field is used for validation as by lemma \ref{lemma:si-abort} we know this is the value previously
 in shared memory.
- but here the compare
+%  but here the compare
 % and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ ensures that the value previously at this location is now in the $\mathit{last}$
 % field of this record.
 \end{proof}
@@ -2120,8 +2146,8 @@ lemma \ref{lemma:si-samevalue}.
 \label{lemma:si-rvvalid}
 The value validated by a successful $\sf{validate\_by\_value}()$ or returned by a successful
 $\sf{transactional\_read}()$ operation to address $\mathit{addr}$ is the same
-value that would be validated or returned by any read (non-transactional or transactional) that took place
-at the time of the most recent read of $\mathit{GCV}$ by this process used to set $\mathit{rv}$ for the transaction.
+value that would be validated or returned by any read (non-transactional or transactional) performed by another process that took place
+at the time of the most recent read of $\mathit{GCV}$ by this process (whose value is then used to set $\mathit{rv}$ for the transaction).
 \end{lemma}
 \begin{proof}
 By lemma \ref{lemma:si-samevalue} we know that for any record dereferenced the value read or validated will
@@ -2156,16 +2182,16 @@ Given this, we just need to show that the T record dereferenced was in memory be
 read in $\sf{begin\_transaction}$ (i.e. before $\mathit{GCV} = \mathit{rv}$).
 First consider the case where $\mathit{tmp.status} = $ COMMITTED, given that $\mathit{tmp}$ is a T record, it was created
 during a $\sf{try\_to\_commit}$ operation.
-During this operation  the compare and swap on line \ref{DA08} ensures  that $\mathit{tmp}$ is referenced by $\mathit{addr}$ before the process
-increases $\mathit{GCV}$ by performing an increment and fetch (line \ref{DA12}).
-Then on line \ref{DA15}, the value returned from the increment and fetch is used to set the $\mathit{time}$ field of each T record
+During this operation  the compare\&swap on line \ref{DA08} ensures  that $\mathit{tmp}$ is referenced by $\mathit{addr}$ before the process
+increases $\mathit{GCV}$ by performing an increment\&fetch (line \ref{DA12}).
+Then on line \ref{DA15}, the value returned from the increment\&fetch is used to set the $\mathit{time}$ field of each T record
 created by the transaction.
 Given this and that we know $\mathit{tmp.time} \leq \mathit{rv}$, $\mathit{tmp}$ must be referenced by $\mathit{addr}$ before
 $\mathit{GCV} = \mathit{rv}$.
-Now consider the case where $\mathit{tmp.status} = $ ABORTED, the compare and swap on line \ref{DA08} of $\sf{try\_to\_commit}$ and lemma \ref{lemma:si-abort} ensures
+Now consider the case where $\mathit{tmp.status} = $ ABORTED, the compare\&swap on line \ref{DA08} of $\sf{try\_to\_commit}$ and lemma \ref{lemma:si-abort} ensures
 that the value in $\ms{tmp.last}$ was the previous value at $\ms{addr}$ as well as that $\mathit{tmp}$ is referenced by $\mathit{addr}$
-before the increment and fetch.
-Following this (just like in the of $\mathit{tmp.status} = $ COMMITTED) we have the value returned from the increment and fetch
+before the increment\&fetch.
+Following this (just like in the of $\mathit{tmp.status} = $ COMMITTED) we have the value returned from the increment\&fetch
 used to set the $\mathit{time}$ field of each T record created by the transaction.
 Therefore $\mathit{tmp}$ must have been referenced by $\mathit{addr}$ before $\mathit{GCV} = \mathit{rv}$.
 
@@ -2226,13 +2252,13 @@ The precondition is ensured by the subsequent call to $\sf{validate\_by\_value}$
 as if any location in the read set has been changed since it was first read then
 the transaction would abort.
 The post condition is ensured by the for loop on lines \ref{DA15}-\ref{DA17} as well
-as the compare and swap on line \ref{DA18} changing the transaction's $\mathit{status}$
+as the compare\&swap on line \ref{DA18} changing the transaction's $\mathit{status}$
 from LIVE to COMMITTED.
 The for loop goes through each T record in the transaction's write set, checking
 if a write by some other process has changed the record referenced by $\mathit{addr}$ so that it no longer points
 to this transaction's record and aborting the transaction
 if there is.
-Finally the compare and swap setting $\mathit{status}$ to COMMITTED ensures
+Finally the compare\&swap setting $\mathit{status}$ to COMMITTED ensures
 that any future read (transactional or non-transactional) that dereferences one of
 the transaction's records returns the value written by the transaction.
 Lemma \ref{lemma:si-samevalue} ensures that any read or validation to any one of these
@@ -2673,6 +2699,14 @@ these different systems will interact.
 In this sense it has looked at the problem of accesses to the same
 shared memory being performed inside and outside of a transaction
 and suggested termination strong isolation to be used to deal with this.
+More specifically terminating strong isolation is used due to the fact that it follows
+our high level Definition \ref{def:trans-def} of transactions by
+ensuring the atomicity of transactions with respect to other non-transactional
+reads and writes in the system without changing the progress guarantees
+of traditional reads and writes.
+Thus for ease of use in the resulting model, a programmer can perform shared reads and writes
+as he normally would in a concurrent environment and not have to worry
+about violating the atomicity of transactions.
 
 Following this suggestion this chapter has presented an algorithm that achieves terminating strong 
 isolation  ``on top of'' a TM algorithm based on logical dates and locks, 
@@ -2698,8 +2732,10 @@ is just one among many possible interactions that a programmer may face when usi
 transactions.
 For example he might want to use locks or atomic hardware operations along side his transactions,
 he might want to use I/O within his transactions.
-Each of these and many more things deserve an investigation on possible models in which
+Each of these and many more things deserve an investigation on possible models where
 they are considered alongside the semantics of transactions.
+Future research is needed to decide how these additional operations can be added
+to the STM ecosystem in a way that does not hamper ease of use.
 
 
 

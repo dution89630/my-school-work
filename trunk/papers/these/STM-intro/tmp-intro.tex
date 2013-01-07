@@ -19,7 +19,7 @@ architectures has  given rise to what is called the {\it multicore
 revolution} \cite{HL08} that has  rang the revival of concurrent programming. 
 
 
-\section{Lock-based concurrent programming}
+\section{Lock-based concurrent programming}\label{sec:intro-lockbased}
 % A   {\it concurrent  object} is  an   object that can be   concurrently  
 % accessed by different processes of a  multiprocess program. 
 %
@@ -78,9 +78,9 @@ correctly.
 
 The most common difficulty associated with using fine grained locking
 is avoiding deadlock.
-Deadlock occurs for example when a process $A$ wants to obtain a lock that
-is already owned by process $B$ while concurrently process $B$ wants
-to obtain a lock that is already owned by process $A$ resulting
+Deadlock occurs for example when a process $T_A$ wants to obtain a lock that
+is already owned by process $T_B$ while concurrently process $T_B$ wants
+to obtain a lock that is already owned by process $T_A$ resulting
 in neither process progressing.
 In order to avoid deadlock locks are often acquired in a global order,
 but this may result in locks being taken more often and held longer then necessary.
@@ -120,7 +120,7 @@ examined in this thesis (namely software transactional memory (STM)).
 Non-blocking algorithms \cite{GC96} have been introduced as an alternative to using
 locks in order to avoid some of the scalability and progress problems of locks.
 These algorithms are implemented using powerful system level synchronization operations such
-as $compare\_and\_swap$.
+as compare\&swap.
 There have been many efficient and scalable non-blocking data structures proposed
 \cite{Mic02,ST04,Val96,FR04,Fra03}.
 Unfortunately such algorithms are known to be extremely difficult to implement
@@ -206,7 +206,7 @@ Therefore the programmer is not concerned by synchronization
 except when he defines the beginning and the end of a  transaction.
 It  is the job of the 
 STM system to ensure that transactions are executed as if they were atomic using low level synchronization
-operations such as $\lit{compare\&swap}$ or even other abstractions such as locks
+operations such as compare\&swap or even other abstractions such as locks
 (note that all these details are hidden from the programmer as he only has access to the interface
 to the STM which allows him to define atomic computation units).
 
@@ -310,7 +310,7 @@ The problem of aborted transactions and how a programmer must deal with them is 
 
 
 
-\subsection{Correctness}
+\subsection{Correctness}\label{sec:int-correct}
 
 Without a proper consistency or correctness criterion the programmer is lost, these criterion must ensure that transactions execute
 atomically and prevents the programmer from having to worry about inconsistencies that might occur otherwise.
@@ -637,7 +637,7 @@ additionally a conflict does not always mean a transaction must immediately abor
 in fact conflicting transactions are often still able to commit when allowed to run with validation.
 
 
-\subsubsection{Dealing with conflicts}
+\subsubsection{Dealing with conflicts}\label{sec:intro-contention}
 Once a conflict is detected the STM system must then choose a way to deal with it.
 Contention management was originally implemented in DSTM \cite{HLMS03} as an out-of-bound mechanism
 that a transaction would call when it detected a conflict with another transaction, 
@@ -764,7 +764,7 @@ otherwise simplicity is lost.
 % Even though transactional memory is designed as an abstraction focused on making
 % concurrent programming easier, 
 Before deciding the semantics of an easy to use STM a high level
-definition for a transaction must be decided.
+definition for transactions themselves must be decided.
 % As will be shown in each chapter there are complex aspects
 % of the STM abstraction that pose significant open research questions on how the programmer interacts with the
 % STM system in a modern concurrent environment.
@@ -775,7 +775,8 @@ of this system.
 % this
 % thesis takes an approach to answering these questions in a way attempting to minimally impact complexity
 % of the system.
-Following this approach the following high level definition for a transaction as follows:
+Following this approach the following high level definition for a transaction
+used in this thesis is the following:
 
 \begin{definition}\label{def:trans-def}
 A transaction is any block of
@@ -796,7 +797,7 @@ This could include things such as the actions of other processes, the interactio
 of objects and memory in the system with this transaction, among other things, many of
 which are explored in this thesis.
 Each chapter in this thesis will then take this definition of a transaction,
-and by helping to formalizing its parts move towards the realization of the
+and help to formalizing its parts, moving towards the realization of the
 goal in Definition \ref{def:stm-def}.
 
 
@@ -834,7 +835,7 @@ Traditionally research has taken the view that for a protocol to be considered a
 implementation then it should ensure transactions
 are atomic with respect to each other and all transactions (aborted transaction included)
 execute in a consistent state of memory.
-Once this is satisfied the research then focuses on improving the implementing protocol
+Once this is satisfied the research then often focuses on improving the implementing protocol
 by increasing its performance or having it satisfy desirable properties
 (interestingly, this properties are usually related to improving performance).
 Following this model, the first chapter looks at the specific properties of \emph{invisible reads}
@@ -863,7 +864,7 @@ and provide straightforward solutions to them.
 
 
 Specifically, the second chapter looks at research that takes the view that for transactional memory to
-be easy to use the semantics defined in the first chapter should be simplified, meaning that,
+be easy to use the basic semantics should be simplified, meaning that,
 in a sense, the abstraction level should be raised.
 In detail it looks at the problem of aborted transactions and suggests that
 the programmer should not have to be aware of aborts at all, following this suggestion it introduces a protocol
@@ -1425,7 +1426,7 @@ by the protocols described throughout this thesis.
 \subsection{Processors, Processes}
 The underlying multiprocessor system executing the transactional program or application
 written by a programmer is made up of one or more physical processors.
-The multiprocess program, defined  by the  programmer made up of transactions is  made up  of one or
+The multiprocess program, defined  by the  programmer is  made up  of one or
 sequential processes  where each process is a separate thread of execution.
 The application programmer defines the number of processes.
 Each process consists of  a sequence of 
@@ -1466,9 +1467,9 @@ protocols, chapters \ref{chap:VWC} and \ref{chap:UC} use this model.
 Separately, in chapter \ref{chap:SI} a different model is considered
 because this chapter deals specifically with memory management
 inside and outside of transactions (the model used is described in detail in that chapter).
-The algorithms presented in chapter \ref{chap:STMlib} for use as a library are correct in either memory model,
-but a separate syntax for transactional operations is used
-in order to simplify the pseudo code there (this syntax is described in the chapter).
+The algorithms presented in chapter \ref{chap:STMlib} for use as a library are correct in either memory model.
+% but a separate syntax for transactional operations is used
+% in order to simplify the pseudo code there (this syntax is described in the chapter).
 
 The set of the shared objects read by a transaction  defines its
 {\it read  set}.  Similarly the set  of shared objects it writes  defines its 
@@ -1501,7 +1502,9 @@ If  it  has  not  been  aborted  during a  read  or  write  operation,    a
 transaction $T$ invokes  the operation ${\sf try\_to\_commit}_T()$ when 
 it terminates. That operation returns $commit$ or $abort$. 
 
-
+In this document just to make a point for the simplicity of how a transaction should be viewed,
+sometimes the syntax of simply an atomic block ($atomic\{ \dots \})$)
+will be used to indicate a transaction.
 
 
 
