@@ -152,11 +152,11 @@
 \subsection{Software transactional memory (STM) systems}
 The most important goal of the STM abstraction is to make concurrent programming
 easier and more accessible to any programmer.
-By following our goal for STM defined in \ref{def:stm-def} and using our defnintion for a transaction \ref{def:trans-def},
+By following our goal for STM defined in \ref{def:stm-def} and using our definition for a transaction \ref{def:trans-def},
 arguably then all a programmer should need to know in order to use the STM abstraction is to know
 the syntax for writing an atomic block, likely something as simple as
 $$atomic \{ \dots \} $$
-The is because follwoing Definition \ref{def:trans-def}, a transaction always executes as an atomic block
+The is because following Definition \ref{def:trans-def}, a transaction always executes as an atomic block
 no matter what else is going on in the system,
 all the complexities and difficult synchronization is then taken care of by the
 underlying STM system.
@@ -183,14 +183,14 @@ The most obvious is that there are different data structures that can be used to
 provide a map abstraction, examples such as a skip-list, binary tree, or hash table.
 Choosing one of these may impact the applications performance or provide additional
 functionality, yet
-to the programmer just interested in the map abstraction he case use each of them the same.
+to the programmer just interested in the map abstraction he can use each of them the same.
 
 At a lower level things start to get much more complex,
 even when considering a single data structure there are different properties a specific implementation might ensure.
 For example one might have a blocking skip-list or a non-blocking skip-list which provide
 different guarantees of the progress of the operations.
 Taking this a step further, different implementations might perform
-better or wore depending on the workload.
+better or worse depending on the workload.
 For example there might exist a skip-list implementation that is memory efficient, but is slower
 then another implementation that is less memory efficient.
 Again though a programmer is not required to know these details (but they can still help him).
@@ -220,13 +220,13 @@ the study of additional properties.
 
 
 %----------------------------------------------------------------------
-\subsection{Some interesting and desirable properties for STM systems}
+\subsection{Some interesting and desirable properties for STM systems} \label{sec:def-perm}
 
 \paragraph{Invisible read operation}
 A read operation issued by a transaction is {\it invisible} if it does 
 not entail the modification of base shared objects used to implement 
 the STM system  \cite{MSHAESS06}.
-This is a desirable property for both efficiency  and privacy. 
+This is a desirable property mainly for efficiency. 
 
 
 \paragraph{Permissiveness}
@@ -434,8 +434,8 @@ Section \ref{sec:model-and-conditions} of the first chapter described the basic 
 be used in these definitions and throughout this chapter.
 Before getting into the formal definitions of the consistency conditions, the following paragraphs describe some additional properties
 of STM executions necessary for completeness.
-Then, based on these definitions, opacity and  virtual world consistency
-is defined.
+% Then, based on these definitions, opacity and  virtual world consistency
+% is defined.
 
 \paragraph{Processes and shared objects}
 An application is made up of  an  arbitrary number  of  processes  and  $m$
@@ -797,7 +797,7 @@ committed   transactions  and    on  committed  transactions   issued by
 the  other  process as  defined  by the  read-from relation due to the  
 accesses to the shared  objects, (e.g., the label $y$ on the dependency edge 
 from  $T_2^1$  to  $T_1'$ means  that   $T_1'$ has  read from $y$ a  value 
-written by  $T_2^1$). In contrast, since an  aborted  
+written by  $T_2^1$). In contrast, since here we consider that an  aborted  
 transaction does not write shared objects, there is no dependency edges 
 originating from it. The causal past of the aborted transactions   $T_1'$
 and   $T_2'$ are indicated on the figure  (left of the corresponding dotted
@@ -814,6 +814,9 @@ on STM algorithms.
 
 We start by proving that an STM protocol cannot implement invisible reads, opacity,
 and permissiveness at the same time.
+Recalling that a permissive protocol is one that
+never aborts a 
+transaction unless necessary for  correctness (as defined earlier in Section \ref{sec:def-perm}).
 This is important because it shows that no matter how well we keep track of
 the interactions between transactions, an opaque STM protocol will have to abort
 transactions unnecessarily if invisible reads are used.
@@ -1147,7 +1150,7 @@ where $v_{init}$ is the initial value of~$X$.
 
 
 \paragraph{Locks}
-A exclusive access lock is associated with each read/write shared object 
+An exclusive access lock is associated with each read/write shared object 
 $X$. These locks are used only in the ${\sf try\_to\_commit}()$ operation,
 which means that neither $X.{\sf read}_T()$ nor $X.{\sf write}_T()$ 
 is lock-based. 

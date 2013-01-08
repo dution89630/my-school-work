@@ -423,18 +423,18 @@ a universal construction for wait-free {\it transaction friendly}
 concurrent objects presented in \cite{CER10}. The words 
 ``transaction friendly'' means here that a process that has invoked an
 operation on an object can abort it during its execution. Hence, 
-a `transaction friendly'' concurrent object is a kind of  
+a ``transaction friendly'' concurrent object is a kind of  
 abortable object.  It is important to notice  that  this  abortion 
 notion is different from  the notion of  transaction abortion. 
 In the first case, the abort of an operation is a programming level notion
 that  the construction has to implement. 
-Differently, in the second case,  a transaction abort is  due 
+Differently, in the second case,  a transaction abort is  due  to
 the implementation itself. More precisely, 
 transaction abortion is then a system level mechanism used to  prevent  
 global inconsistency when  the system allows concurrent transactions 
 to be  executed
 optimistically (differently, albeit very inefficient,  using a single 
-global lock for  all transactions would allow any  transaction to executed
+global lock for  all transactions would allow any  transaction to be executed
 without being aborted).
 
 % (A main issue solved in  \cite{CER10}
@@ -501,7 +501,7 @@ for transactional memory and
 \emph{local-progress} as a equivalent
 of wait-freedom for transactional memory.
 Informally a protocol that satisfies solo-progress must ensure
-that every process that executes alone for long enough
+that every process that executes in isolation for long enough
 must make progress (where progress requires eventually committing
 some live transaction) while a protocol satisfying
 local-progress must ensure that
@@ -538,7 +538,7 @@ encountered  in  some systems).
 In such systems the programmer has the choice to have the protocol execute 
 a specifically defined set of code when a transaction is aborted one or several times.
 This can be a powerful option for an experienced programmer who knows the details
-of an transactional memory implementation, but this also provides the programmer
+of a transactional memory implementation, but this also provides the programmer
 with additional problems to deal with which would not fit into our
 original Definition \ref{def:trans-def} of a transaction, instead
 complicating it.
@@ -753,12 +753,12 @@ in his code, in others a programmer can prioritize certain transactions
 so they will not abort, others allow transactions to be blocked, while
 others allow transactions to be aborted infinitely.
 Absent from these solutions is the case where all transactions are guaranteed to
-commit where the progress of a transaction does not rely on the
-other processes then the one that issued the transaction, thus
+commit where the progress of a transaction does not rely on
+other processes except for the one that issued the transaction; thus
 fitting within our Definition \ref{def:trans-def} of a transaction
 where every transaction is ``executed atomically exactly once
 taking in consideration all parts of the system''.
-Such a solution would prioritize ease of use as such a protocol would hide
+Such a solution would prioritize ease of use as this type of protocol would hide
 the concept of aborted transactions from the programmer when considering
 the progress of the system.
 
@@ -781,7 +781,7 @@ While the underlying STM protocol might satisfy a stronger consistency criterion
 designed to deal with aborted transactions,
 such as opacity, the programmer need not worry about this as each transaction
 he writes executes exactly once.
-The remainder of this chapter focuses on the design of a such protocol.
+The remainder of this chapter focuses on the design of such a protocol.
 
 
 \paragraph{A note about system calls and I/O}
@@ -796,7 +796,7 @@ Obviously certain of these operations will not be reversible or abortable,
 the classic example being the sending of a message to launch a missile.
 
 Several solutions have been proposed concerning how to allow these operations to be performed
-within transactions.
+from within transactions.
 For example, a straightforward solution might be to place all I/O operations
 in irrevocable transactions \cite{SSDMS08}, but this restricts scalability and overall progress
 as only one irrevocable transaction can execute at a time.
@@ -807,14 +807,14 @@ and create a separate version of it to run efficiently in transactions, but agai
 scalability.
 Traditionally, STM designers assume that the programmer is not allowed to perform system or I/O calls
 from within his transactions and is also, for simplicity, what we assume throughout this thesis.
-Still given this, to follow our high level Definition \ref{def:trans-def} of transactions we must take into account all parts
-of the system, as such we need to consider how these non-reversible operations fit into transactions
+Still, in order to follow our high level Definition \ref{def:trans-def} of transactions all parts
+of the system must be taken into account, therefore it is necessary to consider how these non-reversible operations fit into transactions
 in our definition.
-Since this problem is not focused on in this thesis,
+Since this thesis does not focus on this specific problem,
 future research should consider these operations and the surrounding questions left unanswered.
-For example, when considering progress, an important question for
-to answer is what kind of non-blocking progress can
-be ensured for transactions when different types of I/O or system calls are allowed to be performed within them?
+For example, when considering progress, an important question
+to answer is ``what kind of non-blocking progress can
+be ensured for transactions when different types of I/O or system calls are allowed to be performed within them?''
 
 % (As a note it should be said that the presentation of previous approaches
 % that deal with aborted transactions are primarily
@@ -877,7 +877,7 @@ When considering lock-based mechanisms,   it is like using a single lock
 on  the single  ``big'' object $\mathit{TO}$, instead of a lock per object. 
 Moreover, as it  requires each operation on an object to make a copy of 
 this object   (before  accessing it),  H\_UC would force each  operation to
-copy the whole  shared memory, even it  it works on a very  small subset of
+copy the whole  shared memory, even if  it works on a very  small subset of
 its  content.  This is not the case in the construction proposed
 for STM, where
 only  the specific locations accessed by a transaction needs to be copied. 
@@ -917,7 +917,7 @@ work  on  an STM protocol   that will focus on efficiency and  providing the sam
 The following sections  present a  new STM construction  that,
 in order to hide the notion of abort/commit from the programmer, ensures every  
 transaction issued by a process is necessarily committed and  each process 
-makes progress without depending on the state other processes.
+makes progress without depending on the state of other processes.
 More specifically it ensures linearizable X-ability.
 X-ability, or exactly-once ability, was originally defined 
 by Fr{\o}lund and Guerraoui in \cite{FG01}

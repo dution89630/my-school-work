@@ -180,7 +180,7 @@ semantics in the interest of ease-of-use.
 Following the discussion of the previous chapter we will promote our change
 of semantics by contrasting transactions to concurrent objects.
 
-A discussion on semantics the of concurrent protocols is meaningless without
+A discussion on the semantics of concurrent protocols is meaningless without
 first considering consistency conditions.
 By satisfying a consistency condition a concurrent protocol allows the
 user of that protocol to reason about how he can use it in his program
@@ -255,9 +255,9 @@ the $\act{insert}$, $\act{delete}$, and $\act{contains}$ operations.
 If he wanted additional functionality such as in-order iteration, then
 he would have to choose a different implementation providing the appropriate
 abstraction.
-This might lead the programmer to consider data structure as a separate entity
-from that of the program where this entity is accessible through some fixed
-interface, he need not be aware of the implementation below the interface.
+This might lead the programmer to consider data structures as a separate entity
+from that of the program, where this entity is accessible through some fixed
+interface, thus he needs not to be aware of the implementation below the interface.
 
 Transactions on the other hand are integrated into the users program
 rather then compromising some separate entity.
@@ -284,7 +284,7 @@ differences between a traditional universal construction and a
 universal construction for transaction based programs.
 Differently, this thesis focuses on a high level Definition \ref{def:trans-def}
 of a transaction aimed towards ease of use.
-Therefore, before considering implementation details we must consider how
+Therefore, before considering implementation details we must consider
 how the programmer interacts with a transaction is considered at an abstraction level.
 
 
@@ -470,7 +470,7 @@ linked list. The  removal of a node $n$ by a  transaction $T_i$, for private
 use, through  non-transactional  code,  by  the process $p$ that  invoked $T_i$,  
 constitutes  privatization. Then, $T_i$  is called privatizing transaction. 
 Obviously after the transaction commits future transactions will no longer
-be observe $n$ in the list, but unless the STM protocol is privatization safe
+observe $n$ in the list, but unless the STM protocol is privatization safe
 $p$ cannot safely access $n$ non-transactionally.
 Normally this is due to the fact that there could be live transactions
 that started before $T_i$ committed who have concurrently accessed $n$.
@@ -619,7 +619,7 @@ Obviously in this solution there is no separate section of memory for transactio
 and their atomicity is preserved resulting in a simpler framework for
 the programmer then privatization or weak isolation.
 While this solution is simple, it is not necessarily optimal performance wise.
-As such, several more efficient approaches to implementing strong isolation have been proposed,
+Given this, several more efficient approaches to implementing strong isolation have been proposed;
 in \cite{shpeis07} a blocking implementation to strong isolation
 is described by placing barriers in transactions to ensure safety.
 In the interest of improving performance, this paper also proposes ways of performing dynamic
@@ -688,9 +688,9 @@ further suggesting that a standard should be proposed so that the programmer
 is not stuck having to understand the intricacies provided by different STM
 protocols.
 
-Further complicating things, there  are different  definitions in  literature for  strong 
-isolation \cite{blundell06,ma07,harris06}.
-In this paper we consider strong isolation to be the following:
+To be precise, there  are different  definitions in  literature for  strong 
+isolation \cite{blundell06,ma07,harris06}, but
+in this paper we consider strong isolation to be the following:
 %\begin{enumerate}
 %\vspace{-0.1cm}
 %\item   Non-transactional   operations   are   considered   as ``mini''
@@ -742,7 +742,7 @@ read a shared variable $x$.
 }
 \caption{Left:  {\it Containment}  (operation $R_x$  should not  return the
     value written to $x$ inside the transaction). 
-Right:  {\it  Non-Interference} (wile  it is still  executing, transaction
+Right:  {\it  Non-Interference} (while  it is still  executing, transaction
 $T_1$ should not have access to the values that were written to $x$ and $y$
 by process $p_2$).} 
 \label{fig:int-nonc}
@@ -816,7 +816,7 @@ however     assumed   that  shared   memory   is   only  accessed   through
 transactions. The use  of locks  in a TM algorithm  entails blocking and may
 even lead a process to starvation.
 Previous research on STM protocols has taken the approach that
-these characteristics might acceptable.
+these characteristics might be acceptable.
 % The reason for this is that the
 % programmer  accepts the fact that a  transaction has a duration and that it
 % may  even  fail: Given that every live transaction has the possibility

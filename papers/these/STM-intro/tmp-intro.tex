@@ -10,13 +10,14 @@ Multicore architectures are changing the way we write programs.
 Not only are all computational devices
 turning multicore thus becoming inherently concurrent, 
 but tomorrow's multicore will embed a larger amount of simplified cores to better handle energy while 
-proposing higher performance, a technology also known as \emph{manycore}~\cite{Borkar2007}.
-Thus in order to take advantage of these resources programs must be written so
-that they can execute concurrently.
-Interestingly  enough,  
-it is important to also observe that the recent advent of multicore 
-architectures has  given rise to what is called the {\it multicore  
-revolution} \cite{HL08} that has  rang the revival of concurrent programming. 
+proposing higher performance, a technology also known as \emph{manycore}~\cite{Borkar2007}
+and giving rise to what is called the {\it multicore  
+revolution} \cite{HL08}.
+% that has  rang the revival of concurrent programming.
+Thus, in order to take advantage of these resources a revival of concurrent programming has begun.
+% Interestingly  enough,  
+% it is important to also observe that the recent advent of multicore 
+% architectures has
 
 
 \section{Lock-based concurrent programming}\label{sec:intro-lockbased}
@@ -63,10 +64,10 @@ object for which a single lock is used to perform any operation on that queue
 allowing only one operation at a time, when more optimally
 concurrent executions of enqueue and dequeue operations 
 should be possible as long as they are not on the same item.
-Using locks in such a way is often referred to as ``course-grained''.
+Using locks in such a way is often referred to as ``coarse-grained''.
 
 
-Of course in order to improve the performance of course-grained locking
+Of course in order to improve the performance of coarse-grained locking
 the first solution that comes to mind would be to simply
 use a finer grain.  For example one could consider
 each item of the queue as  a concurrent object with its own lock,
@@ -87,7 +88,7 @@ but this may result in locks being taken more often and held longer then necessa
 
 Other problems with locks can occur when a process holding a lock
 is descheduled by the operating system while a live process is trying to
-access the same lock (sometimes called \emph{priority inversion}.
+access the same lock (sometimes called \emph{priority inversion}).
 Further problems can occur if a thread crashes or is stalled while
 holding a lock.
 
@@ -119,7 +120,7 @@ examined in this thesis (namely software transactional memory (STM)).
 \paragraph{Non-blocking concurrent programming}
 Non-blocking algorithms \cite{GC96} have been introduced as an alternative to using
 locks in order to avoid some of the scalability and progress problems of locks.
-These algorithms are implemented using powerful system level synchronization operations such
+These algorithms are implemented using system level synchronization operations such
 as compare\&swap.
 There have been many efficient and scalable non-blocking data structures proposed
 \cite{Mic02,ST04,Val96,FR04,Fra03}.
@@ -266,7 +267,7 @@ can either be done by the programmer or done automatically by the system.
 Of course a solution that requires the programmer to define this makes using an STM more complicated, but on
 the other hand determining them automatically can lead to more accesses being declared as shared then necessary,
 causing increased overhead during execution.
-Doing this efficiently is no easy task, \cite{DFGG11} discusses some of the difficulties with STM code complication,
+Doing this efficiently is no easy task, \cite{DFGG11} discusses some of the difficulties with STM code compilation,
 and in \cite{1133985} an efficient STM is designed with optimizations for their JIT complier to lower the overhead
 of shared memory accesses.
 
@@ -284,7 +285,7 @@ an efficiency point of view. So, an STM system has to do ``its best'' to
 execute and commit as many concurrent transactions  per time unit as possible
 (a concept sometimes referred to as \emph{optimistic synchronization}), 
 but unfortunately, similarly to 
-a scheduler, a STM system is an on-line algorithm that does not know 
+a scheduler, an STM system is an on-line algorithm that does not know 
 the future. Therefore, if the STM is not trivial (i.e., it allows several transactions 
 that access the same objects to run concurrently),  
 then conflicts between concurrent transactions may require the system to abort some transactions in order 
@@ -430,10 +431,11 @@ is described  in \cite{NMA+07}.
 \subsection{Implementation}
 This next section will look at how to to actually implement STM protocols, and some
  of the difficulties that go along with this.
-Importantly, even though there are many ways to implement software transactional memory, there is no clear ``best''
-method, in \cite{1123001} they 
-perform benchmarks on many different combinations on STM protocols and benchmarks and find certain combinations that are
-preferred in certain situations, but it is not clear that their decisions are conclusive.
+Before doing this, it is important to consider that even though there are many ways to implement software transactional memory, there is no clear ``best''
+method.
+In \cite{1123001}
+tests are performed using many different combinations of STM protocols and benchmarks, finding certain combinations that are
+preferred in certain situations, but no clear and conclusive decisions are found for all cases.
 
 
 \paragraph{Read and write sets}
@@ -470,8 +472,8 @@ In an implementation that uses \emph{write buffering}
 % \anote{Citation?}
 when a transaction wants to perform
  a write to a shared memory location first it will make a local copy of that variable only visible to the transaction.
-Any subsequent writes this transaction does will be preformed on this local copy,
- and if the transaction commits successfully then the value of the local copy will then be written into the shared memory at commit time.
+Then any subsequent writes this transaction does will be preformed on this local copy.
+ If the transaction commits successfully then the value of the local copy will be written into the shared memory at commit time.
 
 There are some advantages and disadvantages to both solutions \cite{1123001}, and depend on how the rest of the 
 protocol is implemented.
@@ -671,7 +673,7 @@ different contention managers  but there is no definite answer as
 to what type of contention manager works best for which TM properties.
 
 A workload can largely effect how well a contention manager performs, for example passive contention
- management is know to perform well on workloads with a regular access pattern \cite{1504199}, while
+ management is known to perform well on workloads with a regular access pattern \cite{1504199}, while
  polka works well on small scale benchmarks \cite{DGK09}.
 The obvious problem with this is that there is no "best" contention manager that performs well in 
 all reasonable situations, in \cite{guerraoui05polymorphic/LPD} they come to this conclusion by 
@@ -879,7 +881,7 @@ It only considers the interaction between transactions themselves,
 % operations within them at atomic with respect to the other transactions.
 leaving the interaction between
 transactions and other entities in the system undefined.
-This is not optimal considering ease-of-use as if a programmer uses
+This is not optimal considering ease of use as if a programmer uses
 some of these mechanisms he would encounter undefined results or will have
 to be familiar with how different STM protocols specifically interact with 
 each of these mechanisms.
@@ -891,7 +893,7 @@ To answer this we suggest and define a term called \emph{terminating strong isol
 that a transaction's atomicity will not be violated by reads and writes performed
 outside of the transaction by other processes without holding back the progress of
 these reads and writes.
-A protocol protocol ensuring this property is presented.
+A protocol ensuring this property is presented.
 
 % The subject of the fourth chapter is probably the least interesting theoretically, but
 % shows no less ambition then the previous chapters.

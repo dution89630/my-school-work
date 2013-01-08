@@ -1,4 +1,133 @@
-After defining such semantics, a following important step is to then see what sort of performance they might
-offer and see how easily programmers can use them, taking this information to improve the semantics
-possibly in an iterative fashion.
- 
+% \section{Conclusions and future work}
+Software transactional memory is a attractive alternative to locks for writing concurrent programs
+due to the fact that it abstracts away many of the difficulties.
+A programmer using STM can simply create blocks of code surrounded by the $\act{atomic}$
+keyword which are then guaranteed by the underlying STM implementation to appear
+as being executed atomically,
+thus preventing the programmer from worrying about complex synchronization details
+and avoiding problems such as deadlock.
+Unfortunately in its current form, using STM is not quite so simple.
+The reason for this is that are many more details a programmer must consider when using transactions
+further then just defining atomic blocks.
+Part of the reason for this is that STM exists as a single component of a more complicated
+system of concurrency for which many details must be considered or assumptions made.
+In fact, many of the not so subtle-subtleties
+of the STM abstraction are actively debated by the research community.
+
+Given this complex system where even experts have difficulty in coming us with precise
+and clear ways of defining and dealing with
+subtleties this thesis takes a different approach.
+% Instead of trying to come up with a precise and complete definition for transactions and how they
+% fit in a concurrent system, this thesis approaches the problem in a different way.
+The key of this approach is that this thesis takes as monumental importance
+the view that STM is a high level abstraction whose
+primary goal is to make concurrent programming easier.
+All other goals such as performance are secondary.
+In order to do this, the thesis starts with a high level goal for defining the STM
+system focused on ease of use (from Definition \ref{def:stm-def}):
+``\emph{STM is an abstraction designed to simplify concurrent programming that exists as a component of a larger system,
+but the semantics of the STM abstraction and how it interacts with the rest of the system must be clear and easy to understand and use,
+otherwise simplicity is lost.}''
+Which is then followed by definition for
+a transaction aiming to satisfy this goal avoiding specific system details (from Definition \ref{def:trans-def}):
+``\emph{A transaction is any block of
+code defined by the programmer to be executed by a given process.
+This transaction is executed atomically exactly once
+taking in consideration all parts of the system.}''
+
+
+Given that this definition gives no details on the complex interactions of transactions in
+the system, instead of trying to expand this definition with further details, this
+thesis looks at ways to come up with solutions that fit within the confines of this
+definitions that promote ease of use.
+Of course precise definitions of semantics and properties must then be used as solutions
+for the specific problems, but the goal is that the high and low levels can coexist.
+A programmer who
+understands the high level definition should find the specific details of the low level definitions as a
+natural extension.
+
+% hen from this definition this thesis looks at some of the complexities that exist with STM
+% and attempts to come up with precise ways to deal with them in order that they do not violate
+% our high level definitions.
+
+In doing this, the thesis was broken up into four main chapters of content, with each chapter
+introducing a general area of STM research 
+focused on ease of use
+before tacking a specific problem in this area.
+
+\paragraph{Overview}
+The first chapter took a common view at what is widely viewed as the most important concept
+for STM to ensure.
+That is the idea that transactions should be executed atomically with respect to each other
+with aborted transactions seeing no invalid states of memory, following the basic
+idea of consistency criterion such as opacity or virtual world consistency.
+In this area of STM research protocols and properties are explored while
+ensure that the consistency criterion satisfied, placing consistency as a first priority.
+Specifically this chapter encourages exploring multiple properties at once, with
+the combination of read invisibility and permissiveness looked at in conjunction
+with the correctness criterion of opacity and virtual world consistency.
+Looking at further combinations is also suggested.
+
+The second chapter took the view that simply ensuring a consistency criterion
+is not enough to fit in the high level transaction definition and instead
+suggests to simplify the traditional view of transaction semantics.
+That is, to ensure that every transaction is committed exactly once no matter
+the concurrency patter of other processors in the system, effectively allowing
+the programmer not have to worry that his transactions might not be executed;
+in a way abstracting away the concept of aborts when considering progress.
+As suggested in the chapter, further research could be conducted on the simplification
+of and increased abstraction level of transactions, with an important problem being nested transactions.
+
+The third chapter took the view that STM exists as an integrated part
+of the users program and the concurrent system as a whole, thus
+suggesting the viewing of STM as its own separate entity in a concurrent system does not fit
+in our high level definition.
+In order to integrate STM in the system the details and semantics of how a transaction
+fits within a system must be defined.
+Specifically this chapter looked at the problem of concurrently accessing
+shared memory inside and outside of a transaction, and suggested that in order
+to follow our high level definition terminating strong isolation should be insured.
+As future research, there are many other components in the system that should be considered,
+such as how STM should interact with other synchronization methods
+and with non-reversible actions such as system calls.
+
+
+The fourth chapter looked at the concept of libraries in concurrent programing.
+Libraries implementing common abstractions in a correct and efficient
+manner are becoming an important and widely used part of a concurrent system.
+Thus it is important to develop libraries for STM systems as well so that STM can become
+a complete and easy to use integrated part of the concurrent system.
+Given their importance in concurrent programs libraries can also become a bottleneck
+in programs and due to the specific type of synchronization done in STM
+libraries need to be developed specifically for use in transactions to avoid these bottlenecks.
+Interestingly one of the ways this chapter suggests doing this is by using additional
+operations in order to write these libraries that break the traditional TM interface, thus complicating things, seemingly
+violating the spirit of this thesis.
+From this, two important things should be taken away, first is that this thesis encourages
+research on ways to improve the performance of the STM abstraction by extending it, but more importantly
+the programmer should not be required to know the details of these operations as they should be left to be used by programmers
+who know the intricacies of the STM system in order to implement things such as libraries.
+In this chapter a binary tree library implementing the map abstraction is developed
+with future work being suggested to design a more complete library of abstractions for use in STM.
+
+
+\paragraph{Final discussion}
+In a way this thesis contradicts itself, a chapter will suggest that an STM should
+be designed in a certain way, while the following chapter will then introduce
+a protocol that does not satisfy this design.
+No chapter introduces a permissive, terminating strong isolating, STM protocol that ensures
+every transaction is committed.
+Instead each chapter focuses on a certain problem concerning the ease of use of STM
+in specific.
+Thus, as the important future work (notably motivated by the first chapter) is too look at all the desirable
+properties together and see if the design of such a system is possible.
+
+
+It should be noted that, in no way does this thesis suggest its definitions or results be the final
+word on those topics in STM.
+Instead, the opposite should be promoted:
+After defining these first semantics focused on ease of use, the next step is to examine them,
+find out what parts programmers use and understand and which parts are not used often, or
+are too complex, or too difficult to implement, then refine them in an iterative process.
+With the goal that someday programmers will be able to write efficient concurrent programs
+(nearly!) as simply as they write sequential programs today.
