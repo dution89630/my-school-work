@@ -108,7 +108,7 @@ interface for anyone to use.
 By doing this experts can create algorithms providing strong guarantees
 and good performance that can then be widely reused.
 
-In a perfect world transactional memory would not need such libraries,
+In an optimal situation transactional memory would not need such libraries,
 as one could just directly place a sequential implementation of an abstraction
 directly in transactions and it would perform as well and provide the same
 guarantees as a library provided by an expert.
@@ -116,11 +116,12 @@ Unfortunately this is not completely true.
 Due to the general nature
 of the synchronization required by STM, a sequential data structure implementation directly
 placed in transactions will never perform as well as a highly tuned concurrent
-(lock based or non-blocking) implementation of a data structure done by an expert
-given that the expert can consider the specific synchronization needed to implement
-that data structure safely.
+(lock based or non-blocking) implementation of a data structure done by an expert.
+The reason for this is that an expert can consider the specific synchronization needed to implement
+that specific data structure safely.
 
-This gives us the opportunity to design libraries designed specifically for use inside
+Fortunately this does not mean that data structures in STM will always have suboptimal performance,
+instead this gives us the opportunity to design libraries designed specifically for use inside
 of transactions that take into account the synchronization considerations
 of STM.
 By doing this we can provide a programmer using transactions with abstractions that perform closer
@@ -134,12 +135,21 @@ to create an atomic $\lit{move}$ operation by simply combing the $\lit{insert}$ 
 
 By providing a programmer with a large selection of transaction based implementations of commonly used abstractions
 his life becomes much easier.
-Also if these libraries provide good performance it gives an additional reason to use STM as an attractive alternative to
-concurrent code using locks or even highly tuned non-transactional abstractions.
-Furthermore STM has the advantage over these other types of concurrent abstractions that the programmer can reuse
-the libraries in his transactions to create new atomic operations specific to his needs.
-
-This chapter will focus on designing efficient data structures in transactional memory providing the map abstraction.
+Accordingly, this chapter will focus on designing efficient data structures in transactional memory (specifically those providing the map abstraction).
+While the previous chapters focused on considering how to define transaction semantics so that the programmer can use them easily and additionally
+the the fact that the data structures presented in this chapter are not directly related to programmers interaction with transaction semantics,
+this chapter still focuses on dealing with the ease of use of the STM ecosystem.
+Namely, it promotes the fact that the proposed data structures can help increase the ease of use of STM for concurrent programming.
+As sated in the discussion of the STM abstraction in the introduction (specifically Definition \ref{def:stm-def}), the desired STM abstraction
+should exist as a one component of the concurrent system as a whole, therefore providing libraries implementing additional abstractions
+that are able to execute within the STM helps constitute this easy to use ecosystem; similar to the way the \emph{java.util.concurrent}
+package as part of the Oracle Java SDK \cite{javasdk} provides several different lock type abstractions in addition to many concurrent data structure
+implementations.
+Furthermore, if these STM compatible libraries provide good performance they give an additional reason to use STM as an attractive alternative to
+concurrent code using locks or even highly tuned non-blocking abstractions.
+The reason for this is that the programmer can reuse
+the STM compatible libraries directly within his transactions in order to compose new atomic operations specific to his needs,
+something that is usually not possible using lock based or non-blocking abstractions.
 
 
 % % multicore data structure
@@ -1252,10 +1262,10 @@ $\ms{deleted}$ to $\lit{true}$, $\ms{k}$ is no longer in the set after the trans
 
 
 
-As previously mentioned we use a method for local rotations introduced in \cite{IRISAppr}.
+As previously mentioned this implementation uses a method for local rotations introduced in \cite{IRISAppr}.
 This method works by propagating local estimated balance information from a child to a parent,
 performing rotations based on what is observed.
-This method only requires that a node knows when it has a child subtree of height zero
+The method only requires that a node knows when it has a child subtree of height zero
 (i.e. a child pointer with value $\bot$) in order to ensure
 the distributed local rotations and propagations provide eventual balance.
 In fact in \cite{IRISAppr} they prove that in the absence of concurrent insertions and deletions,
@@ -1263,21 +1273,21 @@ a tree in any configuration is guaranteed to be balanced after $O(n^2)$ successf
 and propagations.
 Interestingly this holds no matter the sequence or concurrency pattern of the rotations
 and propagations, meaning they can take place in a completely distributed fashion.
-Even though in \cite{IRISAppr} different synchronization methods are used then are used here,
+Even though in \cite{IRISAppr} different synchronization methods are used then those that are used here
+(i.e. locks versus transactions),
 the results still apply as the rotations and
 propagations done in the speculation friendly tree have the same effect and keep track of
 balance information in the same way.
 
-Before discussing how balance information is propagated in the speculation friendly tree
-it should be noted that balance information is also updated during the $\act{remove}$ operation
-(line \ref{line:u-b-v3}).
-When a node is removed and a $\bot$ subtree takes its place at the parent then height
-for that subtree at the parent is set to zero.
-This along with the fact that new nodes are inserted with left and right child heights of zero (line \ref{sline:init-childh})
-ensures the requirement from \cite{IRISAppr} that a nodes know when it has a $\bot$ subtree.
+% The rotations and propagations are performed as follows, being performed by the 
+% $\act{recursive\_balance}$ procedure of Algorithm \ref{fig:tree-rec-bal}.
+% When a node is removed and a $\bot$ subtree takes its place at the parent then height
+% for that subtree at the parent is set to zero.
+% This along with the fact that new nodes are inserted with left and right child heights of zero (line \ref{sline:init-childh})
+% ensures the requirement from \cite{IRISAppr} that a nodes know when it has a $\bot$ subtree.
 The algorithm showing how balance information is propagated and when rotations are performed
 is shown in figure \ref{fig:tree-rec-bal}.
-The bulk of the work takes place in the $\act{recursive\_traversal}$ procedure.
+The bulk of the work takes place in the $\act{recursive\_balance}$ procedure.
 This procedure is repeatably called by the maintenance thread with each iteration traversing
 the tree in a depth first manner propagating balance information and performing rotations
 as it travels up the tree.
@@ -1285,10 +1295,18 @@ This operation starts at the left child of the root, recursively calling itself 
 and right children of the node (lines \ref{sline:maint-recleft}-\ref{sline:maint-recright}) before updating the current node.
 The recursive calls return an integer value of the estimated height of the subtree rooted
 at the node it was called on.
-This values are then used to update the current nodes $\ms{left\_h}$, $\ms{right\_h}$, and $\ms{local\_h}$
+These values are then used to update the current nodes $\ms{left\_h}$, $\ms{right\_h}$, and $\ms{local\_h}$
 values, which are also then used to check if any rotations should be performed at the current node.
-Note that during rotation, these balance values are also updated for the nodes modified during the rotation
+There are two additional places where balance information is updated
+(note that both these operations are performed by the rotator thread so synchronization
+of these values is not necessary).
+Firstly, these balance values are also updated for the nodes modified during the rotation
 (eg. line \ref{line:u-b-v4} of the $\act{right\_rotate}$ procedure).
+Secondly, balance information is also updated during the $\act{remove}$ operation
+(line \ref{line:u-b-v3}), setting the height of the child tree to zero when removing
+a node results in an empty subtree at that child.
+Note that given this fact, along with the fact that new nodes are inserted with left and right child heights of zero (line \ref{sline:init-childh})
+ensures the requirement from \cite{IRISAppr} that a node has its child height set to zero when it has a $\bot$ subtree.
 
 % \subsection{Proof of balance}
 % We already know (thanks to the result from \cite{IRISAppr}) in the absence of concurrent insert and removal
@@ -1526,29 +1544,40 @@ non-speculation-friendly data structures. The results presented in Section~\ref{
 
 \section{Conclusion}\label{sec:conclusion}
 
-Transaction-based data structures are becoming a bottleneck in multicore programming,
-playing the role of synchronization toolboxes a programmer can rely on to write 
+Libraries are an important piece of concurrent programming
+as they give programmers access to safe and efficient implementations
+of popular abstractions such maps/dictionaries.
+Given that through the transaction
+abstraction STM provides a general purpose model for synchronization,
+other abstractions such as the map/dictionary can be implemented from within transactions,
+playing the role of synchronization toolboxes that a programmer can rely on to write 
 a concurrent application easily.
-This work is the first to show that speculative executions require the design of new data structures.
+Unfortunately due to the general speculative nature of synchronization provided by STM,
+transaction-based data structures are becoming a bottleneck in multicore programming.
+The work in that chapter shows that speculative executions require the design of new data structures.
 The underlying challenge is to decrease the inherent contention by relaxing the invariants of the structure
 while preserving the invariants of the abstraction.
 
-In contrast with the traditional pessimistic synchronization, the optimistic synchronization allows the programmer
+In contrast with the traditional pessimistic synchronization, the optimistic synchronization allows us
 to directly observe the impact of contention as part of the step complexity because conflicts potentially lead to subsequent speculative re-executions.
-We have illustrated, using a binary search tree, how one can exploit this information
+This chapter has illustrated, using a binary search tree, how one can exploit this information
 to design a speculation-friendly data structure.
 The next challenge is to
 adapt this technique to a large body of data structures to derive a speculation-friendly library.
 Providing such a library would encourage the use of STM for several reasons.
 The most obvious being simply that a programmer would not have to create the data-structures himself,
-preventing him from worrying about the correctness and efficiency of his code.
-Secondly, as previously noted, the library can be designed specifically for optimistic synchronization or take advantage of
-non-standard TM operations such as the unit load that the programmer might not be aware of, allowing him to
-gain performance advantages without knowing the underlying intricacies of the STM system.
-Thirdly the programmer can compose several operations from the library within a transaction, creating
+preventing him from worrying about the correctness and efficiency of his code
+thus helping ensure our goal of having STM as part of a complete concurrent ecosystem from Definition \ref{def:stm-def}.
+Secondly, the programmer can compose several operations from the library within a transaction, creating
 new operations specific to his needs, something that is normally not possible when using non-transactional data structures.
+Thirdly, the library can be designed specifically for optimistic synchronization or take advantage of
+non-standard TM operations such as the unit load.
+Interesting this goes against our intended goal for the simplicity of the transaction interface
+as desired by the Definition \ref{def:trans-def} of a transaction from the introduction.
+Importantly though, the programmer using these libraries need not be aware of this non standard interface, thus allowing him to
+gain performance advantages without knowing the underlying intricacies of the STM system, knowing only the
+simple definition of a transaction.
 
-To finish let us go back to the key phrase stated in the introduction:
 
 
 \section*{Source Code}
