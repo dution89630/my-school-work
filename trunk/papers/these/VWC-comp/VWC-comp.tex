@@ -192,7 +192,7 @@ different guarantees of the progress of the operations.
 Taking this a step further, different implementations might perform
 better or worse depending on the workload.
 For example there might exist a skip-list implementation that is memory efficient, but is slower
-then another implementation that is less memory efficient.
+than another implementation that is less memory efficient.
 Again though a programmer is not required to know these details (but they can still help him).
 
 Each of these points are true in transactional memory as well.
@@ -242,7 +242,7 @@ an STM system is permissive with respect to a consistency condition
 As indicated in \cite{GHS08}, an STM system that checks at commit time that
 the values of the objects read by a transaction have not been modified (and 
 aborts the transaction if true) cannot be permissive  with respect to opacity. 
-In fact other then the protocol introduced along with permissiveness in \cite{GHS08}
+In fact other than the protocol introduced along with permissiveness in \cite{GHS08}
 virtually all published STM protocols abort transactions that could
 otherwise be safely committed, i.e. the protocols are not permissive.
 
@@ -316,7 +316,7 @@ Consequently  a transaction always has to operate on a consistent state
 % occurs,  the transaction  throws  a divide by zero  exception  that  has to  be
 % handled by the process that invoked the corresponding
 % transaction.
-If this is not ensured by the STM system then undesirable
+If this is not ensured by the STM system, then undesirable
 behaviors such as divide by zero exceptions can occur
 (an example of an execution in which such an exception occurs
 is described in section \ref{sec:int-correct} of the introduction).
@@ -2684,7 +2684,7 @@ Given this, it is extremely difficult to choose the ``best'' properties for an S
 across all workloads and consequently encourages the study of various properties in different
 combinations across various workloads.
 As interesting example of this can be found in \cite{DH12} where shorter transactions are treated
-differently then longer ones.
+differently than longer ones.
 
 % % % % % % \section{Improving the  base protocol described in Figure 
 % % % % % % \ref{fig:ttc-protocol}}
@@ -3065,7 +3065,7 @@ To conclude this chapter we will return to the idea that the main purpose of
 transactional memory is to make concurrent programming easier.
 Overall the contribution of this chapter is a study of the interaction
 between several properties and consistency conditions of transactional memory.
-So then what does this have to do with the ease-of-use of 
+So then, what does this have to do with the ease-of-use of 
 transactional memory?
 
 When designing an STM protocol it is necessary that we design it to satisfy
@@ -3093,7 +3093,7 @@ incompatible with opacity, we then show that we can choose a weaker consistency 
 read invisibility.
 Most importantly, even though we have weakened the consistency criterion, the programmer
 will see no difference in the semantics of a transaction.
-If virtual world consistency changed the way a programmer had to think about transactions versus opacity
+If virtual world consistency changed the way a programmer had to think about transactions versus opacity,
 then it would not be considered an appropriate consistency criterion for transactional memory.
 
 The second contribution of this chapter introduces a realistic algorithm that satisfies
