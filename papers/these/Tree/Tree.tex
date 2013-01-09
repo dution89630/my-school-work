@@ -323,7 +323,7 @@ targets while being rotated downward. Similarly, rotations cannot access common 
 Moreover, the red-black tree does not allow any abstract transaction to access a node that is concurrently being deleted from the abstraction because
 phases (1) and (2) are tightly coupled within the same transaction.
 If this was allowed the abstract transaction's traversal might end up on the node that is no longer part of the tree.
-Fortunately, if the modification operation is a deletion then phase (1) can be decoupled from the structural modification of phase (2)
+Fortunately, if the modification operation is a deletion, then phase (1) can be decoupled from the structural modification of phase (2)
 by marking the targeted node as logically deleted in phase (1) effectively removing it from the set abstraction prior to unlinking it physically in phase (2).
 This improvement is important as it lets a concurrent abstract transaction can travel through the node concurrently being logically deleted in phase (1) without conflicting.
 %\tyler{Then remove this: This improvement is important to let a $\act{contains}$ access a node that is concurrently being logically deleted in phase (1).}
@@ -407,7 +407,7 @@ thread proposed by Dijkstra et al.~\cite{DLM78} to garbage collect stale nodes.
 This decoupling allows the read set of the $\act{insert}$/$\lit{delete}$ operations to only contain the path from the root to the node(s) being modified and the write set to only contain
 the nodes that need to be modified in order to ensure the abstraction modification (i.e., the nodes at the bottom of the search path), thus reducing conflicts significantly.
 Let us consider a specific example.
-If rotations are performed within the $\act{insert}$/$\act{delete}$ operations then each rotation increases the read and write set sizes.
+If rotations are performed within the $\act{insert}$/$\act{delete}$ operations, then each rotation increases the read and write set sizes.
 Take an $\act{insert}$ operation that triggers a right rotation such as the one depicted in Figures~\ref{sfig:tree1}-\ref{sfig:tree2}.
 Before the rotation the read set for the nodes $\ms{p},\ms{j},\ms{i}$ is $\{\ms{p.\ell}, \ms{j.r}\}$, where $\ell$ and $r$ represent the left and right pointers, and the write set is $\emptyset$.
 Now with the rotation the read set becomes $\{\ms{p.\ell}, \ms{i.r}, \ms{j.\ell}, \ms{j.r}\}$ and the write set becomes $\{\ms{p.\ell}, \ms{i.r}, \ms{j.\ell}\}$
@@ -428,12 +428,12 @@ performing a single rotations per transaction.
 More specifically, neither do the $\act{insert}$/$\act{delete}$ operations comprise any rotation, nor do the rotations execute
 on a large block of nodes. Hence, local
 rotations that occur near the root can still cause a large amount of conflicts, but rotations performed further down the tree are less subject to conflict.
-If several local rotations are performed in a single transaction block then even the rotations that occur further down the tree will be part of a likely conflicting transaction, 
+If several local rotations are performed in a single transaction block, then even the rotations that occur further down the tree will be part of a likely conflicting transaction, 
 so instead each local rotation is performed as a single transaction.
 Keeping the $\act{insert}$/$\act{delete}$/$\act{contains}$ and $\act{rotate}$/$\act{remove}$ operations as small as possible allows more operations to execute at the same time without conflicts, increasing concurrency.
 
 Performing local rotations rather than global ones has other benefits.
-If rotations are performed as blocks then, due to concurrent  $\act{insert}$/$\act{delete}$ operations, not all of the rotations may still be valid once the transaction commits.
+If rotations are performed as blocks, then due to concurrent  $\act{insert}$/$\act{delete}$ operations, not all of the rotations may still be valid once the transaction commits.
 Each concurrent $\act{insert}$/$\act{delete}$ operation might require a certain set of rotations to balance the tree,
 but because the operations are happening concurrently the appropriate rotations to balance the tree are constantly changing
 and since each operation only has a partial view of the tree it might not know what the appropriate rotations are.
@@ -514,21 +514,21 @@ some other concurrent transaction will not insert a node with key $k$.
 The $\act{contains}$ operation first executes the $\act{find}$ procedure which returns a node (line~\ref{sline:cont-find}).
 If the key of the node returned is equal to the key being searched for, then it performs a transactional read of the $\ms{deleted}$ flag (line~\ref{sline:del-cont}).
 If the flag is $\lit{false}$ the operation returns $\lit{true}$, otherwise it returns $\lit{false}$.
-If the key of the returned node is not equal to the key being searched for then a node with the key being searched for is not in the tree and $\lit{false}$ is returned (lines~\ref{sline:cont-neq} and \ref{sline:cont-return}).
+If the key of the returned node is not equal to the key being searched for, then a node with the key being searched for is not in the tree and $\lit{false}$ is returned (lines~\ref{sline:cont-neq} and \ref{sline:cont-return}).
 
 \paragraph{Insertion} The $\act{insert}(k,v)$ operation starts by calling the $\act{find}$ procedure which returns a node (line~\ref{sline:find-ins}).
-If a node is found with the same $key$ as the one being searched for then the $\ms{deleted}$ flag is checked using a transactional read (line~\ref{sline:del-false-ins}).
-If the flag is $\lit{false}$ then the tree already contains $\ms{k}$ and $\lit{false}$ is returned (lines~\ref{sline:false-ins} and~\ref{sline:insert-return}).
-Otherwise if the flag is $\lit{true}$ then the flag is updated to $\lit{false}$ (line \ref{sline:del-false-ins}) and $\lit{true}$ is returned.
-If the $key$ of the node returned is not equal to $\ms{k}$ then a new node is allocated and added as the
+If a node is found with the same $key$ as the one being searched for, then the $\ms{deleted}$ flag is checked using a transactional read (line~\ref{sline:del-false-ins}).
+If the flag is $\lit{false}$, then the tree already contains $\ms{k}$ and $\lit{false}$ is returned (lines~\ref{sline:false-ins} and~\ref{sline:insert-return}).
+Otherwise if the flag is $\lit{true}$, then the flag is updated to $\lit{false}$ (line \ref{sline:del-false-ins}) and $\lit{true}$ is returned.
+If the $key$ of the node returned is not equal to $\ms{k}$, then a new node is allocated and added as the
 appropriate child of the node returned by the $\act{find}$ procedure (lines \ref{sline:new-node}-\ref{sline:end-ins}).
 Notice that only in this final case does the operation modify the structure of the tree.
 
 \paragraph{Logical deletion} The $\act{delete}$ uses also the $\act{find}$ procedure in order to locate the node to be deleted (line \ref{sline:del-find}).
 A transactional read is then performed on the $\ms{deleted}$ flag (line \ref{sline:del-false}).
-If $\ms{deleted}$ is $\lit{true}$ then the operation returns $\lit{false}$ (lines~\ref{sline:del-false} and \ref{sline:del-return}), if $\ms{deleted}$
+If $\ms{deleted}$ is $\lit{true}$, then the operation returns $\lit{false}$ (lines~\ref{sline:del-false} and \ref{sline:del-return}), if $\ms{deleted}$
 is $\lit{false}$ it is set to $\lit{true}$ (line \ref{sline:del-set}) and the operation returns $\lit{true}$.
-If the $\act{find}$ procedure does not return a node with the same $key$ as the one being searched for then $\lit{false}$ is returned (line \ref{sline:del-false2} and \ref{sline:del-return}).
+If the $\act{find}$ procedure does not return a node with the same $key$ as the one being searched for, then $\lit{false}$ is returned (line \ref{sline:del-false2} and \ref{sline:del-return}).
 Notice that this operation never modifies the tree structure.
 
 Consequently, the $\act{insert}$/$\act{delete}$/$\act{contains}$ operations can only conflict with each other in two cases.
@@ -644,7 +644,7 @@ modifications to the rotation and removal operations are needed to ensure the co
 \paragraph{Rotation}
 
 Rotations in the non-optimized algorithm remain conflict-prone (Algorithm~\ref{fig:tree-maintenance}) as they incur a conflict when crossing the region of the tree traversed by a  $\act{contains}$/$\act{insert}$/$\act{delete}$ operation. 
-If $\act{uread}$s are used during the traversal done by the $\act{find}$ procedure during the $\act{contains}$/$\act{insert}$/$\act{delete}$ operations then rotations will only conflict with these rotations if they
+If $\act{uread}$s are used during the traversal done by the $\act{find}$ procedure during the $\act{contains}$/$\act{insert}$/$\act{delete}$ operations, then rotations will only conflict with these rotations if they
 finish at one of the two nodes that are rotated by $\act{rotation}$ operation
 (for example in Figure~\ref{sfig:tree1} this would be the node $i$ or $j$).
 A rotation at the root will only conflict with a $\act{contains}$/$\act{insert}$/$\act{delete}$ that finished at (or at the rotated child of) the root, any operations that travel further down the tree will not conflict.
@@ -677,11 +677,11 @@ The interesting point for the $\act{find}$ operation is that the search continue
 (line \ref{line:rem-check1} and \ref{line:rem-check2}).
 Once the leaf or a node with the same key as the one being searched for is reached, a transactional read is performed on the $\ms{removed}$ flag to
 ensure that the node is not removed from the tree (by some other operation) at least until the transaction commits.
-If $\ms{removed}$ is $\lit{true}$ then the operation continues traversing the tree, otherwise 
+If $\ms{removed}$ is $\lit{true}$, then the operation continues traversing the tree, otherwise 
 the correct node has been found.
 Next, if the node is a leaf, a transactional read must be performed on the appropriate child pointer to ensure this node remains a leaf throughout
 the transaction (lines \ref{line:null-par-find1}--\ref{line:null-par-find2}).
-If this read does not return $\bot$ then the operation continues traversing the tree.
+If this read does not return $\bot$, then the operation continues traversing the tree.
 Otherwise the operation then leaves the nested while loop 
 (lines \ref{line:rem-check1} and \ref{line:null-find}), but the $\act{find}$ operation does not return yet.
 
@@ -703,7 +703,7 @@ The $\act{contains}$/$\act{insert}$/$\act{delete}$ operations themselves are ide
 \paragraph{Removal}
 Like before, physical removals are performed by the rotator thread.
 The $\act{remove}$ operation requires some modification to ensure safety when using $\act{uread}$s during the traversal phase.
-Normally if a $\act{contains}$/$\act{insert}$/$\act{delete}$ operation is preempted on a node that is removed then that operation will have to backtrack or abort the transaction.
+Normally if a $\act{contains}$/$\act{insert}$/$\act{delete}$ operation is preempted on a node that is removed, then that operation will have to backtrack or abort the transaction.
 This can be avoided as follows.
 When a node is removed, its left and right child pointers are set to point to its previous parent (line \ref{line:child-par-rem1}).%--\ref{line:child-par-rem2}).
 This provides a preempted operation with a path back to the tree.
@@ -722,7 +722,7 @@ Each
 application thread maintains a boolean indicating a pending operation and a counter indicating the number of 
 completed operations. Before starting a traversal, the rotator thread sets a pointer to what is currently the end of 
 the garbage collection list and copies all booleans and counters. After a traversal, if for every thread its counter 
-has increased or if its boolean is false then the nodes up to the previously stored end pointer can be safely 
+has increased or if its boolean is false, then the nodes up to the previously stored end pointer can be safely 
 freed. Experimentally, we found that the size of the list was never larger than a small fraction of the size of the 
 tree but theoretically assuming that threads do not crash and are progressing
 we expect the total space required to remain linear in the tree size.
@@ -859,7 +859,7 @@ During the operation a new node is created with no children and for itself it ha
 % new par. for the inductive case
 Now for the induction step from $j=m-1$ to $j=m$, this could be a $\act{contains}$, $\act{delete}$, $\act{insert}$, $\act{remove}$, or $\act{rotate}$ operation.
 First note that the inductions holds for the $\act{contains}$ and $\act{delete}$ operations as they neither change any children pointers nor any $\ms{removed}$ flags.
-If this is an $\act{insert}$ operation then at $j=m-1$ $\ms{left}$ or $\ms{right}$ must be $\bot$ (line~\ref{line:null-find} of the $\act{find}$ operation) and the induction obviously still holds
+If this is an $\act{insert}$ operation, then at $j=m-1$ $\ms{left}$ or $\ms{right}$ must be $\bot$ (line~\ref{line:null-find} of the $\act{find}$ operation) and the induction obviously still holds
 as newly allocated nodes have $\ms{removed}=\lit{false}$.
 If this is a $\act{remove}$ operation, then the child of the node is being removed.
 This means that the new child will either be $\bot$ or the child of the child (lines~\ref{line:rem-start}--\ref{line:rem-end}), 
@@ -1168,10 +1168,10 @@ By the assumption given by induction the $n-1^{th}$ node has a path to the range
 From the $n-1^{th}$ node either the right or left child must be chosen.
 The node is chosen based on a standard tree traversal with one exception:
 If the node has the same key $\ms{k}$ that is being searched for and the node was removed by a left rotation
-($\ms{removed}=\lit{true\_by\_left\_rot}$) then the right child is chosen (lines~\ref{line:find-rot-check}--\ref{line:next-find1}).
-With this exception then in all cases if the node is not $\bot$ then by lemma \ref{lemma:range} it must have a path to the same range as when it has $\ms{removed}=\lit{false}$, which includes $\ms{k}$
+($\ms{removed}=\lit{true\_by\_left\_rot}$), then the right child is chosen (lines~\ref{line:find-rot-check}--\ref{line:next-find1}).
+With this exception then in all cases if the node is not $\bot$, then by lemma \ref{lemma:range} it must have a path to the same range as when it has $\ms{removed}=\lit{false}$, which includes $\ms{k}$
 (the $n-1^{th}$ node's range includes $\ms{k}$ so the $n^{th}$ node's range must also).
-Otherwise if one child is $\bot$ then the other child is chosen (lines~\ref{line:rem-find1}--\ref{line:rem-find2}), which must have a path to a range at
+Otherwise if one child is $\bot$, then the other child is chosen (lines~\ref{line:rem-find1}--\ref{line:rem-find2}), which must have a path to a range at
 least as large as the $n-1^{th}$ node by lemma~\ref{lemma:range} (which includes $\ms{k}$).
 \end{enumerate}
 \end{itemize}
@@ -1191,9 +1191,9 @@ or it returns a node in the tree that has $\bot$ for the child where $\ms{k}$ mu
 First consider the case where a node with key $\ms{k}$ is returned.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
 Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false-ins}) ensuring that this value will remain the same throughout the transaction.
-If the read on $\ms{deleted}$ returns $\lit{false}$ then the $\act{insert}$ operation can return $\lit{false}$ because the node exists in the set.
+If the read on $\ms{deleted}$ returns $\lit{false}$, then the $\act{insert}$ operation can return $\lit{false}$ because the node exists in the set.
 % The transactional reads on $\ms{removed}$ and $\ms{deleted}$ ensure that $k$ exists in the set for the duration of the transaction.
-Otherwise if the read on $\ms{deleted}$ returns $\lit{true}$ then a transaction performs a transactional write setting $\ms{deleted}$ to $\lit{false}$ (line \ref{sline:del-false-ins}).
+Otherwise if the read on $\ms{deleted}$ returns $\lit{true}$, then a transaction performs a transactional write setting $\ms{deleted}$ to $\lit{false}$ (line \ref{sline:del-false-ins}).
 The transactional read on $\ms{deleted}$ ensures that $\ms{k}$ is not in the set before the transaction commits.
 The transactional write on $\ms{deleted}$ ensures that $\ms{k}$ is in the set after the transaction commits.
 
@@ -1222,7 +1222,7 @@ or it returns a node in the tree that has $\bot$ for the child where $\ms{k}$ wo
 First consider the case where a node with key $\ms{k}$ is returned.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
 Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-cont}) ensuring that this value will remain the same throughout the transaction.
-If the read on $\ms{deleted}$ returns $\lit{false}$ then the $\ms{contains}$ operation can return $\lit{true}$ because the node exists in the set
+If the read on $\ms{deleted}$ returns $\lit{false}$, then the $\ms{contains}$ operation can return $\lit{true}$ because the node exists in the set
 otherwise $\lit{false}$ can be returned because the node does not exist in the set.
 
 Second consider the case where a node with $\ms{key} \neq \ms{k}$ is returned.
@@ -1246,7 +1246,7 @@ The $\act{delete}$ operation is almost the same as the $\act{contains}$ operatio
 The only difference is in the case where a node with key $\ms{k}$ is returned from the $\act{find}$ operation.
 The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
 Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false}) ensuring that this value will remain the same throughout the transaction.
-If the read on $\ms{deleted}$ returns $\lit{true}$ then the $\act{delete}$ operation can return $\lit{false}$ because the node does not exist in the set.
+If the read on $\ms{deleted}$ returns $\lit{true}$, then the $\act{delete}$ operation can return $\lit{false}$ because the node does not exist in the set.
 Otherwise $\ms{k}$ is in the set and a transactional write is performed setting the nodes $\ms{deleted}$ variable to $\lit{true}$.
 Since $\ms{removed}$ is $\lit{false}$ this node is part of the valid tree (lemma \ref{lemma:binary-tree}) so it is the only place where key $\ms{k}$ can be, then by setting
 $\ms{deleted}$ to $\lit{true}$, $\ms{k}$ is no longer in the set after the transaction commits.
@@ -1273,7 +1273,7 @@ a tree in any configuration is guaranteed to be balanced after $O(n^2)$ successf
 and propagations.
 Interestingly this holds no matter the sequence or concurrency pattern of the rotations
 and propagations, meaning they can take place in a completely distributed fashion.
-Even though in \cite{IRISAppr} different synchronization methods are used then those that are used here
+Even though in \cite{IRISAppr} different synchronization methods are used than those that are used here
 (i.e. locks versus transactions),
 the results still apply as the rotations and
 propagations done in the speculation friendly tree have the same effect and keep track of
@@ -1487,7 +1487,7 @@ number of transactions and to $3.5\times$ with $16\times$ more transactions.
 %
 The reason of this is twofold: 
 (i)~In contrast with the speculation-friendly tree, if an operation on the red-black tree traverses a location that is being 
-deleted then this operation and the deletion conflict. (ii)~Even though the Oracle red-black tree tolerates that the longest 
+deleted, then this operation and the deletion conflict. (ii)~Even though the Oracle red-black tree tolerates that the longest 
 path from the root to a leaf can be twice as long as the shortest one, it triggers the rotation immediately after this threshold
 is reached. By contrast, our speculation-friendly tree keeps checking the unbalance to potentially rotate in the background.
 In particular, 

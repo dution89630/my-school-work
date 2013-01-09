@@ -58,7 +58,7 @@ are encapsulated  in a single  concurrent  object, the
 inherent parallelism  the object can provide 
 can be drastically reduced.
 For example, consider a case where all threads except the one owning the lock could be blocked waiting
-for the lock to be released, resulting in no better then sequential performance.
+for the lock to be released, resulting in no better than sequential performance.
 Or the case of a queue 
 object for which a single lock is used to perform any operation on that queue
 allowing only one operation at a time, when more optimally
@@ -260,7 +260,7 @@ These operations are defined by the STM protocol and usually require executing s
 In addition to shared accesses, some memory accesses within a transaction might be to local memory
 (memory that is only accessible by the current process),
 as such this memory does not need to be synchronized (although it needs to be reinitialized when a transaction is
-restarted after an abort [aborts are described in the following section]) and can therefore be performed more efficiently then shared accesses.
+restarted after an abort [aborts are described in the following section]) and can therefore be performed more efficiently than shared accesses.
 
 Deciding which accesses should be treated as shared and which others should be treated as local
 can either be done by the programmer or done automatically by the system.
@@ -317,7 +317,7 @@ Without a proper consistency or correctness criterion the programmer is lost, th
 atomically and prevents the programmer from having to worry about inconsistencies that might occur otherwise.
 STM consistency criterion define when a transaction can be committed or when it must abort. 
 Interestingly, choosing a consistency criterion for memory transactions is different than from database transactions
-and even different then other concurrent objects,
+and even different than other concurrent objects,
 for example a common consistency criterion for database transactions is \emph{serializability} \cite{P79}.  
 Serializability guarantees that every committed transaction happened atomically at some point in time,
  as if they were executed sequentially one after another.
@@ -477,7 +477,7 @@ Then any subsequent writes this transaction does will be preformed on this local
 
 There are some advantages and disadvantages to both solutions \cite{1123001}, and depend on how the rest of the 
 protocol is implemented.
-Often one type performs better then the other depending on the workload.
+Often one type performs better than the other depending on the workload.
 
 % Undo locking is nice because it does not have to keep track of local memory for writes,
 %  and when write transactions committ it does not have to copy the values from local to shared memory.
@@ -755,12 +755,17 @@ Instead of taking this approach of directly tackling the problem of performance,
 the goal of this thesis is to take a step towards finding and defining fixed and easy to understand semantics
 for transactions while finding efficient protocols satisfying these semantics.
 This leads us to the following concept that is the focus of the thesis:
-
 \begin{definition}\label{def:stm-def}
 STM is an abstraction designed to simplify concurrent programming that exists as a component of a larger system,
 but the semantics of the STM abstraction and how it interacts with the rest of the system must be clear and easy to understand and use,
 otherwise simplicity is lost.
 \end{definition}
+As this definition will be used in this thesis as a goal for how STM should be viewed,
+instead of staring with a complex definition that directly takes into account the complex details of the concurrent system
+(which would complicate things from the beginning),
+we start with this vague definition that will be used as a guide to follow throughout the thesis where,
+throughout the chapters, these complex details are examined.
+Following this, we will define (in the same light) how a transaction will be viewed.
 
 \subsection{Defining a transaction}
 % Even though transactional memory is designed as an abstraction focused on making
@@ -777,16 +782,14 @@ of this system.
 % this
 % thesis takes an approach to answering these questions in a way attempting to minimally impact complexity
 % of the system.
-Following this approach the following high level definition for a transaction
+Following this approach, the following high level definition for a transaction
 used in this thesis is the following:
-
 \begin{definition}\label{def:trans-def}
 A transaction is any block of
 code defined by the programmer to be executed by a given process.
 This transaction is executed atomically exactly once
 taking in consideration all parts of the system.
 \end{definition}
-
 This definition is broken down into two key parts.
 The first, more obvious key part is (1) a transaction is defined by the programmer
 and is executed atomically.
@@ -830,7 +833,7 @@ this thesis makes important steps in this direction, while suggesting ways to mo
 Each chapter in this thesis consider a different general area of research around
 the concept of the ease (or difficulty) of concurrent programming while using transactional memory, first introducing
 the area to the reader, following this with a discussion of a specific problem
-and possible solution from the area, each helping to move towards a solution to Definition \ref{def:stm-def}.
+and possible solution from the area, each helping to move towards a solution of our goal defined in Definition \ref{def:stm-def}.
 
 
 Traditionally research has taken the view that for a protocol to be considered a valid STM

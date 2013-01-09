@@ -173,7 +173,7 @@ to worry about inconsistencies
 (Note that in some cases virtual world consistency is used as it does not change
 how the programmer views a transaction).
 This chapter takes a slightly different approach to STM research as it suggest that transactional
-memory might be more usable to a programmer if it satisfied more then just opacity.
+memory might be more usable to a programmer if it satisfied more than just opacity.
 
 
 Opacity and other consistency criterion are sometimes also called safety properties.
@@ -236,7 +236,7 @@ A common way to avoid deadlock freedom is by ensuring threads acquire locks in a
 but this can have negative implications on performance.
 
 \paragraph{Livelock freedom}
-Stronger then deadlock freedom, livelock freedom prevents a state of livelock where threads
+Stronger than deadlock freedom, livelock freedom prevents a state of livelock where threads
 never progress due to their progress depending on a shared state that is created by another thread.
 Consider the following simple example
 where a thread must own locks $\ms{L_1}$ and $\ms{L_2}$ concurrently in order to perform its desired operation.
@@ -276,7 +276,7 @@ Inherently this means that it is not possible protocols that use standard locks
 to be non-blocking.
 Instead of using locks, non-blocking protocols generally use atomic operations
 such as test\&set or compare\&swap (in a non-blocking fashion) when synchronization between threads is necessary.
-Generally programming using these operations in this way is considered to be much more difficult then
+Generally programming using these operations in this way is considered to be much more difficult than
 programming using locks.
 
 \paragraph{The problem with blocking}
@@ -287,16 +287,16 @@ The first most obvious advantage is by definition; in a non-blocking algorithm a
 waiting for another thread.
 Normally waiting might seem to be necessary part of synchronization, for example in our everyday lives when working together
 with someone on a project we will wait for a teammate to finish their task before starting ours.
-But then consider a massive project that involves hundreds of people across the world in multiple organizations,
+But, then consider a massive project that involves hundreds of people across the world in multiple organizations,
 if one person on this project might have an approaching deadline and he might not want to wait on someone across the
 world that he has never met before in order to start his task.
 Similar situations can exist in largely parallel computer systems, threads might be spread across multiple
-processors or machines, some might be sleeping, some might execute slower then others, the connection between
-some processors might be slower then others.
+processors or machines, some might be sleeping, some might execute slower than others, the connection between
+some processors might be slower than others.
 In such cases the amount of time a thread might have to wait could be unknown and harmful to scalability.
 
 The second advantage is when faults are considered.
-If a thread is waiting for a lock that is owned by another thread that has crashed
+If a thread is waiting for a lock that is owned by another thread that has crashed,
 then without fault detection and recovery (known to be a very difficult problem to solve \cite{ACT00})
 this thread will be waiting forever.
 Non-blocking algorithms on the other hand, by definition, do not have to worry about this.
@@ -390,7 +390,7 @@ The value swapped out must be the same as it was when the operation started,
 if not the operation discards its modifications and starts over with a
 new up to date local copy.
 Unfortunately this means that best case concurrent performance will be no better
-then a single thread, but in certain cases this might be an acceptable
+than a single thread, but in certain cases this might be an acceptable
 trade-off for having wait-free progress.
 
 The second key concept has to deal with liveness.
