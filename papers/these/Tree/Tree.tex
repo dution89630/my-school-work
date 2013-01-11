@@ -218,7 +218,7 @@ on the probability of conflicts with concurrent transactions that depends, in tu
 on the transaction length and $h$.
 
 
-When implementing a tree using TM it is clear that a transaction must be aborted before violating 
+When implementing a tree using TM it is clear that, although a transaction must be aborted before violating 
 the abstraction implemented by this tree
 (e.g., inserting $k$ successfully in a set where $k$ has already been inserted by a concurrent transaction),
 it is unclear whether a transaction must be aborted due to
@@ -590,12 +590,7 @@ It should also be noted that the left rotation is not the exact symmetry of the 
 this small difference will be described in further sections. 
 %Please refer to the technical report~\cite{CGR11} for a desciption of this sublety.
 
-\paragraph{Removed flag}
-The optimization to the algorithm requires that each node has an additional flag indicating whether or not the 
-node has been physically removed from the tree (a node is physically removed during a successful $\act{rotate}$ or $\act{remove}$ operation).
-This removed flag can be set to $\lit{false}$, $\lit{true}$ or $\lit{true\_by\_left\_rot}$ and is initialized to $\lit{false}$.
-In order not to complicate the pseudo code $\lit{true\_by\_left\_rot}$ is considered to be equivalent to $\lit{true}$, only on line \ref{line:find-rot-check} of the $\act{find}$ operation is this
-parameter value specifically checked for.
+
 
 \paragraph{Lightweight reads}
 The key idea is to avoid validating superfluous read accesses when an operation traverses the tree structure.
@@ -618,11 +613,11 @@ the read/write set sizes can be kept at a size of $O(k)$ instead of the $O(k\log
 where $k$ is the number of nested $\act{contains}$/$\act{insert}$/$\act{delete}$ operations nested in a transaction.
 Looking at Table \ref{table:complexity} taking this optimization account we have a read set size of 2 (for 10\% updates) and 
 18 (for 50\% updates).
-The reasoning behind this is as follow:
+The reasoning behind this is as follows:
 Upon success, a $\act{contains}$ only needs to ensure that the node it found is still in the tree when the transaction commits,
 and can ignore the state of other nodes it had traversed. Upon failure, it only needs to ensure that the node $i$ it is looking 
-for is not in the tree when the transaction commits, this requires to check whether the pointer from the
-parent that would point to $i$ is $\bot$ (i.e., this pointer should be in the read set of the transaction and its value is $\bot$)
+for is not in the tree when the transaction commits which requires to check whether the pointer from the
+parent that would point to $i$ is $\bot$ (i.e., this pointer should be in the read set of the transaction with value $\bot$)
 and that the parent is still in the tree (i.e. the parent's $\ms{removed}$ flag should have value $\lit{false}$ and be in this transaction's read set.
 In a similar vein, $\act{insert}$ and $\act{delete}$ only need to validate the position in the tree where they aimed at inserting or deleting.
 Therefore, $\act{contains}$/$\act{insert}$/$\act{delete}$ only increases the size of the read/write set by a constant instead of a logarithmic 
@@ -633,7 +628,15 @@ Classical reads are more expensive to perform than unit loads.
 This is because in addition to needing to store a list keeping track of the reads done so far, 
 an opaque TM that uses invisible reads needs to perform validation of the read set with a worst case cost of 
 $O(s^2)$,
-where $s$ is the size of the read set, whereas a TM that uses visible reads performs a modification to shared memory for each read.
+where $s$ is the size of the read set, or a TM that uses visible reads needs to perform a modification to shared memory for each read.
+
+
+\paragraph{Removed flag}
+The optimization to the algorithm requires that each node has an additional flag indicating whether or not the 
+node has been physically removed from the tree (a node is physically removed during a successful $\act{rotate}$ or $\act{remove}$ operation).
+This removed flag can be set to $\lit{false}$, $\lit{true}$ or $\lit{true\_by\_left\_rot}$ and is initialized to $\lit{false}$.
+In order not to complicate the pseudo code $\lit{true\_by\_left\_rot}$ is considered to be equivalent to $\lit{true}$, only on line \ref{line:find-rot-check} of the $\act{find}$ operation is this
+parameter value specifically checked for.
 
 
 \subsection{Operation description}
@@ -645,7 +648,7 @@ modifications to the rotation and removal operations are needed to ensure the co
 
 Rotations in the non-optimized algorithm remain conflict-prone (Algorithm~\ref{fig:tree-maintenance}) as they incur a conflict when crossing the region of the tree traversed by a  $\act{contains}$/$\act{insert}$/$\act{delete}$ operation. 
 If $\act{uread}$s are used during the traversal done by the $\act{find}$ procedure during the $\act{contains}$/$\act{insert}$/$\act{delete}$ operations, then rotations will only conflict with these rotations if they
-finish at one of the two nodes that are rotated by $\act{rotation}$ operation
+finish at one of the two nodes that are moved by the $\act{rotation}$ operation
 (for example in Figure~\ref{sfig:tree1} this would be the node $i$ or $j$).
 A rotation at the root will only conflict with a $\act{contains}$/$\act{insert}$/$\act{delete}$ that finished at (or at the rotated child of) the root, any operations that travel further down the tree will not conflict.
 
@@ -1352,20 +1355,36 @@ runs sometimes exceed half an hour.
 The machine used for our experiments is a four AMD Opteron 12-core Processor 6172 at 2.1 Ghz with 32 GB of RAM running Linux 2.6.32, thus comprising 48 cores in total.
 
 \subsection{Testbed choices}
+% We evaluate our tree against well-engineered 
+% tree algorithms especially dedicated to transactional workloads.
+% %
+% The red-black tree is a mature implementation developed and improved by expert programmers from Oracle Labs and 
+% others to show good performance of TM in numerous papers~\cite{DSS06,HLMS03,CCKO08,HK08,FFR08,YNW+08,DFGG11}.
+% The observed performance is generally scalable when contention is low, most of integer set benchmarks on which they are tested 
+% consider the ratio of attempted updates instead of effective updates. 
+% To avoid the misleading (attempted) update ratios that capture the number of calls to potentially updating operations, we consider the \emph{effective} update ratios of synchrobench 
+% counting only modifications and ignoring the operations that fail (e.g., $\act{remove}$ may fail in finding its parameter value thus failing in modifying the data structure).
+% 
+% The AVL tree we evaluate (as well as the aforementioned red-black tree) is part of STAMP~\cite{CCKO08}. 
+% As mentioned before one of the main refactoring of this red-black tree implementation is to avoid the use of sentinel nodes that would 
+% produce false-conflicts within transactions. This improvement could be considered a first-step towards obtaining a speculation-friendly binary 
+% search tree, however, the modification-restructuring, which remains tightly coupled, prevents scalability to high levels of parallelism.
+
 We evaluate our tree against well-engineered 
 tree algorithms especially dedicated to transactional workloads.
 %
 The red-black tree is a mature implementation developed and improved by expert programmers from Oracle Labs and 
 others to show good performance of TM in numerous papers~\cite{DSS06,HLMS03,CCKO08,HK08,FFR08,YNW+08,DFGG11}.
-The observed performance is generally scalable when contention is low, most of integer set benchmarks on which they are tested 
+The observed performance in these papers is that this tree is generally scalable when contention is low; most of integer set benchmarks on which they are tested 
 consider the ratio of attempted updates instead of effective updates. 
 To avoid the misleading (attempted) update ratios that capture the number of calls to potentially updating operations, we consider the \emph{effective} update ratios of synchrobench 
 counting only modifications and ignoring the operations that fail (e.g., $\act{remove}$ may fail in finding its parameter value thus failing in modifying the data structure).
 
-The AVL tree we evaluate (as well as the aforementioned red-black tree) is part of STAMP~\cite{CCKO08}. 
 As mentioned before one of the main refactoring of this red-black tree implementation is to avoid the use of sentinel nodes that would 
 produce false-conflicts within transactions. This improvement could be considered a first-step towards obtaining a speculation-friendly binary 
 search tree, however, the modification-restructuring, which remains tightly coupled, prevents scalability to high levels of parallelism.
+The AVL tree we evaluate (as well as the aforementioned red-black tree) is part of STAMP~\cite{CCKO08}. 
+
 
 To evaluate performance we ran the micro-benchmark and the vacation application with 1, 2, 4, 8, 16, 24, 32, 40, 48 application threads.
 For the micro-benchmark, we averaged the data over three runs of 10 seconds each. For the vacation application, we averaged the data over 
@@ -1382,13 +1401,21 @@ We carefully verified that the variance was sufficiently low for the result to b
 
 \subsection{Biased workloads and the effect of restructuring}\label{ssec:microbench}
 
-In this section, we evaluate the performance of our speculation-friendly tree on an integer set micro-benchmark providing $\act{remove}$, $\act{insert}$, and $\act{contains}$ operations, similarly to the benchmark used to evaluate state-of-the-art TM algorithms~\cite{FFR08,FGG09,DSS10}.
+In this section, we evaluate the performance of our speculation-friendly tree on an integer set micro-benchmark providing $\act{remove}$, $\act{insert}$, and $\act{contains}$ operations, similarly to the benchmarks used to evaluate state-of-the-art TM algorithms~\cite{FFR08,FGG09,DSS10}.
 We implemented two set libraries that we added to the synchrobench distribution:
-our non-optimized speculation-friendly tree and a baseline tree that is similar but never rebalances the structure whatever modifications occur.
+(1) our non-optimized speculation-friendly tree and (2) a baseline tree that is similar but never rebalances the structure whatever modifications occur.
+% our non-optimized speculation-friendly tree and a baseline tree that is similar but never rebalances the structure whatever modifications occur.
 Figure~\ref{fig:microbench} depicts the performance obtained from four different binary search trees: the red-black tree (RBtree), our speculation-friendly tree without optimizations (SFtree), the no-restructuring tree (NRtree) and the AVL tree (AVLtree). 
 
-The performance is expressed as the number of operations executed per microsecond. The update ratio varies between 5\% and 20\%. As we obtained similar results with $2^{10}$, $2^{12}$ and $2^{14}$ elements, we only report the results obtained from an initialized set of $2^{12}$ elements.
-The biased workload consists of inserting (resp. deleting) random values skewed towards high (resp. low) numbers in the value range: the values always taken from a range of $2^{14}$ are skewed with a fixed probability by incrementing (resp. decrementing) with an integer uniformly taken within $[0..9]$.
+% The performance is expressed as the number of operations executed per microsecond. The update ratio varies between 5\% and 20\%. As we obtained similar results with $2^{10}$, $2^{12}$ and $2^{14}$ elements, we only report the results obtained from an initialized set of $2^{12}$ elements.
+% The biased workload consists of inserting (resp. deleting) random values skewed towards high (resp. low) numbers in the value range: the values always taken from a range of $2^{14}$ are skewed with a fixed probability by incrementing (resp. decrementing) with an integer uniformly taken within $[0..9]$.
+The performance is expressed as the number of operations executed per microsecond. The update ratio varies between 5\% and 20\%.
+As we obtained similar results with $2^{10}$, $2^{12}$ and $2^{14}$ elements, we only report the results obtained from an initialized set of $2^{12}$ elements.
+We tested the algorithms using two workloads:
+(1) The normal workload in which elements are inserted (resp. deleted) by selecting values randomly with equal probability from the value range.
+(2) The biased workload consists of inserting (resp. deleting) random values skewed towards high (resp. low) numbers in the value range:
+the values always taken from a range of $2^{14}$ are skewed with a fixed probability by incrementing (resp. decrementing) with an integer uniformly taken within $[0..9]$.
+
 
 On both the normal (uniformly distributed) and biased workloads, the speculation-friendly tree scales 
 well up to 32/40 threads. The no-restructuring tree performance drops to a linear shape 
