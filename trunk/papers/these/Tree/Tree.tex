@@ -225,43 +225,43 @@ it is unclear whether a transaction must be aborted due to
 slightly unbalancing the tree implementation in order to strictly preserve the balance invariant.
 Following this assumption we introduce a \emph{speculation-friendly} tree as a tree that transiently breaks its
 balance structural invariant without hampering the abstraction consistency in order to speed up transaction-based accesses. 
-Here are our contributions.
-
-\begin{itemize}
-\item We propose a speculation-friendly binary search tree data structure
-implementing an associative array and set abstractions.
-In this implementation we decoupling the operations that modify the abstraction (we call these \emph{abstract transactions}) from operations
-that modify the tree structure itself but not the abstraction (we call these \emph{structural transactions}).
-An abstract transaction either inserts or deletes an element from the abstraction and 
-in certain cases the insertion might also modify the tree structure.
-Structural transactions have two main tasks:
-(1) Certain structural transactions are given the task to rebalance the tree 
-by executing a distributed rotation mechanism: each of these transactions executes a local rotation involving
-only a constant number of neighboring nodes. 
-(2) Some other structural transactions unlink and free nodes that have been logically deleted 
-by previously committed abstract transactions.
-
-\item We prove the correctness (i.e., linearizability) of our tree and we compare its performance against existing transaction-based versions of an AVL tree and a red-black tree,
-widely used to evaluate transactions~\cite{DSS06,HLMS03,CCKO08,HK08,FFR08,YNW+08,DFGG11}.
-The speculation-friendly tree improves by up to $1.6\times$ the performance of the AVL tree on the micro-benchmark and 
-by up to $3.5\times$ the performance of the built-in red-black tree on a travel reservation application, already well-engineered for transactions.
-Finally, our speculation-friendly tree performs similarly to a non-rotating tree but remains robust in face of non-uniform workloads.
-
-\item We illustrate (i)~the portability of our speculation-friendly tree by evaluating it on two different Transactional Memories (TMs), TinySTM~\cite{FFR08} 
-and $\mathcal{E}$-STM~\cite{FGG09} and with different configuration settings, hence outlining that our performance benefit is independent 
-from the transactional algorithm it uses; and (ii)~its reusability by composing 
-straightforwardly the $\lit{remove}$ and $\lit{insert}$ into a new $\lit{move}$ operation.
-In addition, we compare the benefit of relaxing data structures into speculation-friendly ones against the benefit of only relaxing transactions,
-by evaluating elastic transactions.
-It shows that, for a particular data structure, refactoring its algorithm is preferable to refactoring the underlying transaction algorithm.
-\end{itemize}
-
-The chapter is organized as follows. In Section~\ref{sec:pb} we describe the problem related
-to the use of transactions in existing balanced trees. In Section~\ref{sec:tf} we present our 
-speculation-friendly binary search tree. In Section~\ref{sec:expe} we evaluate our tree
-experimentally and illustrate its portability and reusability.
-In Section~\ref{sec:rw} we describe the related work and 
-Section~\ref{sec:conclusion} concludes.
+% Here are our contributions.
+% 
+% \begin{itemize}
+% \item We propose a speculation-friendly binary search tree data structure
+% implementing an associative array and set abstractions.
+% In this implementation we decoupling the operations that modify the abstraction (we call these \emph{abstract transactions}) from operations
+% that modify the tree structure itself but not the abstraction (we call these \emph{structural transactions}).
+% An abstract transaction either inserts or deletes an element from the abstraction and 
+% in certain cases the insertion might also modify the tree structure.
+% Structural transactions have two main tasks:
+% (1) Certain structural transactions are given the task to rebalance the tree 
+% by executing a distributed rotation mechanism: each of these transactions executes a local rotation involving
+% only a constant number of neighboring nodes. 
+% (2) Some other structural transactions unlink and free nodes that have been logically deleted 
+% by previously committed abstract transactions.
+% 
+% \item We prove the correctness (i.e., linearizability) of our tree and we compare its performance against existing transaction-based versions of an AVL tree and a red-black tree,
+% widely used to evaluate transactions~\cite{DSS06,HLMS03,CCKO08,HK08,FFR08,YNW+08,DFGG11}.
+% The speculation-friendly tree improves by up to $1.6\times$ the performance of the AVL tree on the micro-benchmark and 
+% by up to $3.5\times$ the performance of the built-in red-black tree on a travel reservation application, already well-engineered for transactions.
+% Finally, our speculation-friendly tree performs similarly to a non-rotating tree but remains robust in face of non-uniform workloads.
+% 
+% \item We illustrate (i)~the portability of our speculation-friendly tree by evaluating it on two different Transactional Memories (TMs), TinySTM~\cite{FFR08} 
+% and $\mathcal{E}$-STM~\cite{FGG09} and with different configuration settings, hence outlining that our performance benefit is independent 
+% from the transactional algorithm it uses; and (ii)~its reusability by composing 
+% straightforwardly the $\lit{remove}$ and $\lit{insert}$ into a new $\lit{move}$ operation.
+% In addition, we compare the benefit of relaxing data structures into speculation-friendly ones against the benefit of only relaxing transactions,
+% by evaluating elastic transactions.
+% It shows that, for a particular data structure, refactoring its algorithm is preferable to refactoring the underlying transaction algorithm.
+% \end{itemize}
+% 
+% The chapter is organized as follows. In Section~\ref{sec:pb} we describe the problem related
+% to the use of transactions in existing balanced trees. In Section~\ref{sec:tf} we present our 
+% speculation-friendly binary search tree. In Section~\ref{sec:expe} we evaluate our tree
+% experimentally and illustrate its portability and reusability.
+% In Section~\ref{sec:rw} we describe the related work and 
+% Section~\ref{sec:conclusion} concludes.
 
 \section{The Problem with Balanced Trees}\label{sec:pb}
 
