@@ -115,4 +115,77 @@ On peut dire alors tout ce qu'un programmeur doit besoin de savoir afin d'utilis
 de connaître la syntaxe pour écrire un bloc atomique, probablement quelque chose d'aussi simple que $atomique\{ \dots \}$.
 Au niveau le plus élémentaire tout un programmeur devrait besoin de savoir est par où commencer et finir ses blocs atomiques.
 
+Comme de nombreuses abstractions, même si ce qui est exposé au programmeur est une interface fixe bien défini,
+il ya beaucoup de différentes implémentations possibles et des propriétés différentes qui existent pour fournir l'abstraction.
+Sous ces blocs atomiques est la mise en œuvre de la STM, qui comporte de nombreux aspects.
+Depuis l'introduction de mémoire transactionnelle en 1993 \cite{HM93} des dizaines (voire des centaines) de propriétés différentes
+sont apparues ainsi que de nombreux algorithmes STM différentes, chacune d'entre elles en assurant  plus ou moins de ces propriétés et être plus ou moins concernés par la performance.
+(Certaines de ces propriétés sont discutées dans l'introduction de cette thèse dans la section \ref{sec:détails})
+
+
+Peut-être le plus important de ces propriétés concernent la exactitude de l'algorithme.
+Souvent désigné comme Les critères de cohérence de STM, ils s'assureront que le protocole est correctement mise en œuvre l'abstraction.
+En faisant cela, la facilité d'utilisation est prise d'une importance capitale,
+permettant aux utilisateurs de ne pas avoir à s'inquiéter de comportement étrange qui ferait l'abstraction plus difficile à comprendre.
+Dans le critère de cohérence STM sont utilisés afin d'assurer que les transactions seulement observer états
+valides de mémoire (i.e. états créés par seulement les transactions atomiques).
+En raison de la nature optimiste et en ligne des transactions, les lectures et les écriture d'une transaction pourrait entrer en conflit
+avec une transaction concurrente , c'est à dire si elles étaient tous les deux continuer à s'exécuter, l'un d'entre eux serait observer un état non valide de la mémoire.
+Les critères de cohérence de STM STM éviter cela, et afin de le faire le protocole STM annulerait l'une des transactions, ce qui signifie qu'il semble avoir pas exécuté du tout.
+La transaction peut alors être redémarré.
+Ce chapitre se penche sur la façon dont ces critères de cohérence, qui assurent un niveau fondamental de facilité d'utilisation pour STM,
+se rapportent à d'autres propriétés qui concernent les choses moins importantes comme la performance.
+
+
+Dans un monde idéal, il existerait un \emph{``parfaite algorithme''} STM qui assure toutes les propriétés désirables sans faire de sacrifices.
+Malheureusement, cet algorithme n'a pas encore été découverts (si c'est encore possible).
+En fait, beaucoup de ces propriétés désirables ont été un peu plus alors introduit et plusieurs de leurs implications sur la façon
+dont ils affectent algorithmes STM ou comment ils interagissent les uns avec les autres n'a pas encore été exploré.
+Motivé par cela, ce chapitre examine deux propriétés désirables qui se préoccupent de la performance,
+à savoir \emph{permissivité} et \emph{lectures-invisible}, et comment ils interagissent avec deux critères de cohérence des systèmes STM,
+à savoir \emph{l'opacité} et le \emph{consistance monde virtuel}.
+
+
+
+\paragraph{Opération de lecture invisible}
+Une opération de lecture émis par une transaction est {\it invisible}
+si elle n'implique pas la modification des objets partagés utilisés pour mettre en œuvre le système STM \cite{MSHAESS06}.
+Il s'agit d'une propriété désirable principalement pour l'efficacité.
+
+
+\paragraph{Permissivité}
+La notion de permissivité a été introduite dans \cite{GHS08} (dans un certain sens,
+il s'agit d'une généralisation très agréable de la notion de {\it obligation} propriété \cite{a-IR09}). C'est sur la annulation de transaction.
+Intuitivement, un système STM est {\it permissive} ``si elle n'a jamais annule une transaction sauf si c'est nécessaire pour l'exactitude.''
+(sinon, il est {\it non-permissive}). Plus précisément, un système STM est permissive par rapport à une condition de cohérence
+(par exemple, l'opacité) si elle accepte toute histoire qui satisfait la condition.
+
+Comme indiqué dans \cite{GHS08}, un système STM qui vérifie lors du commit que les
+valeurs des objets lus par une transaction n'ont pas été modifiées (et annule la transaction si vrai) ne peut pas être permissive par rapport à l'opacité.
+En fait autre que le protocole introduit avec la notation de permissivité dans \cite{GHS08} pratiquement
+tous les protocoles STM publiés annuler les transactions qui auraient pu être commises sans risque, à savoir les protocoles ne sont pas permissives.
+
+
+\paragraph{Deux conditions de cohérence pour les systèmes STM}
+Nous avons déjà notre syntaxe définie pour le programmeur ($atomique \{ \dots \})$) et d'une idée fondamentale de ce que cela signifie,
+``le code dans le bloc atomique apparaît comme si elle a été exécutée instantanément par rapport à autres opérations'',
+mais nous avons besoin de définir précisément ce que cela signifie pour un algorithme STM.
+Au cœur de ce que nous avons critères de cohérence.
+Ce critère de définir précisément la sémantique d'une transaction et guider la création d'algorithmes afin que le critère choisi est satisfaite.
+Sans un critère de cohérence claire et précise nous perdons la facilité d'utilisation qui est l'intention originale de la STM.
+Dans cette section, nous donnons un aperçu de deux critères de cohérence bien connu définis pour la mémoire transactionnelle.
+
+
+
+\paragraph {La condition de cohérence opacité}
+Le critère de cohérence classique pour les transactions de base de données est sérialisation \cite{P79}, approximativement définie comme suit:
+``Une histoire est sérialisable si elle est équivalente à celle dans laquelle les transactions apparaissent à exécuter de manière séquentielle, c'est à dire, sans entrelaçage.''
+Ce qui est important à considérer lorsqu'on pense à la mémoire transactionnelle est que le critère de cohérence sérialisation ne concerne que les transactions qui commettent.
+Dit autrement, une transaction qui est annulée n'est pas empêchés d'accéder à un état incohérent avant d'annuler.
+Il convient de noter que la sérialisabilité est parfois renforcée dans ``serializability stricte''.
+La sérialisabilité stricte a la contrainte supplémentaire que l'histoire séquentielle équivalente doit suivre l'ordre de temps réel
+de sorte que chaque transaction est placée quelque part entre son invocation et son temps de réponse, comme mis en œuvre par de l'utilisation du mécanisme de verrouillage en 2 phases.
+La sérialisabilité stricte est souvent désigné comme linéarisabilité \cite{HW90} lorsque l'on considère les opérations d'un objet au lieu du système entirer.
+
+
 
