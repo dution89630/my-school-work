@@ -1,0 +1,118 @@
+
+\chapter*{Resume}
+
+Architectures multicœurs changent notre façon d'écrire des programmes.
+Non seulement tous les dispositifs informatiques tournant multi devenant ainsi intrinsèquement parallèle,
+mais demain multicœurs intégrera une plus grande quantité de cœurs simplifiés
+afin de mieux gérer l'énergie tout en proposant des performances supérieures,
+une technologie également connu sous le nom \emph{manycore}~\cite{Borkar2007} et donnant lieu à ce qu'on appelle
+le \emph{multicœurs révolution} \cite{HL08}. Ainsi, afin de profiter de ces ressources, un renouveau de
+la programmation concurrente a commencé.
+
+Il s'agit d'un point de vue largement partagé que la conception d'un programme concurrent n'est pas une tâche facile.
+Dans ce contexte, les objets de synchronisation de base ont été définis pour aider le programmeur à résoudre les problèmes de concurrence et de coopération processus.
+Une étape importante dans ce domaine, qui a été présenté il y a plus de quarante ans, était le concept de {\it exclusion mutuelle} \cite{D68} qui a donné naissance à la notion de {\it lock} objet.
+Un objet de verrouillage permet au programmeur de deux opérations (de verrouillage et de déverrouillage) qui permettent à un seul processus à la fois d'accéder à un objet concurrente.
+Par conséquent, d'un point de vue objet concurrent, le verrou associé à un objet permet de transformer accès concurrents sur cet objet en accès séquentiels.
+Le type de synchronisation admis par des verrous est souvent désigné comme \emph{pessimiste},
+car chaque accès à un emplacement $x$ bloque des accès supplémentaires à $x$ jusqu'à ce que la emplacement soit libéré.
+Il n'est pas surprenant donné que le processus de pensée d'une personne se passe de manière séquentielle et
+que ce concept d'exclusion mutuelle est un moyen simple de concevoir de synchronisation/concurrence, le verrouillage est de
+loin l'abstraction la plus largement utilisée pour mettre en œuvre des algorithmes concurrents.
+
+
+Malheureusement, l'utilisation de verrous n'est pas si facile.
+La difficulté la plus fréquente associée à verrouillage est d'éviter l'impasse.
+L'impasse se produit par exemple lorsqu'un processus $T_A$ veut obtenir un verrou qui est déjà détenu par processus
+$T_B$ tandis que le processus en même temps $T_B$ veut obtenir un verrou qui est déjà détenu par processus $T_A$ résultant dans aucun processus progresse.
+Verrous de blocage afin d'éviter sont souvent acquises dans un ordre mondial,
+mais cela peut entraîner des serrures prises plus souvent et plus longtemps tenue alors nécessaire.
+
+D'autres problèmes avec verrous peut se produire quand un processus qui détient un verrou est dé prévue
+par le système d'exploitation tout un processus vivant tente d'accéder à le même verrou (parfois appelé \emph{inversion de priorité}).
+D'autres problèmes peuvent se produire si un thread se bloque ou est bloqué en tenant un verrou.
+
+\paragraph{The Software Transactional Memory approach}
+Le concept de \emph{mémoire software transactionnelle} (STM) est une réponse possible au défi de la programmation concurrente.
+Avant de décrire les détails, d'abord envisager une ``philosophie esprit/design'' qui a contribué à donner naissance à des systèmes STM: la notion de \emph{niveau d'abstraction}.
+Plus précisément, l'objectif d'un niveau d'abstraction accrue est de permettre au programmeur de se concentrer
+et de se concentrer uniquement sur le problème qu'il doit résoudre et non sur la machine de base nécessaires pour le résoudre.
+Comme nous pouvons le voir, c'est l'approche qui a remplacé les langages d'assemblage par des langages de haut niveau et collecte des ordures définié par le programmeur par collecte des ordures automatique.
+Dans ce manière STM peut être considérée comme un concept nouveau niveau d'abstraction qui relève ce défi lors de l'examen des problèmes de synchronisation.
+
+
+La façon dont la mémoire transactionnelle élimine la complexité associée à la programmation concurrente est de remplacer verrouillage avec unités d'exécution atomiques.
+Contrairement à l'utilisation des verrous où un programmeur peut utiliser plusieurs verrous au long de ses opérations, lorsque il utilise la mémoire transactionnelle un programmeur n'a besoin que
+de définir quelles sections de son code doit apparaître comme si elles exécuter de façon atomique (i.e. tout à la fois, ne laissant aucune possibilité pour des opérations simultanées entrelacés).
+Le protocole de mémoire transactionnelle aborde ensuite la synchronisation nécessaire pour s'assurer que cela arrive.
+Un programmeur pourrait penser que c'est comme en utilisant un seul verrou global où toutes les fois qu'il veut effectuer la synchronisation entre processus.
+De cette façon, le programmeur doit se concentrer sur l'endroit où l'atomicité est nécessaire et non pas sur la façon dont il doit être rendu compte.
+Le but d'un système STM est donc de décharger le programmeur de la gestion directe de la synchronisation qui est entraîné par des accès aux objets simultanés.
+
+
+Plus explicitement, la STM offre au programmeur le concept {\it transaction} (ce concept est proche mais différente
+de la notion de transactions rencontrées dans les systèmes de bases de données \cite{FFGH08, HCUAGSV07, HL08}).
+Un processus est réalisé sous la forme (ou décomposée en) une séquence d'opérations,
+chaque opération étant un morceau de code qui, lors de l'accès des objets concurrents, apparaît toujours comme s'il était exécuté de façon atomique.
+C'est le travail du système STM pour s'assurer que les opérations sont exécutées comme
+si elles étaient atomique en utilisant de faibles opérations de synchronisation de niveau comme compar\&swap ou même d'autres
+abstractions telles que les verrous (notez que tous ces détails sont cachés par le programmateur
+comme il ne a que accès à l'interface de la STM qui lui permet de définir des unités de calcul atomiques).
+
+
+Un autre avantage important de l'utilisation mémoire transactionnelle sur les verrous est 
+qu'un programme transactionnel peut être directement réutilisé par un autre programmeur dans son propre code.
+Ainsi, un programmeur qui compose opérations à partir d'une bibliothèque d'opérations à une 
+autre transaction est garantie d'obtenir de nouvelles opérations sans impase qui sont exécutées de manière atomique.
+Promouvoir davantage la facilité d'utilisation de transactions, plusieurs études \cite{PA11, RHW10} ont été réalisées qui
+trouvent que (selon les paramètres de leurs études) les utilisateurs peuvent créer des programmes concurrents plus facile 
+lorsque ils utilisent la mémoire transactionnelle au lieu de verrous.
+
+
+La notion de mémoire transactionnelle a été proposée il ya près de vingt ans par Herlihy et Moss comme une abstraction à mettre
+en œuvre en hardware et être utilisé afin de mettre en œuvre facilement des structures de données concurrentes sans-verrou \cite{HM93}.
+Depuis, il a d'abord été mis en œuvre dans le logiciel par Shavit et Touitou \cite{ST97} et, en partie grâce à la
+révolution multi-core, a récemment pris de l'ampleur grand comme une alternative prometteuse aux verrous dans la programmation concurrente \cite{FFGH08,HCUAGSV07,LK08,R08}.
+
+
+Comme une abstraction conçu pour rendre plus facile la programmation concurrente, la mémoire transactionnelle a
+besoin d'une interface simple et précis pour les programmeurs à utiliser.
+Afin de effectivement définir des transactions dans le code,
+l'approche la plus courante consiste à entourer le code par quelques mots-clés qui indiquent le début et la fin d'une transaction.
+Par exemple, le programmeur peut simplement entourer sa transaction en utilisant le \emph{atomique} mot-clé.
+Le code contenu dans ce bloc sera alors traitée comme une transaction et semblent être exécutés de façon atomique.
+Dans un monde idéal, ce serait tout que le programmeur aurait à connaître avant de commencer à utiliser la mémoire transactionnelle,
+mais malheureusement, comme on le verra dans cette thèse, il est beaucoup plus complexe que cela et il ya beaucoup d'autres choses que le programmeur doit prendre en considération.
+
+
+
+Comme nous le verrons dans chaque chapitre de cette thèse dans un système moderne concurrentes
+il ya des aspects complexes de l'abstraction STM qui concernent comment un programmeur interagit avec le système STM et le système dans son ensemble.
+Alors que la sémantique de base d'une transaction sont largement convenu (i.e. atomicité de la transaction par rapport à d'autres transactions),
+il ya beaucoup d'autres détails à prendre en considération certains d'entre eux sont activement débattus et restent sous forme de questions de recherche ouverts.
+La normalisation de ce sémantique et à répondre aux questions ouvertes sur il est une étape importante pour assurer
+que l'objectif principal de rendre plus facile la programmation concurrente est réalisée.
+Si la sémantique est trop difficile à comprendre, ou un programmeur doit être conscient de trop de détails spécifiques à un système
+STM avant de pouvoir utiliser les transactions dans son programme, puis la vue de l'objectif original a été perdu.
+
+
+
+L'objectif de cette thèse est de faire un pas vers la retrouvailles et la définition fixe et facile à
+comprendre de la sémantique des transactions tout en trouvant des protocoles efficaces satisfaisant à cette sémantique.
+
+
+
+Chaque chapitre de cette thèse considère un domaine générale différent de la recherche autour du concept de la facilité
+(ou la difficulté) de la programmation concurrente en utilisant la mémoire transactionnelle, introduisant d'abord le domaine du lecteur,
+suivie d'une discussion d'un problème spécifique et une solution possible à partir de la région, chacun aidant à aller vers une solution de notre objectif.
+
+
+
+\section{Chapitre 1}
+
+L'objectif le plus important de l'abstraction STM est de rendre la programmation concurrente plus simple et plus accessible à tout programmeur.
+On peut dire alors tout ce qu'un programmeur doit besoin de savoir afin d'utiliser l'abstraction STM est
+de connaître la syntaxe pour écrire un bloc atomique, probablement quelque chose d'aussi simple que $atomique\{ \dots \}$.
+Au niveau le plus élémentaire tout un programmeur devrait besoin de savoir est par où commencer et finir ses blocs atomiques.
+
+

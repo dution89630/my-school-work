@@ -147,7 +147,7 @@
 
 
 \section{Motivation}
-\vspace{0.1cm}
+% \vspace{0.1cm}
 
 \subsection{Software transactional memory (STM) systems}
 The most important goal of the STM abstraction is to make concurrent programming
@@ -742,29 +742,28 @@ Their main  difference lies in the  fact that opacity considers strong
 transaction histories while virtual world consistency considers 
 weak transaction histories. 
 
-
-\vspace{-0.2cm}
-\begin{definition}
-%Opacity considers strong transaction  histories. 
+% \vspace{-0.2cm}
+\begin{defin}
 A strong transaction  history satisfies the  {\it   opacity}  consistency
 condition if it has a real time-compliant  legal  linear extension. 
-\end{definition}
-\vspace{-0.2cm}
+\end{defin}
+% \vspace{-0.2cm}
 %
 
 Examples  of  protocols  implementing  the opacity   property,  each  with
 different additional features, can be found in \cite{DSS06,IR08,IR09,RFF07}. 
 
-\vspace{-0.2cm}
+% \vspace{-0.2cm}
 
-\begin{definition}
-A weak transaction  history satisfies the  {\it   virtual world}  
+\begin{defin}
+A weak transaction  history satisfies the  {\it   virtual world}
 consistency condition if 
 (a)  all its committed transactions have  a %realtime-compliant 
 legal linear  extension and 
 (b) the causal past of each aborted transaction has a legal linear extension. 
-\end{definition}
-\vspace{-0.2cm}
+\end{defin}
+% \vspace{-0.2cm}
+
 
 A protocol  implementing   virtual world consistency 
 can be found in \cite{IR09} where it is also shown that 
@@ -3065,7 +3064,7 @@ To conclude this chapter we will return to the idea that the main purpose of
 transactional memory is to make concurrent programming easier.
 Overall the contribution of this chapter is a study of the interaction
 between several properties and consistency conditions of transactional memory.
-So then, what does this have to do with the ease-of-use of 
+So then, what does this have to do with the ease of use of 
 transactional memory?
 
 When designing an STM protocol it is necessary that we design it to satisfy
@@ -3116,12 +3115,12 @@ of concurrency certain properties (or even combinations of these properties) mig
 They do this by proving the minimum amount of expensive synchronization operations that are needed
 by an STM in order to ensure these properties safely.
 
-As a final note on ease-of use, it should be said that the research direction suggested in
+As a final note on ease of use, it should be said that the research direction suggested in
 this chapter is also similar in a way to that of
 the majority of published work on transactional memory in that it concerns itself with
 designing an efficient protocol without modifying the idea of a transaction.
 Each of the protocols presented in these various works (DSTM \cite{HLMS03}, TL2 \cite{DSS06}, TinySTM \cite{FFR08}, SwissSTM \cite{DGK09}, NOrec \cite{DSS10}, etc...) have no impact on how the programmer
-understands the transaction which, in a way, puts ease-of-use first.
+understands the transaction which, in a way, puts ease of use first.
 The following chapters will take a different direction, examining some of what we consider shortcomings
 of the commonly used transactional model and how to improve it.
 

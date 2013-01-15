@@ -166,7 +166,7 @@
 \label{sec:SIintro}
 
 Simplified transaction semantics may not be enough.
-In the interest of ease-of-use, each chapter in this takes a 
+In the interest of ease of use, each chapter in this takes a 
 different look on transaction semantics.
 The first chapter suggested improving STM
 protocols while focusing on the semantics of a transactions
@@ -175,7 +175,7 @@ chapter suggested simplifying the semantics of a transaction,
 and this chapter will suggest expanding the semantics.
 It will look at how a programmer might use transactions
 within his code in order to suggest the expansion of transactional
-semantics in the interest of ease-of-use.
+semantics in the interest of ease of use.
 
 Following the discussion of the previous chapter we will promote our change
 of semantics by contrasting transactions to concurrent objects.
@@ -383,7 +383,7 @@ Not only can this make transactional code extremely difficult to write
 and understand, but a simple change in the STM protocol could render the
 program useless.
 Obviously this is not a good solution to concurrent transactional and non-transactional
-access when considering ease-of-use.
+access when considering ease of use.
 
 More commonly, an STM protocol that implements weak isolation expects users to avoid
 any concurrent interaction between the shared memory outside and inside of
@@ -418,7 +418,7 @@ weak isolation can deal with concurrency issues between transactional
 and non-transactional accesses himself.
 Usually a programmer will purposely subject himself to these
 difficulties in the interest of performance.
-Examining more formally these performance over ease-of-use concepts, several
+Examining more formally these performance over ease of use concepts, several
 STM protocols have been proposed allowing the existence of transactions
 that might not appear as being atomic.
 These protocols often focus on ways to give the programmer the power to weaken the semantics
@@ -838,7 +838,7 @@ expected  to  be de-scheduled, blocked or aborted.
 Unfortunately   strong
 isolation  implemented with  locks  entails the blocking  
 of non-transactional read and write operations and would not provide termination.
-In the previous chapter we argued that, when considering ease-of-use, 
+In the previous chapter we argued that, when considering ease of use, 
 every transaction should be committed and the
 possible non-termination of transactions is unacceptable.
 Even worse would be if a programmer had to consider that simple
