@@ -6,13 +6,13 @@ proposing higher performance, a technology also known as \emph{manycore}~\cite{B
 and giving rise to what is called the {\it multicore  
 revolution} \cite{HL08}.
 % that has  rang the revival of concurrent programming.
-Thus, in order to take advantage of these resources a revival of concurrent programming has begun.
+Thus, in order to take advantage of these resources, a revival of concurrent programming has begun.
 % Interestingly  enough,  
 % it is important to also observe that the recent advent of multicore 
 % architectures has
 
 
-\section{Lock-based concurrent programming}\label{sec:intro-lockbased}
+\paragraph{Lock-based concurrent programming}
 % A   {\it concurrent  object} is  an   object that can be   concurrently  
 % accessed by different processes of a  multiprocess program. 
 %
@@ -144,7 +144,7 @@ holding a lock.
 
 % \anote{Should mention more things here???}
 
-\section{The Software Transactional Memory approach}
+\paragraph{The Software Transactional Memory approach}
 The concept of {\it Software Transactional  Memory}   (STM)  is  a possible answer  
 to   the  challenge of concurrent programming.
 Before describing the details, let us first consider a ``spirit/design philosophy'' that has helped give
@@ -204,7 +204,7 @@ operations such as compare\&swap or even other abstractions such as locks
 (note that all these details are hidden from the programmer as he only has access to the interface
 to the STM which allows him to define atomic computation units).
 
-Another important advantage of using transactional memory over locks it that a transactional program
+Another important advantage of using transactional memory over locks is that a transactional program
 can be directly reused by another programmer within his own code.
 Hence a programmer composing operations from a transactional library into another 
 transaction is guaranteed to obtain new deadlock-free operations that execute atomically.
@@ -213,10 +213,6 @@ have been performed that find that (under the parameters of their studies) users
 easier when using transactional memory instead of locks.
 
 
-
-
-\section{Details}
-\label{sec:details}
 The notion  of   transactional  memory  was
 first   proposed  nearly twenty years ago by Herlihy  and Moss 
 as an abstraction to be implemented in hardware and be used in order to easily 
@@ -230,7 +226,6 @@ concurrent programming  \cite{FFGH08,HCUAGSV07,LK08,R08}.
 % in order to help explain STM.
 
 
-\subsection{Programming}
 As an abstraction designed to make concurrent programming easier, transactional memory needs a
 simple and precise interface for programmers to use.
 In order to actually define transactions in code, the most common
@@ -270,7 +265,7 @@ for transactions while finding efficient protocols satisfying these semantics.
 Each chapter in this thesis considers a different general area of research around
 the concept of the ease (or difficulty) of concurrent programming while using transactional memory, first introducing
 the area to the reader, following this with a discussion of a specific problem
-and possible solution from the area, each helping to move towards a solution of our goal
+and possible solution from the area, each helping to move towards a solution of our goal.
 % defined in Definition \ref{def:stm-def}.
 
 
@@ -280,13 +275,13 @@ and possible solution from the area, each helping to move towards a solution of 
 
 
 \section{Chapter 1}
-\subsection{Software transactional memory (STM) systems}
+% \subsection{Software transactional memory (STM) systems}
 The most important goal of the STM abstraction is to make concurrent programming
 easier and more accessible to any programmer.
 % By following our goal for STM defined in \ref{def:stm-def} and using our definition for a transaction \ref{def:trans-def},
-arguably then all a programmer should need to know in order to use the STM abstraction is to know
+Arguably then all a programmer should need to know in order to use the STM abstraction is to know
 the syntax for writing an atomic block, likely something as simple as
-$$atomic \{ \dots \} $$.
+$atomic \{ \dots \} $.
 % The is because following Definition \ref{def:trans-def}, a transaction always executes as an atomic block
 % no matter what else is going on in the system,
 % all the complexities and difficult synchronization is then taken care of by the
@@ -349,7 +344,7 @@ criterion for STM systems, namely \emph{opacity} and \emph{virtual world consist
 
 
 %----------------------------------------------------------------------
-\subsection{Some interesting and desirable properties for STM systems} \label{sec:def-perm}
+\paragraph{Some interesting and desirable properties for STM systems}
 
 \paragraph{Invisible read operation}
 A read operation issued by a transaction is {\it invisible} if it does 
@@ -386,7 +381,7 @@ satisfies the condition is accepted with positive probability \cite{GHS08}.
 
 
 %----------------------------------------------------------------------
-\subsection{Two consistency conditions  for STM systems}
+\paragraph{Two consistency conditions  for STM systems}
 
 % The recurring theme throughout this document is that
 % the most important goal of transactional memory is ease of use,
@@ -688,9 +683,19 @@ such as opacity, the programmer need not worry about this as each transaction
 he writes executes exactly once.
 This chapter focuses on the design of such a protocol.
 
----------------> discuss protocol
 
-The previous chapter explored an area of transactional memory
+
+Similar to a wait-free universal construction, the protocol ensures progress
+by using helping.
+A process that issues a transaction that is aborted will request 
+that other processes help by simultaneously trying to execute the transaction,
+ensuring that eventually the transaction will be committed.
+A difficulty that arises from this type of helping 
+which is solved by this algorithm
+is ensuring that a transaction is not committed more then once.
+
+
+Chapter 2 explored an area of transactional memory
 research that focuses on improving STM protocols without effecting
 how the user interacts with the STM, that is by ensuring some implementation
 level properties or by increasing performance.
@@ -750,36 +755,36 @@ come up with ways to deal with it when it does.
 
 
 \section{Chapter 3}
-Simplified transaction semantics may not be enough.
-In the interest of ease-of-use, each chapter in this takes a 
-different look on transaction semantics.
-The first chapter suggested improving STM
-protocols while focusing on the semantics of a transactions
-interaction with other transactions, the second
-chapter suggested simplifying the semantics of a transaction,
-and this chapter suggests expanding the semantics.
+Simplified transaction semantics may not be enough,
+% In the interest of ease of use, each chapter in this takes a 
+% different look on transaction semantics.
+% The first chapter suggested improving STM
+% protocols while focusing on the semantics of a transactions
+% interaction with other transactions, the second
+% chapter suggested simplifying the semantics of a transaction,
+this chapter suggests expanding the semantics.
 It looks at how a programmer might use transactions
-within his code in order to suggest the expansion of transactional
-semantics in the interest of ease-of-use.
+within his code in a larger system in order to suggest the expansion of transactional
+semantics in the interest of ease of use.
 
 
 
-
-Given the view that transactions exist as an integrated part of
-a users program, we have
-the programmer placing a group of reads and writes
+This chapter takes the view that transactions exist as an integrated part of
+a users program.
+The programmer then places a group of reads and writes
 inside a block of code bounded by the keywords $\act{transaction\_begin}()$ and
 $\act{transaction\_end}()$ (or alternatively the atomic block $\act{atomic}(\dots)$).
 This atomic operation exists directly as a piece of his code, preceded
 and followed by code also written by the programmer.
 Inside this block of code reads and writes to shared memory are then
-treated by the STM protocol as calls to the operations
-$transaction\_read$ and $transaction\_write$.
-The STM protocol then
-takes care of the difficult synchronization in order to ensure these transactions
-appear as if they happen atomically.
+treated by the STM protocol as transactional reads and writes,
+while reads and writes performed in the code outside of the transactions
+are non-transactional.
+% The STM protocol then
+% takes care of the difficult synchronization in order to ensure these transactions
+% appear as if they happen atomically.
 
------>why memory is different
+% % ----->why memory is different
 
 At this point we have an important choice to make dealing with the
 semantics and correctness of a transaction when considering shared memory.
@@ -787,8 +792,7 @@ Should the transactions appear to be atomic only with other transactions, or sho
 concurrent non-transactional shared memory accesses also be considered?
 More precisely, should the shared memory that is accessed from within a transaction
 be only safely accessible from within transactions, or should it be
-safe to access memory inside and outside of transactions at any time,
-or should it be something in-between?
+safe to access memory inside and outside of transactions at any time?
 
 % Interestingly, this possibility of the {\it existence of two different paradigms} reveals
 % %between strong and weak isolation reveals 
@@ -806,11 +810,12 @@ the concept of transactions being an integrated part of the users program for mo
 concept where transactions exist as a separate isolated object.
 In the second case the transactions could represent a programmer defined
 interface to one large discrete shared object separate from the rest of the system.
-Transactions are still defined and placed by the programmers, but they are limited
+Transactions are still defined and placed by the programmer, but they are limited
 in what memory they can access.
 On the other hand if the programmer can access shared memory both inside and outside
 of transactions while the system is still ensuring the atomicity of the transactions then
 we have a more straightforward integrated system.
+Unfortunately ensuring this is not clear and is the problem tackled by this chapter.
 % that follows our high level transaction
 % Definition \ref{def:trans-def}.
 
@@ -864,8 +869,7 @@ the programmer.
 
 
 
-\subsection{Terminating Strong  Isolation}
-\label{sec:protocol}
+\paragraph{Terminating Strong  Isolation}
 
 
 % Strong isolation allows transactions to not be restricted to use a fixed
@@ -876,7 +880,7 @@ the programmer.
 % As indicated in the paragraph on strong isolation, one possible implementation
 % is to simply convert all non-transactional reads and writes into mini-transactions.
 Let us now consider a solution to  the problem of  ensuring strong isolation 
-by using  locks or barriers: Each shared
+by using the typical mechanisms of locks or barriers: Each shared
 variable would then  
 be associated with a lock and both transactions as well as non-transactional 
 operations would have to access the lock before accessing the variable.
@@ -922,8 +926,8 @@ In order to deal with this we suggest that a STM protocol should implement
 with the additional guarantee that the non-transactional read and write
 operations of a process are guaranteed to terminate no matter the actions of
 concurrent processes in the system.
-This chapter focuses on the design of an STM protocol
-that ensures terminating strong isolation.
+% This chapter focuses on the design of an STM protocol
+% that ensures terminating strong isolation.
 
 
 
@@ -942,11 +946,11 @@ that ensures terminating strong isolation.
 % ensuring the atomicity of transactions with respect to other non-transactional
 % reads and writes in the system without changing the progress guarantees
 % of traditional reads and writes.
-Thus for ease of use in the resulting model, a programmer can perform shared reads and writes
-as he normally would in a concurrent environment and not have to worry
-about violating the atomicity of transactions.
+% Thus for ease of use in the resulting model, a programmer can perform shared reads and writes
+% as he normally would in a concurrent environment and not have to worry
+% about violating the atomicity of transactions.
 
-Following this suggestion this chapter presents an algorithm that achieves terminating strong 
+This chapter presents an algorithm that achieves terminating strong 
 isolation  ``on top of'' a TM algorithm based on logical dates and locks, 
 namely  TL2. 
 In the case of a conflict between a transactional and a non-transactional
@@ -993,30 +997,30 @@ interface for anyone to use.
 By doing this experts can create algorithms providing strong guarantees
 and good performance that can then be widely reused.
 
-In an optimal situation transactional memory would not need such libraries,
-as one could just directly place a sequential implementation of an abstraction
-directly in transactions and it would perform as well and provide the same
-guarantees as a library provided by an expert.
-Unfortunately this is not completely true.
-Due to the general nature
-of the synchronization required by STM, a sequential data structure implementation directly
-placed in transactions will never perform as well as a highly tuned concurrent
-(lock based or non-blocking) implementation of a data structure done by an expert.
-The reason for this is that an expert can consider the specific synchronization needed to implement
-that specific data structure safely.
-
-Fortunately this does not mean that data structures in STM will always have suboptimal performance,
-instead this gives us the opportunity to design libraries designed specifically for use inside
-of transactions that take into account the synchronization considerations
-of STM.
-By doing this we can provide a programmer using transactions with abstractions that perform closer
-to highly optimized non-transactional ones.
-
-A further advantage of providing efficient libraries in STM is given by the reusable nature of code implemented using
-transactions, a programmer can use the operations of the abstractions along with his own code
-to create new efficient atomic operations.
-For example a programmer might use a map abstraction that provides an $\lit{insert}$ and a $\lit{delete}$ operation
-to create an atomic $\lit{move}$ operation by simply combing the $\lit{insert}$ and $\lit{delete}$ in a transaction.
+% In an optimal situation transactional memory would not need such libraries,
+% as one could just directly place a sequential implementation of an abstraction
+% directly in transactions and it would perform as well and provide the same
+% guarantees as a library provided by an expert.
+% Unfortunately this is not completely true.
+% Due to the general nature
+% of the synchronization required by STM, a sequential data structure implementation directly
+% placed in transactions will never perform as well as a highly tuned concurrent
+% (lock based or non-blocking) implementation of a data structure done by an expert.
+% The reason for this is that an expert can consider the specific synchronization needed to implement
+% that specific data structure safely.
+% 
+% Fortunately this does not mean that data structures in STM will always have suboptimal performance,
+% instead this gives us the opportunity to design libraries designed specifically for use inside
+% of transactions that take into account the synchronization considerations
+% of STM.
+% By doing this we can provide a programmer using transactions with abstractions that perform closer
+% to highly optimized non-transactional ones.
+% 
+% A further advantage of providing efficient libraries in STM is given by the reusable nature of code implemented using
+% transactions, a programmer can use the operations of the abstractions along with his own code
+% to create new efficient atomic operations.
+% For example a programmer might use a map abstraction that provides an $\lit{insert}$ and a $\lit{delete}$ operation
+% to create an atomic $\lit{move}$ operation by simply combing the $\lit{insert}$ and $\lit{delete}$ in a transaction.
 
 By providing a programmer with a large selection of transaction based implementations of commonly used abstractions
 his life becomes much easier.
@@ -1030,11 +1034,11 @@ Namely, it promotes the fact that the proposed data structures can help increase
 % that are able to execute within the STM helps constitute this easy to use ecosystem; similar to the way the \emph{java.util.concurrent}
 % package as part of the Oracle Java SDK \cite{javasdk} provides several different lock type abstractions in addition to many concurrent data structure
 % implementations.
-Furthermore, if these STM compatible libraries provide good performance they give an additional reason to use STM as an attractive alternative to
-concurrent code using locks or even highly tuned non-blocking abstractions.
-The reason for this is that the programmer can reuse
-the STM compatible libraries directly within his transactions in order to compose new atomic operations specific to his needs,
-something that is usually not possible using lock based or non-blocking abstractions.
+% Furthermore, if these STM compatible libraries provide good performance they give an additional reason to use STM as an attractive alternative to
+% concurrent code using locks or even highly tuned non-blocking abstractions.
+% The reason for this is that the programmer can reuse
+% the STM compatible libraries directly within his transactions in order to compose new atomic operations specific to his needs,
+% something that is usually not possible using lock based or non-blocking abstractions.
 
 
 % % multicore data structure

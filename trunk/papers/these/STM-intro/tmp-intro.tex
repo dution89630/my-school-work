@@ -49,7 +49,7 @@ Unsurprisingly given that
 a person's thought process happens sequentially
 and that this concept of mutual exclusion is a straightforward way to
 conceive of synchronization/concurrency,
-locking is the by far the most widely used abstraction to
+locking is by far the most widely used abstraction to
 implement concurrent algorithms.
 
 Unfortunately locks have several drawbacks. One is related to the  granularity
@@ -211,7 +211,7 @@ operations such as compare\&swap or even other abstractions such as locks
 (note that all these details are hidden from the programmer as he only has access to the interface
 to the STM which allows him to define atomic computation units).
 
-Another important advantage of using transactional memory over locks it that a transactional program
+Another important advantage of using transactional memory over locks is that a transactional program
 can be directly reused by another programmer within his own code.
 Hence a programmer composing operations from a transactional library into another 
 transaction is guaranteed to obtain new deadlock-free operations that execute atomically.
@@ -755,11 +755,11 @@ Instead of taking this approach of directly tackling the problem of performance,
 the goal of this thesis is to take a step towards finding and defining fixed and easy to understand semantics
 for transactions while finding efficient protocols satisfying these semantics.
 This leads us to the following concept that is the focus of the thesis:
-\begin{definition}\label{def:stm-def}
+\begin{defin}\label{def:stm-def}
 STM is an abstraction designed to simplify concurrent programming that exists as a component of a larger system,
 but the semantics of the STM abstraction and how it interacts with the rest of the system must be clear and easy to understand and use,
 otherwise simplicity is lost.
-\end{definition}
+\end{defin}
 As this definition will be used in this thesis as a goal for how STM should be viewed,
 instead of staring with a complex definition that directly takes into account the complex details of the concurrent system
 (which would complicate things from the beginning),
@@ -784,12 +784,12 @@ of this system.
 % of the system.
 Following this approach, the following high level definition for a transaction
 used in this thesis is the following:
-\begin{definition}\label{def:trans-def}
+\begin{defin}\label{def:trans-def}
 A transaction is any block of
 code defined by the programmer to be executed by a given process.
 This transaction is executed atomically exactly once
 taking in consideration all parts of the system.
-\end{definition}
+\end{defin}
 This definition is broken down into two key parts.
 The first, more obvious key part is (1) a transaction is defined by the programmer
 and is executed atomically.

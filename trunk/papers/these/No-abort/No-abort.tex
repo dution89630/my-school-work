@@ -164,9 +164,9 @@
 The previous chapter focused on the area of transactional
 memory research that takes a fixed view of the semantics of a transaction for the programmer
 and studies what can be done in an STM protocol without changing the semantics.
-This type of STM research puts first the ease-of-use for the programmer using the STM protocol
+This type of STM research puts first the ease of use for the programmer using the STM protocol
 before considering secondary interests (usually performance).
-In most cases this ease-of-use is ensured by having the protocol satisfy opacity.
+In most cases this ease of use is ensured by having the protocol satisfy opacity.
 Opacity is used because generally it is considered
 to provide the amount of safety a programmer would expect from an atomic block of code without having
 to worry about inconsistencies
@@ -470,7 +470,7 @@ The key difference to consider between transactional memory traditional concurre
 code is that transactions can abort and restart.
 Does an aborted transaction entitle progress?
 If we are just considering that code being executed entitles
-progress then possibly yes, but when considering the ease-of-use of transactional
+progress then possibly yes, but when considering the ease of use of transactional
 memory it is more interesting to consider that only committed transactions
 create progress.
 Then the question of what to do with aborted transactions is an important one,

@@ -42,10 +42,15 @@
 % \usepackage[usenames,dvipsnames]{color}
 \usepackage{letterspace}
 
+% \usepackage{inputenc}
+% \usepackage[T1]{fontenc}
+% \usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+
 \usepackage{macros}
-\usepackage[ruled]{algorithm}
-\usepackage{algpseudocode}
-\usepackage{ioa_code}
+% \usepackage[ruled]{algorithm}
+% \usepackage{algpseudocode}
+% \usepackage{ioa_code}
 \usepackage{flushend}
 \usepackage[table]{xcolor}
 \usepackage{mathptmx}
@@ -65,6 +70,7 @@
 \usepackage{boxedminipage}
 
 \usepackage{floatflt}
+
 
 
 \newcommand{\algtechrep}[0]{
@@ -192,7 +198,7 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 \newcommand{\Xomit}[1]{}
 
 %-------- macros for algorithm ---------------------------------------
-%\newtheorem{definition}{Definition}
+\newtheorem{defin}{Definition}
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
 \newtheorem{corollary}{Corollary}
@@ -456,6 +462,8 @@ The thesis finishes with a concluding discussion and a discussion of possible fu
 
 
 \input{./Resume/resume.tex}
+
+\input{./Resume/resumefr.tex}
 
 \end{document}
 %------------------------------------------------------------------------------------------
