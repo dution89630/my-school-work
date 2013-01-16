@@ -119,8 +119,8 @@ Comme de nombreuses abstractions, même si ce qui est exposé au programmeur est
 il ya beaucoup de différentes implémentations possibles et des propriétés différentes qui existent pour fournir l'abstraction.
 Sous ces blocs atomiques est la mise en œuvre de la STM, qui comporte de nombreux aspects.
 Depuis l'introduction de mémoire transactionnelle en 1993 \cite{HM93} des dizaines (voire des centaines) de propriétés différentes
-sont apparues ainsi que de nombreux algorithmes STM différentes, chacune d'entre elles en assurant  plus ou moins de ces propriétés et être plus ou moins concernés par la performance.
-(Certaines de ces propriétés sont discutées dans l'introduction de cette thèse dans la section \ref{sec:détails})
+sont apparues ainsi que de nombreux algorithmes STM différentes, chacune d'entre elles en assurant plus ou moins de ces propriétés et être plus ou moins concernés par la performance.
+(Certaines de ces propriétés sont discutées dans l'introduction de cette thèse dans la section \ref{sec:details})
 
 
 Peut-être le plus important de ces propriétés concernent la exactitude de l'algorithme.
@@ -141,7 +141,7 @@ Dans un monde idéal, il existerait un \emph{``parfaite algorithme''} STM qui as
 Malheureusement, cet algorithme n'a pas encore été découverts (si c'est encore possible).
 En fait, beaucoup de ces propriétés désirables ont été un peu plus alors introduit et plusieurs de leurs implications sur la façon
 dont ils affectent algorithmes STM ou comment ils interagissent les uns avec les autres n'a pas encore été exploré.
-Motivé par cela, ce chapitre examine deux propriétés désirables qui se préoccupent de la performance,
+Motivé par cela, ce chapitre examine deux propriétés désirables qui se préoccupent de la performance,
 à savoir \emph{permissivité} et \emph{lectures-invisible}, et comment ils interagissent avec deux critères de cohérence des systèmes STM,
 à savoir \emph{l'opacité} et le \emph{consistance monde virtuel}.
 
@@ -188,4 +188,180 @@ de sorte que chaque transaction est placée quelque part entre son invocation et
 La sérialisabilité stricte est souvent désigné comme linéarisabilité \cite{HW90} lorsque l'on considère les opérations d'un objet au lieu du système entirer.
 
 
+Si les transactions ne sont pas annulée avant d'observer un état incohérent de la mémoire,
+puis des comportements indésirables telles qu'exceptions de division par zéro peuvent se produire
+(un exemple d'exécution dans lequel telle exception se produit est décrit dans la section \ref{sec:int-correct} de l'introduction).
+Encore pire des comportements indésirables peuvent être obtenus lors de la lecture des valeurs des états incohérents.
+Cela se produit par exemple quand un état incohérent fournit une transaction avec les valeurs qui génèrent des boucles infinies.
+Ces mauvais comportements doivent être évités dans les systèmes STM:
+quel que soit son sort (validation ou annulée) une transaction doit toujours voir un état cohérent de la mémoire consultée.
+Les transactions annulées doivent être inoffensifs.
 
+
+
+
+Informellement suggéré dans \cite{DSS06}, et officiellement présenté et étudié dans \cite{GK08},
+la {\it opacité} condition de cohérence exige qu'aucune transaction, à tout moment, lit les valeurs d'un état global incohérent où,
+en ne considérant que l'transactions validées, un {\it cohérente global état} est définie comme l'état de la mémoire partagée à un instant de temps réel.
+
+
+
+
+
+\paragraph{Cohérence des mondes virtuels}
+Cette condition de cohérence, introduit dans \cite{IR09}, est plus faible que l'opacité tout en gardant son esprit.
+Il déclare que (1) aucune transaction (validée ou annulée) lit les valeurs d'un état global incohérent,
+(2) les états globaux cohérents lus par les transactions validées sont cohérents entre eux (dans le sens où ils peuvent être totalement ordonné),
+mais (3), tandis que l'état global lu par chaque transaction annulée est compatible à partir de son point de vue individuel,
+les états globaux lus par deux transactions annulée sont pas tenus d'être cohérents entre eux.
+
+En plus du fait qu'il peut permettre à davantage de transactions à commettre d'opacité,
+l'un des points les plus importants de la cohérence monde virtuel réside dans le fait que, comme l'opacité,
+il empêche les phénomènes mauvaises (comme décrit précédemment) de se produire sans nécessiter de tous les transactions
+(validée ou annulée) se mettre d'accord sur là même exécution témoin.
+Supposons que chaque transaction se comporte correctement (par exemple, il n'implique pas une division par 0,
+il ne pas entrer dans une boucle infinie, etc) lorsque, exécuté seul, il lit les valeurs d'un état global cohérent.
+Comme, grâce à la condition de consistance monde virtuel, aucune transaction (validée ou annulée) lit un état incohérent,
+il ne peut pas comporter de manière incorrecte malgré la concurrence, il ne peut que être interrompue.
+Cette condition de cohérence peuvent bénéficier des applications STM nombreux que, de son point de vue local,
+une transaction ne peut le différencier de l'opacité.
+
+
+
+
+Alors qu'est-ce que cela signifie pour le programmeur qui prévoit d'utiliser la mémoire transactionnelle pour écrire son programme concurrent?
+Implications sur les performances possibles de côté, absolument rien, le programmateur
+ne vois aucune différence entre un protocole STM qui est opaque par rapport à celui qui est le monde virtuel cohérent.
+Compte tenu de l'exigence première de la mémoire transactionnelle est la facilité d'utilisation, cela est extrêmement important,
+la cohérence monde virtuel serait beaucoup moins intéressant comme condition de cohérence si cela n'était pas vrai.
+
+La première contribution de ce chapitre montre que l'invisibilité des lectures et la permissivité sont incompatibles avec l'opacité,
+puis nous montrons que nous pouvons choisir un critère plus faible cohérence (consistance monde virtuel) de concevoir un protocole qui satisfait la permissivité et l'invisibilité des lectures.
+Plus important encore, même si nous avons affaibli le critère de cohérence, le programmeur ne verra aucune différence dans la sémantique d'une transaction.
+Si la cohérence monde virtuel a changé la façon dont un programmeur devait penser aux transactions par rapport à l'opacité,
+puis il ne serait pas considéré comme un critère de cohérence approprié pour la mémoire transactionnelle.
+
+
+La deuxième contribution de ce chapitre présente un algorithme réaliste qui satisfait la cohérence monde virtuel, la permissivité, et l'invisibilité des lectures.
+
+Globalement, la contribution de ce chapitre est une étude de l'interaction entre plusieurs propriétés et les conditions de cohérence de mémoire transactionnelle.
+Alors, qu'est-ce que cela a à voir avec la facilité d'utilisation de la mémoire transactionnelle?
+
+
+
+
+Lors de la conception d'un protocole STM, il est nécessaire que nous le concevons pour satisfaire un critère de cohérence.
+Ceci est important parce que ce critère de cohérence définit la sémantique de un transaction pour le programmeur.
+Tant que le critère de cohérence choisi est satisfaite, alors nous pouvons commencer à envisager d'autres secondaires,
+mais important, choses telles que la performance.
+C'est là que des propriétés différentes comme l'invisibilité et la permissivité lire entrer,
+un protocole qui choisit ou pas de mettre en œuvre telles propriétés pourraient affecter le performance de ce protocole, mais ne modifie pas la sémantique d'une transaction.
+En faisant cela, nous mettons la facilité d'utilisation pour le programmeur comme une exigence de première classe.
+En outre, ce chapitre suggère (suivant la tendance de la plupart de recherche STM) en n'utilisant pas n'importe quel critère de cohérence pour STM,
+mais plutôt de choisir critère de cohérence qui assure l'atomicité des transactions sans permettre à toute opération à exécuter dans un état non valide de la mémoire.
+
+
+
+
+\section{Chapitre 2}
+
+Opacité et autres critère de cohérence sont parfois également appelées propriétés de sécurité.
+Informellement c'est parce qu'ils assurent un protocole qui eux implémente va
+agir de manière à ce qu'un utilisateur pourrait s'attendre et ne pas produire aucun comportement bizarre.
+Par exemple, comme mentionné précédemment, l'opacité empêche les transactions de s'exécuter sur les états invalides de la mémoire, empêchant
+des choses telles que des exceptions de diviser par zéro dans le code correct.
+Même si les autres critère de cohérence supprimer la complexité d'avoir à traiter avec des états non définis de la mémoire,
+ils laissent ouvertes d'autres problèmes pour le programmeur faire face aux ce que pourrait rendre l'utilisation de STM plus difficile.
+En ce sens, nous proposons de cacher certains de ces problèmes au programmeur en traitant avec eux dans la mise en œuvre de la STM.
+
+
+
+
+Remarquez comment dans le chapitre précédent aucune mention n'est faite de la façon dont comment fréquemment les transactions sont validées, en particulier, le critère de cohérence ne font aucune considérations à ce sujet.
+Par exemple, un protocole pourrait satisfaire l'opacité par tout simplement faire annuler toute transaction avant qu'elle n'ait effectué aucune action, mais bien sûr, ce protocole serait inutile.
+Afin d'éviter cela, certains protocoles STM satisfaire liveness (ou progrès) propriétés.
+Ces propriétés (dont certains ne se limite pas à la mémoire transactionnelle) s'assurer que les opérations d'un processus fera une sorte de progrès, parfois en fonction du nombre de conflits dans le système.
+
+
+
+
+
+
+Malheureusement, le programmeur doit toujours comprendre le concept de abort / commit comme un complexité qui
+est présumé quand il décide d'utiliser la mémoire transactionnelle dû au fait que les protocoles STM actuelles ne garantissent pas qu'une transaction commettre.
+Dans certains cas, le programmeur doit traiter directement avec les transactions annulées dans son code,
+dans d'autres, un programmeur peut prioriser certaines transactions afin qu'elles ne pas avorter, dans d'autres cas le protocole permet aux transactions d'être bloqués,
+tandis que d'autres, les transactions peuvent être annulée à l'infini.
+Absent à partir de ces solutions est le cas où toutes les transactions sont garanties à commettre où les
+progrès d'une transaction ne repose pas sur les autres processus à l'exception de celui qui a émis la transaction.
+Telle solution donnerait la priorité à la facilité d'utilisation tant que ce type de protocole se cacherait le concept d'opérations annulée du programmeur lorsque l'on considère l'progrès du système.
+
+
+
+Semblable à une construction universelle sans-attente, le protocole garantit une progression en utilisant le concept de processus d'aide.
+Un processus qui émet une transaction qui est annulée demanderont que d'autres processus aider en essayant simultanément d'exécuter l'opération, veiller à ce que finalement la transaction sera commise.
+Une difficulté qui se pose de ce type d'aider qui est résolu par cet algorithme est de s'assurer que la transaction n'est pas commis plus d'une fois.
+
+
+
+Chapitre 1 a exploré un domaine de recherche de la mémoire transactionnelle qui se concentre sur
+l'amélioration des protocoles STM sans affecter la façon dont l'utilisateur interagit avec la STM,
+que est d'assurer la mise en œuvre des propriétés ou par l'augmentation de le performance.
+Ce chapitre, bien que similaire au chapitre précédent en suggérant des propriétés et en montrant comment un protocole peut les mettre en œuvre,
+adopte une approche plus visible qui a des répercussions directes sur l'interaction entre le programmateur et la STM.
+Abstraitement, il examine comment la sémantique est définie entre le programmateur et le protocole STM et suggère qu'ils soient simplifiées.
+En supprimant la notion d'transactions annulée de la sémantique et de s'assurer que chaque transaction commettre,
+quel que soit le motif de l'exécution des autres processus dans le système, nous nous dirigeons vers un système plus facile à utiliser.
+
+
+Des recherches antérieures ont prévu un certain niveau d'interaction entre le programmateur et les transactions annulées,
+tandis que ce chapitre suggère la notion de commit/annuler être complètement abstraite en dehors de niveau programmeur laissé à être uniquement une préoccupation mise en œuvre.
+Cela libère le programmeur d'avoir à se demander si sa transaction pourrait ne pas commettre et soit tenter d'éviter une telle situation, ou pour trouver des moyens d'y faire face quand il le fait.
+
+
+\section{Chapitre 3}
+
+Une sémantique transactionnelle simplifiées peuvent ne pas être suffisant, ce chapitre suggère l'expansion de la sémantique.
+Il examine comment un programmeur peut utiliser des transactions au sein de son code dans un système plus large afin de proposer
+l'extension de la sémantique transactionnelle dans l'intérêt de la facilité d'utilisation.
+
+
+Ce chapitre est d'avis que les opérations exister en tant que partie intégrante d'un programme de le utilisateur.
+Le programmeur met ensuite un groupe de lecture et d'écriture dans un bloc de code délimitée par les mots-clés
+$\act{transaction\_begin}()$ et $\act{transaction\_end}()$ (ou bien le bloc atomique $\act{atomique}\{ \dots \} $).
+Cette opération atomique existe directement comme un morceau de son code, précédé et suivi par le code, également écrit par le programmeur.
+Dans ce bloc de code les lectures et écritures de la mémoire partagée sont ensuite traités par le protocole comes lectures et écritures transactionnel,
+tout en lectures et écritures effectuées dans le code en dehors des transactions sont non-transactionnels.
+
+
+A ce stade, nous avons un choix important à faire face à la sémantique et l'exactitude d'une transaction lorsque l'on considère la mémoire partagée.
+Est-ce que les transactions devrait semblent être atomiques que lorsque l'on considère d'autres transactions, ou devrait les accès concurrente non-transactionnel de la mémoire partagée également être pris en compte?
+Plus précisément, si la mémoire partagée qui est accessible à partir de l'intérieur d'une transaction en
+toute sécurité être seulement accessible à partir de transactions, ou doit-il être sûr d'accéder à la mémoire à l'intérieur et à l'extérieur de transactions à tout moment?
+
+
+Si, dans un programme, il existe deux sets de de la mémoire partagée, un set pour accéder à l'intérieur des transactions,
+et un autre pour accéder à l'extérieur de transactions, alors nous perdons la notion d'transactions faisant partie
+intégrante du programme de le utilisateur pour plus d'un concept où transactions Il existe comme un objet distinct isolé.
+Dans le second cas, les transactions pourraient représenter une interface de programmation définie pour un grand objet partagé et distincte du reste du système.
+Les transactions sont toujours définis et placés par le programmeur, mais ils sont limités à la mémoire qu'ils peuvent accéder.
+D'autre part, si le programmeur peut accéder à la mémoire partagée à la fois à l'intérieur et à l'extérieur des transactions
+tout en guarantissant l'atomicité de ces transactions, alors le système devient plus simple.
+Malheureusement, pour guarantir cela n'est pas clair et c'est le problème abordé par le présent chapitre.
+
+
+
+\paragraph{Isolement forte}
+
+Le \emph{isolement forte} s'assure que tant les opérations de lecture et d'écriture transactionnel et non-transactionnel sont mises en œuvre d'une manière qui prend leur co-existence en compte.
+Plus précisément, l'isolement forte garantit que les accès non-transactionnelles à mémoire partagée ne violent pas l'atomicité des transactions.
+
+
+
+Afin de mieux comprendre les garanties de l'isolement forte, considérons une extension simple et intuitive qui peut être appliquée à un protocole STM afin d'assurer l'isolation forte.
+Afin de fournir cette extension, toute opération non transactionnel qui accède à des données partagées est simplement considéré comme un ``mini-transaction'', c'est à dire, une transaction qui contient une seule opération lecture/écriture.
+Dans ce casles transactions devront être conformes non seulement par rapport à d'autres transactions, mais aussi par rapport à les opérations non transactionnelles.
+Évidemment, dans cette solution il n'ya pas de section distincte de la mémoire pour les transactions et leur atomicité est préservée, ce qui entraîne un cadre plus simple pour le programmeur.
+
+
+\paragraph{Isolement forte de terminaison}

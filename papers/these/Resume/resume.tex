@@ -477,16 +477,16 @@ state of the shared memory at some real time instant.
 % Here let us return to our high level Definition \ref{def:trans-def} of a transaction that
 % this document is focusing on.
 % Importantly the correctness condition of opacity fits well with this definition.
-The definition says that a transaction is ``executed atomically exactly once
-taking in consideration all parts of the system''.
-Even though the whole system is not considered, the opacity condition fits
-in this definition because
-in an STM such a system, transactions are executed atomically
-with respect to each other and aborted transactions making no visible
-impact on the system.
-Therefore, when considering the interaction between transactions,
-as STM system should use a consistency condition that ensures the same
-level of safety as opacity.
+% % % % % % % % % % % % % % % % The definition says that a transaction is ``executed atomically exactly once
+% % % % % % % % % % % % % % % % taking in consideration all parts of the system''.
+% % % % % % % % % % % % % % % % Even though the whole system is not considered, the opacity condition fits
+% % % % % % % % % % % % % % % % in this definition because
+% % % % % % % % % % % % % % % % in an STM such a system, transactions are executed atomically
+% % % % % % % % % % % % % % % % with respect to each other and aborted transactions making no visible
+% % % % % % % % % % % % % % % % impact on the system.
+% % % % % % % % % % % % % % % % Therefore, when considering the interaction between transactions,
+% % % % % % % % % % % % % % % % as STM system should use a consistency condition that ensures the same
+% % % % % % % % % % % % % % % % level of safety as opacity.
 % Other parts of the system and the definition are considered in later chapters.
 
 
@@ -537,7 +537,7 @@ of view,  a transaction cannot  differentiate it from opacity.
 
 So what does this mean for the programmer who plans to use transactional memory
 to write his concurrent program?
-Possible performance implications aside, absolutely nothing,
+Possible performance implications aside, absolutely nothing.
 The programmer will see no difference between an STM protocol that is opaque
 versus one that is virtual world consistent.
 % and, as a result, still keeping within our Definition \ref{def:trans-def}.
@@ -546,7 +546,7 @@ important, virtual world consistency would be much less interesting as an STM
 consistency condition if this were not true.
 
 
-The first contribution of this chapter shows that permissive and read invisibility are
+The first contribution of this chapter shows that permissiveness and read invisibility are
 incompatible with opacity, we then show that we can choose a weaker consistency criterion
 (virtual world consistency) to design a protocol that satisfies permissiveness and
 read invisibility.
@@ -695,7 +695,7 @@ which is solved by this algorithm
 is ensuring that a transaction is not committed more then once.
 
 
-Chapter 2 explored an area of transactional memory
+Chapter 1 explored an area of transactional memory
 research that focuses on improving STM protocols without effecting
 how the user interacts with the STM, that is by ensuring some implementation
 level properties or by increasing performance.

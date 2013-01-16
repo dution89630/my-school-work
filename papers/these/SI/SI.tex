@@ -328,7 +328,7 @@ interface to one large discrete shared object separate from the rest of the syst
 Transactions are still defined and placed by the programmers, but they are limited
 in what memory they can access.
 On the other hand if the programmer can access shared memory both inside and outside
-of transactions while the system is still ensuring the atomicity of the transactions then
+of transactions, while the system is still ensuring the atomicity of the transactions, then
 we have a more straightforward integrated system that follows our high level transaction
 Definition \ref{def:trans-def}.
 
@@ -616,7 +616,7 @@ consistent (see Sect.~\ref{sec:badthings})  not only with
 respect to each other, but 
 also with respect to the  non-transactional operations.
 Obviously in this solution there is no separate section of memory for transactions
-and their atomicity is preserved resulting in a simpler framework for
+and their atomicity is preserved, resulting in a simpler framework for
 the programmer than privatization or weak isolation.
 While this solution is simple, it is not necessarily optimal performance wise.
 Given this, several more efficient approaches to implementing strong isolation have been proposed;
