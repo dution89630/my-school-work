@@ -811,9 +811,9 @@ by using  locks or barriers: Each shared
 variable would then  
 be associated with a lock and both transactions as well as non-transactional 
 operations would have to access the lock before accessing the variable.
-Locks are already used  in TM algorithms - such as TL2  itself - where it is
+Locks are already used  in STM algorithms - such as TL2  itself - where it is
 however     assumed   that  shared   memory   is   only  accessed   through
-transactions. The use  of locks  in a TM algorithm  entails blocking and may
+transactions. The use  of locks  in an STM algorithm  entails blocking and may
 even lead a process to starvation.
 Previous research on STM protocols has taken the approach that
 these characteristics might be acceptable.
@@ -2731,7 +2731,7 @@ The interaction between transactional and non-transactional accesses to shared m
 is just one among many possible interactions that a programmer may face when using
 transactions.
 For example he might want to use locks or atomic hardware operations along side his transactions,
-he might want to use I/O within his transactions.
+or he might want to use I/O within his transactions.
 Each of these and many more things deserve an investigation on possible models where
 they are considered alongside the semantics of transactions.
 Future research is needed to decide how these additional operations can be added

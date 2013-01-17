@@ -32,7 +32,7 @@ D'autres problèmes avec verrous peut se produire quand un processus qui détien
 par le système d'exploitation tout un processus vivant tente d'accéder à le même verrou (parfois appelé \emph{inversion de priorité}).
 D'autres problèmes peuvent se produire si un thread se bloque ou est bloqué en tenant un verrou.
 
-\paragraph{The Software Transactional Memory approach}
+\paragraph{Mémoire software transactionnelle}
 Le concept de \emph{mémoire software transactionnelle} (STM) est une réponse possible au défi de la programmation concurrente.
 Avant de décrire les détails, d'abord envisager une ``philosophie esprit/design'' qui a contribué à donner naissance à des systèmes STM: la notion de \emph{niveau d'abstraction}.
 Plus précisément, l'objectif d'un niveau d'abstraction accrue est de permettre au programmeur de se concentrer
@@ -44,7 +44,7 @@ Dans ce manière STM peut être considérée comme un concept nouveau niveau d'a
 La façon dont la mémoire transactionnelle élimine la complexité associée à la programmation concurrente est de remplacer verrouillage avec unités d'exécution atomiques.
 Contrairement à l'utilisation des verrous où un programmeur peut utiliser plusieurs verrous au long de ses opérations, lorsque il utilise la mémoire transactionnelle un programmeur n'a besoin que
 de définir quelles sections de son code doit apparaître comme si elles exécuter de façon atomique (i.e. tout à la fois, ne laissant aucune possibilité pour des opérations simultanées entrelacés).
-Le protocole de mémoire transactionnelle aborde ensuite la synchronisation nécessaire pour s'assurer que cela arrive.
+Le protocole de mémoire transactionnelle aborde ensuite la synchronisation nécessaire pour garantir que cela arrive.
 Un programmeur pourrait penser que c'est comme en utilisant un seul verrou global où toutes les fois qu'il veut effectuer la synchronisation entre processus.
 De cette façon, le programmeur doit se concentrer sur l'endroit où l'atomicité est nécessaire et non pas sur la façon dont il doit être rendu compte.
 Le but d'un système STM est donc de décharger le programmeur de la gestion directe de la synchronisation qui est entraîné par des accès aux objets simultanés.
@@ -54,7 +54,7 @@ Plus explicitement, la STM offre au programmeur le concept {\it transaction} (ce
 de la notion de transactions rencontrées dans les systèmes de bases de données \cite{FFGH08, HCUAGSV07, HL08}).
 Un processus est réalisé sous la forme (ou décomposée en) une séquence d'opérations,
 chaque opération étant un morceau de code qui, lors de l'accès des objets concurrents, apparaît toujours comme s'il était exécuté de façon atomique.
-C'est le travail du système STM pour s'assurer que les opérations sont exécutées comme
+C'est le travail du système STM pour garantir que les opérations sont exécutées comme
 si elles étaient atomique en utilisant de faibles opérations de synchronisation de niveau comme compar\&swap ou même d'autres
 abstractions telles que les verrous (notez que tous ces détails sont cachés par le programmateur
 comme il ne a que accès à l'interface de la STM qui lui permet de définir des unités de calcul atomiques).
@@ -90,7 +90,7 @@ Comme nous le verrons dans chaque chapitre de cette thèse dans un système mode
 il ya des aspects complexes de l'abstraction STM qui concernent comment un programmeur interagit avec le système STM et le système dans son ensemble.
 Alors que la sémantique de base d'une transaction sont largement convenu (i.e. atomicité de la transaction par rapport à d'autres transactions),
 il ya beaucoup d'autres détails à prendre en considération certains d'entre eux sont activement débattus et restent sous forme de questions de recherche ouverts.
-La normalisation de ce sémantique et à répondre aux questions ouvertes sur il est une étape importante pour assurer
+La normalisation de ce sémantique et à répondre aux questions ouvertes sur il est une étape importante pour garantir
 que l'objectif principal de rendre plus facile la programmation concurrente est réalisée.
 Si la sémantique est trop difficile à comprendre, ou un programmeur doit être conscient de trop de détails spécifiques à un système
 STM avant de pouvoir utiliser les transactions dans son programme, puis la vue de l'objectif original a été perdu.
@@ -119,25 +119,25 @@ Comme de nombreuses abstractions, même si ce qui est exposé au programmeur est
 il ya beaucoup de différentes implémentations possibles et des propriétés différentes qui existent pour fournir l'abstraction.
 Sous ces blocs atomiques est la mise en œuvre de la STM, qui comporte de nombreux aspects.
 Depuis l'introduction de mémoire transactionnelle en 1993 \cite{HM93} des dizaines (voire des centaines) de propriétés différentes
-sont apparues ainsi que de nombreux algorithmes STM différentes, chacune d'entre elles en assurant plus ou moins de ces propriétés et être plus ou moins concernés par la performance.
+sont apparues ainsi que de nombreux algorithmes STM différentes, chacune d'entre elles en guarantissant plus ou moins de ces propriétés et être plus ou moins concernés par la performance.
 (Certaines de ces propriétés sont discutées dans l'introduction de cette thèse dans la section \ref{sec:details})
 
 
 Peut-être le plus important de ces propriétés concernent la exactitude de l'algorithme.
-Souvent désigné comme Les critères de cohérence de STM, ils s'assureront que le protocole est correctement mise en œuvre l'abstraction.
+Souvent désigné comme les critères de cohérence de STM, ils guarantissant que le protocole mise en œuvre l'abstraction correctement.
 En faisant cela, la facilité d'utilisation est prise d'une importance capitale,
 permettant aux utilisateurs de ne pas avoir à s'inquiéter de comportement étrange qui ferait l'abstraction plus difficile à comprendre.
-Dans le critère de cohérence STM sont utilisés afin d'assurer que les transactions seulement observer états
+Dans le critère de cohérence STM sont utilisés afin d'guarantir que les transactions seulement observer états
 valides de mémoire (i.e. états créés par seulement les transactions atomiques).
 En raison de la nature optimiste et en ligne des transactions, les lectures et les écriture d'une transaction pourrait entrer en conflit
 avec une transaction concurrente , c'est à dire si elles étaient tous les deux continuer à s'exécuter, l'un d'entre eux serait observer un état non valide de la mémoire.
 Les critères de cohérence de STM STM éviter cela, et afin de le faire le protocole STM annulerait l'une des transactions, ce qui signifie qu'il semble avoir pas exécuté du tout.
 La transaction peut alors être redémarré.
-Ce chapitre se penche sur la façon dont ces critères de cohérence, qui assurent un niveau fondamental de facilité d'utilisation pour STM,
+Ce chapitre se penche sur la façon dont ces critères de cohérence, qui guarantissant un niveau fondamental de facilité d'utilisation pour STM,
 se rapportent à d'autres propriétés qui concernent les choses moins importantes comme la performance.
 
 
-Dans un monde idéal, il existerait un \emph{``parfaite algorithme''} STM qui assure toutes les propriétés désirables sans faire de sacrifices.
+Dans un monde idéal, il existerait un \emph{``parfaite algorithme''} STM qui garantit toutes les propriétés désirables sans faire de sacrifices.
 Malheureusement, cet algorithme n'a pas encore été découverts (si c'est encore possible).
 En fait, beaucoup de ces propriétés désirables ont été un peu plus alors introduit et plusieurs de leurs implications sur la façon
 dont ils affectent algorithmes STM ou comment ils interagissent les uns avec les autres n'a pas encore été exploré.
@@ -258,7 +258,7 @@ C'est là que des propriétés différentes comme l'invisibilité et la permissi
 un protocole qui choisit ou pas de mettre en œuvre telles propriétés pourraient affecter le performance de ce protocole, mais ne modifie pas la sémantique d'une transaction.
 En faisant cela, nous mettons la facilité d'utilisation pour le programmeur comme une exigence de première classe.
 En outre, ce chapitre suggère (suivant la tendance de la plupart de recherche STM) en n'utilisant pas n'importe quel critère de cohérence pour STM,
-mais plutôt de choisir critère de cohérence qui assure l'atomicité des transactions sans permettre à toute opération à exécuter dans un état non valide de la mémoire.
+mais plutôt de choisir critère de cohérence qui garantit l'atomicité des transactions sans permettre à toute opération à exécuter dans un état non valide de la mémoire.
 
 
 
@@ -266,7 +266,7 @@ mais plutôt de choisir critère de cohérence qui assure l'atomicité des trans
 \section{Chapitre 2}
 
 Opacité et autres critère de cohérence sont parfois également appelées propriétés de sécurité.
-Informellement c'est parce qu'ils assurent un protocole qui eux implémente va
+Informellement c'est parce qu'ils guarantissant un protocole qui eux implémente va
 agir de manière à ce qu'un utilisateur pourrait s'attendre et ne pas produire aucun comportement bizarre.
 Par exemple, comme mentionné précédemment, l'opacité empêche les transactions de s'exécuter sur les états invalides de la mémoire, empêchant
 des choses telles que des exceptions de diviser par zéro dans le code correct.
@@ -280,7 +280,7 @@ En ce sens, nous proposons de cacher certains de ces problèmes au programmeur e
 Remarquez comment dans le chapitre précédent aucune mention n'est faite de la façon dont comment fréquemment les transactions sont validées, en particulier, le critère de cohérence ne font aucune considérations à ce sujet.
 Par exemple, un protocole pourrait satisfaire l'opacité par tout simplement faire annuler toute transaction avant qu'elle n'ait effectué aucune action, mais bien sûr, ce protocole serait inutile.
 Afin d'éviter cela, certains protocoles STM satisfaire liveness (ou progrès) propriétés.
-Ces propriétés (dont certains ne se limite pas à la mémoire transactionnelle) s'assurer que les opérations d'un processus fera une sorte de progrès, parfois en fonction du nombre de conflits dans le système.
+Ces propriétés (dont certains ne se limite pas à la mémoire transactionnelle) guarantissant que les opérations d'un processus fera une sorte de progrès, parfois en fonction du nombre de conflits dans le système.
 
 
 
@@ -300,17 +300,17 @@ Telle solution donnerait la priorité à la facilité d'utilisation tant que ce 
 
 Semblable à une construction universelle sans-attente, le protocole garantit une progression en utilisant le concept de processus d'aide.
 Un processus qui émet une transaction qui est annulée demanderont que d'autres processus aider en essayant simultanément d'exécuter l'opération, veiller à ce que finalement la transaction sera commise.
-Une difficulté qui se pose de ce type d'aider qui est résolu par cet algorithme est de s'assurer que la transaction n'est pas commis plus d'une fois.
+Une difficulté qui se pose de ce type d'aider qui est résolu par cet algorithme est garantir que la transaction n'est pas commis plus d'une fois.
 
 
 
 Chapitre 1 a exploré un domaine de recherche de la mémoire transactionnelle qui se concentre sur
 l'amélioration des protocoles STM sans affecter la façon dont l'utilisateur interagit avec la STM,
-que est d'assurer la mise en œuvre des propriétés ou par l'augmentation de le performance.
+que est garantir la mise en œuvre des propriétés ou par l'augmentation de le performance.
 Ce chapitre, bien que similaire au chapitre précédent en suggérant des propriétés et en montrant comment un protocole peut les mettre en œuvre,
 adopte une approche plus visible qui a des répercussions directes sur l'interaction entre le programmateur et la STM.
 Abstraitement, il examine comment la sémantique est définie entre le programmateur et le protocole STM et suggère qu'ils soient simplifiées.
-En supprimant la notion d'transactions annulée de la sémantique et de s'assurer que chaque transaction commettre,
+En supprimant la notion d'transactions annulée de la sémantique et de garantir que chaque transaction commettre,
 quel que soit le motif de l'exécution des autres processus dans le système, nous nous dirigeons vers un système plus facile à utiliser.
 
 
@@ -331,7 +331,7 @@ Le programmeur met ensuite un groupe de lecture et d'écriture dans un bloc de c
 $\act{transaction\_begin}()$ et $\act{transaction\_end}()$ (ou bien le bloc atomique $\act{atomique}\{ \dots \} $).
 Cette opération atomique existe directement comme un morceau de son code, précédé et suivi par le code, également écrit par le programmeur.
 Dans ce bloc de code les lectures et écritures de la mémoire partagée sont ensuite traités par le protocole comes lectures et écritures transactionnel,
-tout en lectures et écritures effectuées dans le code en dehors des transactions sont non-transactionnels.
+tout en les lectures et écritures simples effectuées dans le code en dehors des transactions sont non-transactionnels.
 
 
 A ce stade, nous avons un choix important à faire face à la sémantique et l'exactitude d'une transaction lorsque l'on considère la mémoire partagée.
@@ -353,15 +353,51 @@ Malheureusement, pour guarantir cela n'est pas clair et c'est le problème abord
 
 \paragraph{Isolement forte}
 
-Le \emph{isolement forte} s'assure que tant les opérations de lecture et d'écriture transactionnel et non-transactionnel sont mises en œuvre d'une manière qui prend leur co-existence en compte.
+Le \emph{isolement forte} garantit que tant les opérations de lecture et d'écriture transactionnel et non-transactionnel sont mises en œuvre d'une manière qui prend leur co-existence en compte.
 Plus précisément, l'isolement forte garantit que les accès non-transactionnelles à mémoire partagée ne violent pas l'atomicité des transactions.
 
 
 
-Afin de mieux comprendre les garanties de l'isolement forte, considérons une extension simple et intuitive qui peut être appliquée à un protocole STM afin d'assurer l'isolation forte.
+Afin de mieux comprendre les garanties de l'isolement forte, considérons une extension simple et intuitive qui peut être appliquée à un protocole STM afin d'garantir l'isolation forte.
 Afin de fournir cette extension, toute opération non transactionnel qui accède à des données partagées est simplement considéré comme un ``mini-transaction'', c'est à dire, une transaction qui contient une seule opération lecture/écriture.
 Dans ce casles transactions devront être conformes non seulement par rapport à d'autres transactions, mais aussi par rapport à les opérations non transactionnelles.
 Évidemment, dans cette solution il n'ya pas de section distincte de la mémoire pour les transactions et leur atomicité est préservée, ce qui entraîne un cadre plus simple pour le programmeur.
 
 
-\paragraph{Isolement forte de terminaison}
+\paragraph{Isolement forte terminant}
+
+Considérons maintenant une solution au problème d'garantir la isolation forte en utilisant les mécanismes typiques de verrous ou barrières:
+Chaque variable partagée serait alors associée avec un verrou et les deux types de opérations (transactionnelles et non-transactionnelles) devront accéder à le verrou avant d'accéder à la variable.
+Les verrous sont déjà utilisées dans les algorithmes STM - comme TL2 \cite{DSS06} - où il est toutefois supposé que la mémoire partagée est uniquement accessible par les transactions.
+L'utilisation de verrous dans un algorithme STM implique le blocage et peut même conduire à la famine de les processus.
+Des recherches antérieures sur les protocoles STM a adopté l'approche que ces caractéristiques peuvent être acceptables.
+Maintenant, si nous avons des opérations non transactionnelles qui s'appuient sur ​​les mêmes mécanismes (soit mis en œuvre utilisant de verrous ou par mini-transactions),
+ils sont également susceptibles à la possibilité même de la non-exécution.
+
+
+Toutefois, normalement le concept d'un lecture/écriture de memoire partagé n'inclut pas cette possibilité.
+Lorsqu'il s'agit d'un single lecture ou en écriture sur une variable partagée, une opération non transactionnelle est normalement comprise comme un événement qui se produit de façon atomique et termine toujours.
+Lors de l'exécution, une lecture ou d'écriture ne devrait pas être dé-prévu, bloqué ou interrompu.
+Malheureusement forte isolation mis en œuvre avec des verrous implique le blocage des opérations de lecture et d'écriture non transactionnelles et ne fournit pas le terminaison.
+
+
+
+Pour cette raison, nous croyons que la mise en œuvre d'un protocole fort isolement devrait également examiner le progrès des opérations non transactionnelles.
+Afin de faire face à cela, nous suggérons qu'un protocole STM devrait mettre en place \emph{l'isolement forte terminant},
+que nous définissons simplement que l'isolement fort avec la garantie supplémentaire que les opérations de lecture et d'écriture non-transactionnelles d'un processus sont garantis à terminer,
+peu importe les actions de processus concurrents dans le système.
+
+
+Ce chapitre présente un algorithme qui permet d'atteindre ``fort isolement terminant'' sur le dessus d'une algorithme STM basé sur les dates logiques et verrous, nommément TL2.
+Dans le cas d'un conflit entre une transaction et une opération non-transactionnelle, cet algorithme donne la priorité à l'opération non-transactionnel,
+avec le raisonnement que même si un annulation ou redémarrage éventuel est s'inscrite dans la spécification d'une transaction, ce n'est pas le cas d'une single lecture ou d'écriture de memoire partagée.
+Ceci permet au programmeur de connaître son transaction exécutera de façon atomique, même en présence de l'accès mémoire non-transactionnelle,
+tout en garantissant l'accès non-transactionnel ne sont jamais bloqués de progresser.
+
+
+
+L'interaction entre les accès transactionnelles et non transactionnelles à mémoire partagée n'est qu'un parmi de nombreuses interactions possibles qu'un programmeur peut faire face quand il utilise des transactions.
+Par exemple, il pourrait vouloir utiliser des verrous ou des opérations atomiques de hardware en même temps que les transactions, ou il pourrait vouloir utiliser des I/O au sein de ses transactions.
+Chacun de ces derniers et beaucoup d'autres choses méritent une enquête sur les modèles possibles où elles sont considérées aux côtés de la sémantique des transactions.
+De futures recherches sont nécessaires pour déterminer comment ces opérations supplémentaires peuvent être ajoutés à l'écosystème STM d'une manière qui n'entrave pas la facilité d'utilisation.
+

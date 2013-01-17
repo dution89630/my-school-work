@@ -778,7 +778,7 @@ This atomic operation exists directly as a piece of his code, preceded
 and followed by code also written by the programmer.
 Inside this block of code reads and writes to shared memory are then
 treated by the STM protocol as transactional reads and writes,
-while reads and writes performed in the code outside of the transactions
+while simple reads and writes performed in the code outside of the transactions
 are non-transactional.
 % The STM protocol then
 % takes care of the difficult synchronization in order to ensure these transactions
@@ -884,9 +884,9 @@ by using the typical mechanisms of locks or barriers: Each shared
 variable would then  
 be associated with a lock and both transactions as well as non-transactional 
 operations would have to access the lock before accessing the variable.
-Locks are already used  in TM algorithms - such as TL2 \cite{DSS06} - where it is
+Locks are already used  in STM algorithms - such as TL2 \cite{DSS06} - where it is
 however     assumed   that  shared   memory   is   only  accessed   through
-transactions. The use  of locks  in a TM algorithm  entails blocking and may
+transactions. The use  of locks  in an STM algorithm  entails blocking and may
 even lead a process to starvation.
 Previous research on STM protocols has taken the approach that
 these characteristics might be acceptable.
@@ -902,7 +902,7 @@ to the same possibility of non-completion.
 % However one must consider that a transaction does not have the same semantics
 % as a simple read or write operation.
 % While the concept of the memory  transaction includes the possibility of failure,
-However, the concept of a simple read/write operation does not.
+However, normally the concept of a shared read/write operation does not include this possibility.
 When it  comes to single read or  write accesses  to  a shared
 variable, a  non-transactional operation is normally understood  as an
 event  that  happens   atomically  and always  completes.
