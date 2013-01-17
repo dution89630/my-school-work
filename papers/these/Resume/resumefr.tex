@@ -1,5 +1,5 @@
 
-\chapter*{Resume}
+\chapter{Resume}
 
 Architectures multicœurs changent notre façon d'écrire des programmes.
 Non seulement tous les dispositifs informatiques tournant multi devenant ainsi intrinsèquement parallèle,
@@ -221,7 +221,7 @@ il empêche les phénomènes mauvaises (comme décrit précédemment) de se prod
 (validée ou annulée) se mettre d'accord sur là même exécution témoin.
 Supposons que chaque transaction se comporte correctement (par exemple, il n'implique pas une division par 0,
 il ne pas entrer dans une boucle infinie, etc) lorsque, exécuté seul, il lit les valeurs d'un état global cohérent.
-Comme, grâce à la condition de consistance monde virtuel, aucune transaction (validée ou annulée) lit un état incohérent,
+Comme, grâce à la condition de consistance monde virtuel, aucune transaction (validée ou annulée) lit un état incohérent,
 il ne peut pas comporter de manière incorrecte malgré la concurrence, il ne peut que être interrompue.
 Cette condition de cohérence peuvent bénéficier des applications STM nombreux que, de son point de vue local,
 une transaction ne peut le différencier de l'opacité.
@@ -287,7 +287,7 @@ Ces propriétés (dont certains ne se limite pas à la mémoire transactionnelle
 
 
 
-Malheureusement, le programmeur doit toujours comprendre le concept de abort / commit comme un complexité qui
+Malheureusement, le programmeur doit toujours comprendre le concept de abort/commit comme un complexité qui
 est présumé quand il décide d'utiliser la mémoire transactionnelle dû au fait que les protocoles STM actuelles ne garantissent pas qu'une transaction commettre.
 Dans certains cas, le programmeur doit traiter directement avec les transactions annulées dans son code,
 dans d'autres, un programmeur peut prioriser certaines transactions afin qu'elles ne pas avorter, dans d'autres cas le protocole permet aux transactions d'être bloqués,
@@ -371,7 +371,7 @@ Chaque variable partagée serait alors associée avec un verrou et les deux type
 Les verrous sont déjà utilisées dans les algorithmes STM - comme TL2 \cite{DSS06} - où il est toutefois supposé que la mémoire partagée est uniquement accessible par les transactions.
 L'utilisation de verrous dans un algorithme STM implique le blocage et peut même conduire à la famine de les processus.
 Des recherches antérieures sur les protocoles STM a adopté l'approche que ces caractéristiques peuvent être acceptables.
-Maintenant, si nous avons des opérations non transactionnelles qui s'appuient sur ​​les mêmes mécanismes (soit mis en œuvre utilisant de verrous ou par mini-transactions),
+Maintenant, si nous avons des opérations non transactionnelles qui s'appuient sur les mêmes mécanismes (soit mis en œuvre utilisant de verrous ou par mini-transactions),
 ils sont également susceptibles à la possibilité même de la non-exécution.
 
 
@@ -400,4 +400,88 @@ L'interaction entre les accès transactionnelles et non transactionnelles à mé
 Par exemple, il pourrait vouloir utiliser des verrous ou des opérations atomiques de hardware en même temps que les transactions, ou il pourrait vouloir utiliser des I/O au sein de ses transactions.
 Chacun de ces derniers et beaucoup d'autres choses méritent une enquête sur les modèles possibles où elles sont considérées aux côtés de la sémantique des transactions.
 De futures recherches sont nécessaires pour déterminer comment ces opérations supplémentaires peuvent être ajoutés à l'écosystème STM d'une manière qui n'entrave pas la facilité d'utilisation.
+
+
+
+\section{Chapitre 4}
+Une solution partielle à la difficulté de la programmation concurrente est de fournissent des bibliothèques concurrentes d'abstractions populaires.
+En général, ceux-ci sont finement accordés bibliothèques de haute performance fournissant au programmeur opérations utiles.
+Les implémentations de ces bibliothèques sont souvent très complexes et difficiles à comprendre, mais ils sont fournis avec une interface simple à utiliser pour quiconque d'utiliser.
+En faisant cela, les experts peuvent créer des algorithmes offrant des garanties fortes et de bonnes performances qui peuvent ensuite être largement réutilisés.
+
+
+En fournissant un programmeur avec un grand choix d'implémentations de transaction basées sur des abstractions couramment utilisés sa vie devient beaucoup plus facile.
+Par conséquent, ce chapitre se concentre sur la conception de structures de données efficaces au sein des transactions (en particulier ceux qui fournissent l'abstraction carte).
+Même si les chapitres précédents concentré sur la manière de définir la sémantique de transaction afin que le programmeur peut les
+utiliser facilement et les structures de données présentées dans ce chapitre ne sont pas directement liés à l'interaction entre les programmeurs et le sémantique de les transactions,
+ce chapitre se concentre toujours sur la facilité de l'utilisation de l'écosystème de la STM.
+Plus précisément, il favorise le fait que les structures de données proposées peuvent aider à augmenter la facilité d'utilisation de la STM pour la programmation concurrente.
+
+
+
+\paragraph{Structures de données concurrentes}
+Dans cette ère multicœurs, concurrente structures de données deviennent des éléments plus importants pour les programmeurs qui écrivent des programmes concurrents.
+Ils présentent le programmeur avec une interface claire à une abstraction, lui permettant d'effectuer des operations de l'abstraction dans un contexte concurrente.
+En raison de leur importance dans l'organisation des données entre processus, ils sont de plus en plus un goulot d'étranglement dans une grande variété d'applications concurrentes.
+Compte tenu structures de données en général, à la fois concurrente et séquentielle, elles reposent souvent sur le maintien des invariants afin d'assurer leur efficacité et leur grand-O complexité.
+Dans le cas d'un arbre, il doit généralement rester suffisamment équilibré à tout moment de l'exécution concurrent.
+Malheureusement, alors que ces invariants sont importants pour garder, ils peuvent aussi empêcher l'performance de mise à l'échelle avec plusieurs cœurs~\cite{Sha2011}.
+
+
+De plus agrandissant ce problème, il est difficile de savoir comment on peut adapter une structure de données pour y accéder efficacement au moyen de transactions dans un système STM.
+Potentiellement aussi un drawback de la simplicité de l'utilisation de transactions,
+les structures de données utilisées dans la mémoire transactionnelle sont le plus souvent seulement leurs versions séquentielles collées directement dans les transactions.
+
+
+
+Lorsque l'on considère la mise en œuvre d'un arbre en utilisant TM, il est clair que, même si une transaction doit être annulée avant violer
+l'abstraction mis en œuvre par cet arbre (par exemple, l'insertion de $k$ avec succès dans un set où $k$ a déjà été insérée par une transaction concurrente),
+il est difficile de savoir si une transaction doit être annulée en raison d'un peu déséquilibrer l'arbre afin de strictement préserver l'invariant de l'équilibre.
+Selon cette hypothèse, nous introduisons un \emph{spéculation conviviale arbre} comme un arbre qui rompt transitoirement son invariant de l'equilibrium structurel
+sans nuire à l'exactitude de l'abstraction dans le but d'accélérer les accès basés sur les transactions.
+Voici nos contributions.
+
+
+\begin{itemize}
+
+\item Nous proposons une spéculation conviviale arbre binaire de recherche de données   mise en œuvre de l'abstraction de la carte.
+Dans cette implémentation nous découpler les opérations qui modifient l'abstraction
+(on appelle ces transactions \emph{abstraites}) des opérations qui modifient la structure de l'arbre lui-même, mais pas l'abstraction (on appelle ces \emph{transactions structurelles}).
+Une transaction abstraite, soit insère soit supprime un élément de l'abstraction et dans certains cas, l'insertion peut également modifier la structure arborescente.
+Opérations structurelles ont deux tâches principales:
+(1) Certaines opérations structurelles sont vu confier la tâche d'équilibrer l'arbre par l'exécution d'un mécanisme de rotation distribué:
+chacune de ces transactions exécute une rotation locale impliquant seulement un nombre constant de nœuds voisins.
+(2) Certaines autres transactions structurelles séparent et libres les nœuds qui ont été logiquement supprimée par des précédentes transactions abstraites.
+
+
+
+\item Nous prouvons la correction (i.e. linéarisabilité) de notre arbre et nous comparons sa performance par rapport existants versions d'un arbre AVL
+et un arbre rouge-noir basés sur les transactions, largement utilisé pour évaluer les transactions~\cite{DSS06, HLMS03, CCKO08, HK08 , FFR08, YNW 08, DFGG11}.
+L'arbre spéculation conviviale améliore par jusqu'à 1,6$\times$ la performance de l'arbre AVL sur le micro-benchmark et par jusqu'à 3,5$\times$ la performance du arbre rouge-noir sur
+une application de réservation de voyages, déjà bien ingénierie pour les transactions.
+Enfin, notre spéculation conviviale arbre a des résultats comparables à un arbre non rotatif mais il reste robuste face à des charges de travail non uniformes.
+
+
+
+\item Nous illustrent (1)~la portabilité de notre spéculation conviviale arbre en l'évaluant sur deux différents STMs, TinySTM~\cite{FFR08} et $\mathcal{E}$-STM~\cite{FGG09}
+et avec différents paramètres de configuration, donc soulignant que notre gain de performance est indépendante de l'algorithme STM qu'il utilise,
+et (2)~comment facilement réutilisés en composant le $\lit{remove}$ et $\lit{insert}$ dans un nouveau $\lit{move}$ operation.
+En outre, nous comparons l'avantage de se détendre structures de données dans ceux qui sont spéculations conviviale contre ceux qui profit uniquement des transactions relaxantes, par l'évaluation des transactions élastiques.
+Il montre que, pour cette structure de données particulière, la refactorisation de son algorithme est préférable de la refactorisation du algorithme transactionelle sous-jacente.
+
+
+
+\end{itemize}
+
+
+\section{Conclusion}
+
+Cette thèse se penche sur les solutions possibles pour faire face aux difficultés qui surgissent quand un programmeur utilise la mémoire transactionnelle, en prenant la facilité d'utilisation comme la principale préoccupation.
+Même si une définition précise de la sémantique et les propriétés est utilisées comme solutions aux problèmes spécifiques, le but est qu'ils restent faciles à comprendre.
+Par conséquent, un programmeur qui comprend la définition de haut niveau devrait trouver les détails spécifiques des définitions de bas niveau comme un prolongement naturel.
+
+
+
+Le grand objectif est qu'un jour, un programmeur peut écrire un programme concurrente et efficient avec presque autant de facilité que il pouvait en écrire un séquentiel un.
+Bien que cet objectif est loin d'être pleinement réalisé ici, cette thèse fait des pas importants dans cette direction, tout en suggérant des moyens d'avancer plus loin.
 

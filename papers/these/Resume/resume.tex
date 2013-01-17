@@ -987,7 +987,7 @@ to the STM ecosystem in a way that does not hamper ease of use.
 
 
 \section{Chapter 4}
-As partial solution to the difficulty of concurrent programming
+A partial solution to the difficulty of concurrent programming
 is to provide concurrent libraries of popular abstractions such as data structures.
 Generally, these are finely tuned high performance libraries
 providing the programmer with useful operations.
@@ -1025,8 +1025,8 @@ and good performance that can then be widely reused.
 By providing a programmer with a large selection of transaction based implementations of commonly used abstractions
 his life becomes much easier.
 Accordingly, this chapter will focus on designing efficient data structures in transactional memory (specifically those providing the map abstraction).
-While the previous chapters focused on considering how to define transaction semantics so that the programmer can use them easily and additionally
-the the fact that the data structures presented in this chapter are not directly related to programmers interaction with transaction semantics,
+Even though the previous chapters focused on considering how to define transaction semantics so that the programmer can use them easily and
+the data structures presented in this chapter are not directly related to programmers interaction with transaction semantics,
 this chapter still focuses on dealing with the ease of use of the STM ecosystem.
 Namely, it promotes the fact that the proposed data structures can help increase the ease of use of STM for concurrent programming.
 % As sated in the discussion of the STM abstraction in the introduction (specifically Definition \ref{def:stm-def}), the desired STM abstraction
@@ -1044,14 +1044,14 @@ Namely, it promotes the fact that the proposed data structures can help increase
 % % multicore data structure
 % The multicore era is changing the way we write concurrent programs.
 \paragraph{Concurrent data structures}
-In this multicore era concurrent data structure are becoming important building blocks
+In this multicore era, concurrent data structures are becoming important building blocks
 for programmers writing concurrent programs.
 They present the programmer with a clear interface to a given abstraction allowing
 him to safely perform operations to the abstraction in a concurrent context.
 Due to their importance in organizing data between processes they are increasingly becoming a bottleneck
 in a wide variety of concurrent applications.
 Considering data structures in general, both concurrent and sequential, they often rely on keeping invariants
-in order to ensure their efficiency and big-oh complexity.
+in order to ensure their efficiency and big-O complexity.
 In the case of a tree, it must typically remain sufficiently balanced at any point of the concurrent execution.
 Unfortunately while these invariants are important to keep, they can also prevent
 the performance from scaling with multiple cores~\cite{Sha2011}.
@@ -1118,7 +1118,7 @@ Here are our contributions.
 
 \begin{itemize}
 \item We propose a speculation-friendly binary search tree data structure
-implementing an associative array and set abstractions.
+implementing the map abstraction.
 In this implementation we decouple the operations that modify the abstraction (we call these \emph{abstract transactions}) from operations
 that modify the tree structure itself but not the abstraction (we call these \emph{structural transactions}).
 An abstract transaction either inserts or deletes an element from the abstraction and 
@@ -1136,9 +1136,9 @@ The speculation-friendly tree improves by up to $1.6\times$ the performance of t
 by up to $3.5\times$ the performance of the built-in red-black tree on a travel reservation application, already well-engineered for transactions.
 Finally, our speculation-friendly tree performs similarly to a non-rotating tree but remains robust in face of non-uniform workloads.
 
-\item We illustrate (i)~the portability of our speculation-friendly tree by evaluating it on two different Transactional Memories (TMs), TinySTM~\cite{FFR08} 
+\item We illustrate (1)~the portability of our speculation-friendly tree by evaluating it on two different Transactional Memories (TMs), TinySTM~\cite{FFR08} 
 and $\mathcal{E}$-STM~\cite{FGG09} and with different configuration settings, hence outlining that our performance benefit is independent 
-from the transactional algorithm it uses; and (ii)~how it can be reused by composing 
+from the transactional algorithm it uses; and (2)~how it can be reused by composing 
 straightforwardly the $\lit{remove}$ and $\lit{insert}$ into a new $\lit{move}$ operation.
 In addition, we compare the benefit of relaxing data structures into speculation-friendly ones against the benefit of only relaxing transactions,
 by evaluating elastic transactions.

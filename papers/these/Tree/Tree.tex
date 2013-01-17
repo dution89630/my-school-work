@@ -99,7 +99,7 @@
 \section{Introduction}
 
 As briefly mentioned in the introduction a partial solution to the difficulty of concurrent programming
-is to provide concurrent libraries of popular abstractions such as data structures.
+is to provide concurrent libraries of popular abstractions.
 Generally these are finely tuned high performance libraries
 providing the programmer with useful operations.
 The implementations of such libraries are often very complex
@@ -136,8 +136,8 @@ to create an atomic $\lit{move}$ operation by simply combing the $\lit{insert}$ 
 By providing a programmer with a large selection of transaction based implementations of commonly used abstractions
 his life becomes much easier.
 Accordingly, this chapter will focus on designing efficient data structures in transactional memory (specifically those providing the map abstraction).
-While the previous chapters focused on considering how to define transaction semantics so that the programmer can use them easily and additionally
-the the fact that the data structures presented in this chapter are not directly related to programmers interaction with transaction semantics,
+Even though the previous chapters focused on considering how to define transaction semantics so that the programmer can use them easily and
+the data structures presented in this chapter are not directly related to programmers interaction with transaction semantics,
 this chapter still focuses on dealing with the ease of use of the STM ecosystem.
 Namely, it promotes the fact that the proposed data structures can help increase the ease of use of STM for concurrent programming.
 As sated in the discussion of the STM abstraction in the introduction (specifically Definition \ref{def:stm-def}), the desired STM abstraction
@@ -155,14 +155,14 @@ something that is usually not possible using lock based or non-blocking abstract
 % % multicore data structure
 % The multicore era is changing the way we write concurrent programs.
 \paragraph{Concurrent data structures}
-In this multicore era concurrent data structure are becoming important building blocks
+In this multicore era, concurrent data structures are becoming important building blocks
 for programmers writing concurrent programs.
-They present the programmer with a clear interface to a given abstraction allowing
+They present the programmer with a clear interface to a given abstraction, allowing
 him to safely perform operations to the abstraction in a concurrent context.
 Due to their importance in organizing data between processes they are increasingly becoming a bottleneck
 in a wide variety of concurrent applications.
 Considering data structures in general, both concurrent and sequential, they often rely on keeping invariants
-in order to ensure their efficiency and big-oh complexity.
+in order to ensure their efficiency and big-O complexity.
 In the case of a tree, it must typically remain sufficiently balanced at any point of the concurrent execution.
 Unfortunately while these invariants are important to keep, they can also prevent
 the performance from scaling with multiple cores~\cite{Sha2011}.
