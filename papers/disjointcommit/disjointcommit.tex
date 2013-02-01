@@ -1,0 +1,338 @@
+\documentclass[runningheads,a4paper]{llncs}
+
+\usepackage{amssymb}
+\setcounter{tocdepth}{3}
+\usepackage{graphicx}
+
+%%% Our Extra Packages %%%
+
+%\usepackage{epic,eepic,amsmath,latexsym,amssymb,color,amsthm}
+\usepackage{ifthen,epsfig}%,graphics,epsfig,fullpage} 
+\usepackage[english]{babel}
+
+%%%
+
+
+\usepackage{url}
+\urldef{\mailsa}\path|{tyler.crain, eleni.kanellou, michel.raynal}@irisa.fr| 
+\urldef{\mailsb}\path|michel.raynal@irisa.fr|    
+\newcommand{\keywords}[1]{\par\addvspace\baselineskip
+\noindent\keywordname\enspace\ignorespaces#1}
+
+\newcommand{\ignore}[1]{}
+
+%-----------------------for square--------------------------------------------
+\newlength {\squarewidth}
+\renewenvironment {square}
+{
+\setlength {\squarewidth} {\linewidth}
+\addtolength {\squarewidth} {-12pt}
+\renewcommand{\baselinestretch}{0.75} \footnotesize
+\begin {center}
+\begin {tabular} {|c|} \hline
+\begin {minipage} {\squarewidth}
+\medskip
+}{
+\end {minipage}
+\\ \hline
+\end{tabular}
+\end{center}
+}  
+%--------------------------------------------------------------------
+%--------------------------------------------------------------------
+%-------- macros for algorithm ---------------------------------------
+%\newtheorem{definition}{Definition}
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{lemma}{Lemma}
+%\newtheorem{corollary}{Corollary}
+\newcommand{\toto}{xxx}
+%\newenvironment{proofT}{\noindent{\bf Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+%\newenvironment{proofL}{\noindent{\bf Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+%\newenvironment{proofC}{\noindent{\bf Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+
+
+\newcounter{linecounter}
+\newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}{(0\arabic{linecounter})}{(\arabic{linecounter})}}
+\renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+\newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+\renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 9\else 0\fi \arabic{linecounter}}
+
+\newcommand{\tuple}[1]{\ensuremath{\left \langle #1 \right \rangle }}
+
+%----------------------------------------------------------------------
+
+
+
+
+
+\begin{document}
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+\begin{figure} [htb]
+\centering{ \fbox{
+\begin{minipage}[t]{1\linewidth}%{150mm}
+%\footnotesize 
+\scriptsize
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+{\bf operation} ${\sf validate\_by\_value}()$:\\% {\bf is}\\
+% \line{H01} \> $\mathit{rv} \gets \mathit{GVC}$; \\
+\line{H02} \> {\bf for each} $\tuple{\mathit{addr, value}}$ in $\mathit{rs}$ {\bf do} \\
+\line{H03} \>\> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
+\line{H04} \>\> {\bf if} (($\mathit{item} \not \in \mathit{ws} \wedge \mathit{tmp.status} = $ LIVE) $\vee$ (${\sf get\_value}(\mathit{tmp}) \neq \mathit{item.value}$)) \\
+\line{H05} \>\>\> {\bf then} ${\sf abort}(\mathit{tmp.m\_desc})$; \\
+\line{H05} \>\> {\bf end if} \\
+\line{H05} \> {\bf end for} \\
+{\bf end operation}. \\
+\\
+{\bf operation} ${\sf abort}(m\_desc)$:\\% {\bf is}\\
+\line{AB01} \> {\bf if} ($\mathit{Self.is\_local}$) {\bf then} \\
+\line{AB01} \>\> $\mathit{aborts} \gets \mathit{aborts} + 1$; \\
+\line{AB02} \>\> the transaction is restarted at ${\sf begin\_transaction}()$ \\
+\line{AB01} \> {\bf else} \\
+\line{AB01} \>\> {\bf if} ($\neg {\sf contention\_manager}(\mathit{Self.s\_m\_desc}, \mathit{m\_desc})$) {\bf then} \\
+\line{AB01} \>\>\> jump back to ${\sf help\_loop}()$  \\
+\line{AB01} \>\> {\bf end if} \\
+\line{AB01} \> {\bf end if} \\
+%\line{H21} \> free items in $\mathit{ws}$, $\mathit{rs}$, and $\mathit{ntrs}$; \\
+%\line{H22} \> jump to line \ref{START1} \\
+{\bf end operation}. \\
+\\
+{\bf operation} ${\sf contention\_manager}(\mathit{m\_desc}, \mathit{o\_m\_desc})$:\\
+\line{AB01} \> {\bf if} ($\mathit{m\_desc.priority} > \mathit{o\_m\_desc.priority}$) \bf{then} \\
+\line{AB01} \>\> ${\sf other\_shared\_abort}(\mathit{m\_desc}, \mathit{o\_m\_desc})$; \\
+\line{AB01} \>\> {\bf return} ($\sf{false}$); \\
+\line{AB01} \> {\bf else if} ($\mathit{m\_desc.priority} = \mathit{o\_m\_desc.priority}$) {\bf then} \\
+\line{AB01} \>\> {\bf return} $\sf{false}$; \\
+\line{AB01} \> {\bf else} \\
+\line{AB01} \>\> ${\sf self\_shared\_abort}(\mathit{m\_desc}, \mathit{o\_m\_desc})$; \\
+\line{AB01} \>\> {\bf return} $\sf{false}$; \\
+\line{AB01} \> {\bf end if}. \\
+{\bf end operation}.\\
+\\
+{\bf operation} ${\sf self\_shared\_abort}(\mathit{m\_desc}, \mathit{o\_m\_desc})$:\\
+\line{AB01} \> $\mathit{desc} \gets \mathit{m\_desc.desc}$; \\
+\line{AB01} \> $CAS(\mathit{desc.status.status}, $LIVE$, \mathit{o\_m\_desc.id})$; \\
+\line{AB01} \> {\bf if} ($(\mathit{id} \gets \mathit{desc.status.status}) \neq$ COMMITTED) {\bf then} \\
+\line{AB01} \>\> $\mathit{help\_array}[\mathit{o\_m\_desc.id}][\mathit{Self.id}] \gets m\_desc$; \\
+\line{AB01} \> {\bf end if} \\
+{\bf end operation}.\\
+\\
+{\bf operation} ${\sf other\_shared\_abort}(\mathit{m\_desc}, \mathit{o\_m\_desc})$:\\
+\line{AB01} \> $\mathit{desc} \gets \mathit{o\_m\_desc.desc}$; \\
+\line{AB01} \> $CAS(\mathit{desc.status.status}, $LIVE$, \mathit{m\_desc.id})$; \\
+\line{AB01} \> Need to ask for help? \\
+% \line{AB01} \> {\bf if} ($(\mathit{id} \gets \mathit{desc.status.status}) \neq$ COMMITTED) {\bf then} \\
+% \line{AB01} \>\> $\mathit{help\_array}[\mathit{o\_m\_desc.id}][\mathit{Self.id}] \gets m\_desc$; \\
+% \line{AB01} \> {\bf end if} \\
+{\bf end operation}.
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transactional helper operations.}
+\label{fig:helpers}
+}
+\end{figure}
+
+ 
+ 
+ 
+ 
+ \begin{figure} [htb]
+\centering{ \fbox{
+\begin{minipage}[t]{1\linewidth}%{150mm}
+%\footnotesize 
+\scriptsize
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+{\bf operation}  ${\sf begin\_transaction}()$:\\% {\bf is}\\
+\line{S1} \> {\bf if} ($\mathit{Self.is\_local}$) {\bf then} \\
+\line{S1} \>\> {\bf if} ($\mathit{Self.aborts} = 0$) \\
+\line{S1} \>\>\> $\mathit{Self.l\_main\_desc} \gets $ alloc new main descriptor \\
+\line{S1} \>\> {\bf else if} ($\mathit{aborts} > \mathit{THLD}$) {\bf then} \\
+\line{S1} \>\>\> $\mathit{Self.is\_local} \gets \sf{false}$; \\
+\line{S1} \>\>\> $\mathit{help\_array}[\mathit{Self.id}][\mathit{Self.id}] \gets \mathit{Self.l\_main\_desc}$; \\
+\line{S1} \>\>\> ${\sf help\_loop}()$; \\
+\line{S1} \>\>\> $\mathit{Self.desc} \gets \mathit{Self.l\_main\_desc.desc}$; \\
+\line{S1} \>\>\> $\mathit{Self.is\_local} \gets {\sf true}$ \\
+\line{S1} \>\>\> jump to ${\sf try\_to\_commit}()$ \\
+\line{S1} \>\> {\bf end if} \\
+\line{S1} \> {\bf end if} \\
+\line{S1} \> $\mathit{Self.desc} \gets$ allocate new transaction descriptor \\
+\line{S1} \> $\mathit{Self.desc.rv} \gets \mathit{GCV}$; \\
+{\bf end operation}.
+
+% \line{START1} \> determine whether transaction is update transaction based on compiler/user input \\
+% \line{START2} \> $\mathit{rv} \gets \mathit{GVC}$; 
+%                  Allocate new variable $\mathit{status}$; \\
+% \line{START3} \> $\mathit{status} \gets $LIVE; \ $\mathit{ws} \gets \emptyset$; $\mathit{rs} \gets \emptyset$ \\
+% %\line{DA03} \> more??? \\
+% {\bf end operation}. \\
+% \\
+% {\bf operation}  ${\sf try\_to\_commit}()$:\\% {\bf is}\\
+% \line{DA01} \> {\bf if} $(\mathit{ws} = \emptyset)$ {\bf then} ${\sf return}$ (COMMITTED) {\bf end if}; \\
+% 
+% % \line{DA01a} \> $\mathit{abort} \gets \lit{false}$; \\
+% 
+% \line{DA02} \> 
+% {\bf for each} $(\tuple{\mathit{addr, item}} \in \mathit{ws})$ {\bf do} \\
+% 
+% \line{DA03} \>\> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
+% 
+% 
+% \line{DA04} \>\> {\bf if} 
+%    ($\mathit{tmp}$ is of type $T \wedge (\mathit{status} \gets (\downarrow \mathit{tmp.status})) \neq$ COMMITTED $)$  \\
+% \line{DA05} \>\>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} $\sf{abort}()$  {\bf else} $\mathit{item.last} \gets \mathit{tmp.last}$ {\bf end if}; \\
+% \line{DA06} \>\>\> {\bf else} $\mathit{item.last} \gets \mathit{tmp.value}$ \\
+% \line{DA06A} \>\> {\bf end if}; \\
+% 
+% \line{DA07} \>\> $\mathit{item.time} \gets \mathit{tmp.time}$; \\
+% \line{DA07a} \>\> {\bf if} ($\mathit{item.time} = \infty$) {\bf then} $\mathit{item.time} \gets \mathit{GCV}$ {\bf end if}; \\
+% 
+% \line{DA08} \>\> {\bf if} $(\neg {\sf \mathit{Compare\&Swap}}(\mathit{addr, tmp, item}))$ {\bf then} $\sf{abort}()$ {\bf end if}; \\
+% %\line{DA09} \>\>\> {\bf then} ${\sf abort}()$ \\
+% %\line{DA10} \>\> {\bf end if} \\
+% 
+% \line{DA11} \> {\bf end for}; \\
+% 
+% \line{DA12} \> $\mathit{time} \gets {\sf Increment\&Fetch}(\mathit{GVC})$; \bf{if} (${\sf validate\_by\_value}()$) {\bf then} $\sf{abort}()$ {\bf end if}; \\
+% 
+% %\line{DA13} \> ${\sf validate\_by\_value}()$;  \\
+% 
+% 
+% %\> \% Ensure the writes haven't been overwritten by non-transactional writes \\
+% 
+% \line{DA14} \> 
+% {\bf for each} ($\tuple{\mathit{addr, item}} \in \mathit{ws}$) {\bf do} \\
+% \line{DA15} \>\> $\mathit{item.time} \gets \mathit{time}$; \\
+% \line{DA16} \>\> {\bf if} $(\mathit{item} \neq (\downarrow \mathit{addr}))$  
+%                  {\bf then}  
+% 		    $\sf{abort}()$
+%                 {\bf end if}; \\
+% 
+% \line{DA17} \> {\bf end for}; \\
+% % \line{DA17a} \> {\bf if} $\mathit{abort}$ {\bf then} ${\sf abort}()$ {\bf end if}; \\
+% \line{DA18} \> {\bf if} ${\sf \mathit{Compare\&Swap}}$($\mathit{status}$, LIVE, COMMITTED) \\
+% \line{DA19} \>\> {\bf then} \> ${\sf return}$ (COMMITTED)\\
+% \line{DA20} \> \> {\bf else} \= ${\sf abort}()$ \\
+% \line{DA21} \> {\bf end if};  \\
+% {\bf end operation}.
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transaction begin/commit.}
+\label{fig:tbc}
+}
+\end{figure}
+ 
+ 
+ 
+ 
+ 
+
+\begin{figure} [htb]
+\centering{ \fbox{
+\begin{minipage}[t]{1\linewidth}%{150mm}
+%\footnotesize 
+\scriptsize
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+{\bf operation}  ${\sf transactional\_read}(\mathit{addr})$:\\% {\bf is}\\
+\line{C01} \> {\bf if} $\mathit{addr} \in \mathit{ws}$  {\bf then} ${\sf return}$ ($\mathit{item.value}$ from $\mathit{addr}$ in $\mathit{ws}$)  {\bf end if}; \\
+\line{C02} \> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; $\mathit{validate} \gets \sf{false}$;\\
+
+\line{C03} \> {\bf if} ($\mathit{tmp}$ is of type NT)   \\
+\line{C04} \>\> {\bf then} {\bf if} ($\mathit{tmp.time} \geq \mathit{rv}$) \bf{then} $\mathit{validate} \gets \sf{true}$ \bf{end if} \\
+% % % % %\> \% Do validation to prevent abort due to a non-transactional write \\
+% % % % \line{C05} \>\>\> {\bf then if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,tmp.value}}$ to $\mathit{rs}$ and ${\sf validate\_by\_value}$(); \\
+% % % % \line{C06} \>\>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
+% % % % %\line{C14} \> {\bf if} this is an update transaction 
+% % % % %                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+% % % % 
+% % % % 
+% % % % \line{C06A} \>\>\> {\bf end if}; \\
+\line{C07} \>\>\> $\mathit{value} \gets \mathit{tmp.value}$; \\
+
+\line{C08} \>\> {\bf else} \\
+\line{C09} \>\>\> {\bf if} ($(\mathit{status} \gets (\downarrow \mathit{tmp.status})) \neq$ COMMITTED $)$ \\
+\line{C10} \>\>\>\> {\bf then if} ($\mathit{status} =$ LIVE) {\bf then} ${\sf abort}()$  {\bf else} $\mathit{value} \gets \mathit{tmp.last}$ {\bf end if}; \\
+\line{C11} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{C11A} \>\>\> {\bf end if}; \\
+\line{C12} \>\>\> {\bf if} $(\mathit{tmp.time} > \mathit{rv})$ {\bf then} $\mathit{validate} \gets \sf{true}$ {\bf end if}; \\
+% % % % \line{C14} \>\> {\bf if} this is an update transaction {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+
+
+\line{C13} \> {\bf end if}; \\
+
+\line{C14} \> {\bf if} this is an update transaction
+                        {\bf then} add $\tuple{\mathit{addr,value}}$ to $\mathit{rs}$ {\bf end if}; \\
+
+\line{C14A} \> {\bf if} ($\mathit{validate}$) \\
+\line{C14B} \>\> {\bf then if} this is an update transaction {\bf then if} (${\sf validate\_by\_value}$()) {\bf then} $\sf{abort}()$ {\bf end if}; \\
+\line{C14C} \>\>\>\> {\bf else} ${\sf abort}$() and restart as an update transaction {\bf end if}; \\
+
+
+\line{C14D} \> {\bf end if}; \\
+
+
+\line{C15} \> ${\sf return}$ ($\mathit{value}$) \\
+{\bf end operation}. \\
+\\
+{\bf operation}  ${\sf transactional\_write}(\mathit{addr, value})$:\\% {\bf is}\\
+\line{D01} \> {\bf if} $\mathit{addr} \not\in \mathit{ws}$  \\
+\line{D02} \>\> {\bf then} \> allocate a new variable $item$ of type $T$; \\
+\line{D03} \>\>\> $\mathit{item}  \gets (\mathit{value, (\uparrow status), \infty})$; 
+                   $\mathit{ws} \gets \mathit{ws} \cup \tuple{\mathit{addr, item}}$; \\
+\line{D04} \>\> {\bf else} \> set $\mathit{item.value}$ with $\mathit{addr}$ in $\mathit{ws}$ to $\mathit{value}$ \\
+\line{D05} \> {\bf end if}; \\
+{\bf end operation}.
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transactional operations for reading and writing a variable.}
+\label{fig:tops}
+}
+\end{figure} 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+\end{document}
+ 
