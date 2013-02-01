@@ -1,4 +1,5 @@
 
+
 \chapter{Resume}
 
 Architectures multicœurs changent notre façon d'écrire des programmes.
@@ -155,7 +156,7 @@ Il s'agit d'une propriété désirable principalement pour l'efficacité.
 
 \paragraph{Permissivité}
 La notion de permissivité a été introduite dans \cite{GHS08} (dans un certain sens,
-il s'agit d'une généralisation très agréable de la notion de {\it obligation} propriété \cite{a-IR09}). C'est sur la annulation de transaction.
+il s'agit d'une généralisation très agréable de la notion de {\it obligation} propriété \cite{IR09-a}). C'est sur la annulation de transaction.
 Intuitivement, un système STM est {\it permissive} ``si elle n'a jamais annule une transaction sauf si c'est nécessaire pour l'exactitude.''
 (sinon, il est {\it non-permissive}). Plus précisément, un système STM est permissive par rapport à une condition de cohérence
 (par exemple, l'opacité) si elle accepte toute histoire qui satisfait la condition.
@@ -456,7 +457,7 @@ chacune de ces transactions exécute une rotation locale impliquant seulement un
 
 
 \item Nous prouvons la correction (i.e. linéarisabilité) de notre arbre et nous comparons sa performance par rapport existants versions d'un arbre AVL
-et un arbre rouge-noir basés sur les transactions, largement utilisé pour évaluer les transactions~\cite{DSS06, HLMS03, CCKO08, HK08 , FFR08, YNW 08, DFGG11}.
+et un arbre rouge-noir basés sur les transactions, largement utilisé pour évaluer les transactions~\cite{DSS06, HLMS03, CCKO08, HK08, FFR08, YNW+08, DFGG11}.
 L'arbre spéculation conviviale améliore par jusqu'à 1,6$\times$ la performance de l'arbre AVL sur le micro-benchmark et par jusqu'à 3,5$\times$ la performance du arbre rouge-noir sur
 une application de réservation de voyages, déjà bien ingénierie pour les transactions.
 Enfin, notre spéculation conviviale arbre a des résultats comparables à un arbre non rotatif mais il reste robuste face à des charges de travail non uniformes.
@@ -484,4 +485,6 @@ Par conséquent, un programmeur qui comprend la définition de haut niveau devra
 
 Le grand objectif est qu'un jour, un programmeur peut écrire un programme concurrente et efficient avec presque autant de facilité que il pouvait en écrire un séquentiel un.
 Bien que cet objectif est loin d'être pleinement réalisé ici, cette thèse fait des pas importants dans cette direction, tout en suggérant des moyens d'avancer plus loin.
+
+
 
