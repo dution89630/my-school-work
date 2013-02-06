@@ -156,16 +156,16 @@ By following our goal for STM defined in \ref{def:stm-def} and using our definit
 arguably then all a programmer should need to know in order to use the STM abstraction is to know
 the syntax for writing an atomic block, likely something as simple as
 $$atomic \{ \dots \} $$
-The is because following Definition \ref{def:trans-def}, a transaction always executes as an atomic block
-no matter what else is going on in the system,
-all the complexities and difficult synchronization is then taken care of by the
+The reason for this is, following Definition \ref{def:trans-def}, a transaction always executes as an atomic block
+no matter what else is going on in the system.
+The complexities and difficult synchronization procedures are taken care of by the
 underlying STM system.
-This means that, when faced to synchronization,  a programmer has 
+This means that, when faced with synchronization,  a programmer has 
 to concentrate on where atomicity is required and not on the way it is 
 realized
 (unfortunately, in reality, it is actually not so simple for the programmer, as will
 be seen in the later chapters in this thesis).
-Like many abstractions, even if what is exposed to the programmer is a fixed well
+Like many abstractions, even if what is exposed to the programmer is a fixed, well
 defined interface there are many different possible implementations and different
 properties that exist to provide the abstraction.
 
@@ -3140,7 +3140,7 @@ of the commonly used transactional model and how to improve it.
 % \paragraph{Acknowledgements}
 % This research  is part of the TRANSFORM project, 
 % a  Marie Curie project funded by the European Community's Seventh 
-% Framework Programme  (grant agreement n° 238639), devoted to the theory of 
+% Framework Programme  (grant agreement nÂ° 238639), devoted to the theory of 
 % software transactional memories. 
 % We also thank Hagit  Attiya  and Sandeep Hans for their constructive 
 % comments on a draft of this paper. 
