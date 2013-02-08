@@ -80,8 +80,27 @@ algorithm.}
 \label{fig:mem_setup}
 \end{figure*}
  
- !!!!!!!!!!!!!!!!!!!!!!!!!! Need to update commit for R/O transactions !!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!! Need to update commit for R/O transactions !!!!!!!!!!!!!!!!!!!
  
+\section{Intro}
+In \cite{} we presented a universal construction in which every transaction that is started is guaranteed to commit no matter the
+concurrecny pattern of the system.
+In addition, the progress of each thread was dependent only on the proccessor that it was statically assigned to.
+Unfortunatley while this algorithm was realistic in the sense that it could be implemented, it also presented several bottlenecks
+for performance.
+Of these the two most important are (1) there is a single list containing all transactions, through which every transaction must
+traverse to perform reads and validations, before performing a CAS on the head pointer in order to commit, creating a single point
+of contention and (2) this list is expensive to maintain both in terms of computation and memory usage.
+The goal of the algorithm presented here is to address these bottlenecks.
+To acieve this, the idea of having a single list is thrown out for a more traditional view of memory when each variable has its own
+unique address.
+This memory layout is similar to one that we have used to present an efficent algorithm implementing \emph{terminating strong isolation} \cite{}.
+Non-conflicting transactions can then execute concurrently and completely independently (other then accessing a shared clock used for consistency).
+A process is still required to help other processes in order to ensure that every transaction is committed, this is done by looking for processes
+to help in a shared array where processes announce they need help.
+
+
+
 \section{Memory Setup}
 Instead of storing values directly at their address in shared memory, this algorithm
 uses a level of indirection when a location is read or written to by a transactional read or write.
@@ -123,6 +142,35 @@ A process with id $\mathit{i}$ will scan the row $\mathit{Help\_array}[\mathit{i
 When requesting help for a transaction $T$, a process with id $\mathit{i}$ whos execution of $T$ was aborted by process with id $\mathit{j}$, will
 annouce that it needs help to process $\mathit{j}$ by setting $\mathit{Help\_array}[\mathit{j}][\mathit{i}]$ to point to the main descriptor of $T$.
 
+
+\section{Operation description}
+Here we have the traditional transactional operations of ${\sf begin\_transaction}$, ${\sf transactional\_read}$, ${\sf transactional\_write}$,
+and ${\sf try\_to\_commit}$ from wich the STM system runs.
+Within these operations we have calls to other procedures can be grouped into two broad categories (1) the ones that perform simlpe checks such
+as validations and (2) the ones that are used to performing the helping of other transactions.
+Let us start by examining the simple check type operations show in Figure \ref{fig:helpers}.
+
+\subsection{Small procedures}
+
+\paragraph{get\_value}
+Each $t\_item$ stores two possible values for an address,
+$\mathit{value}$, which stores the value written by the transaction that created this object,
+and $\mathit{old}$, which stores the value written by the last transaction to successfully commit, writing to this locaion.
+This procedure simply checks if the transaction that created this item has commited (i.e. $\mathit{item.desc.status}$ = COMMITTED), if
+so then $\mathit{value}$ is returned, otherwise $\mathit{old}$ is returned.
+
+\paragraph{validate\_by\_value}
+This operation validates the read set of a transaction by value.
+It is used during the ${\sf try\_to\_commit}$ operation and simply goes through each location
+in the read set, checking if the value currently in memory was the value that was read during the execution of the transaction.
+If not then the transaction is aborted by calling ${\sf check\_abort}$ with true as input???
+
+\paragraph{check\_abort}
+This procedure takes as input a main descriptor $\mathit{m\_desc}$.
+If the transsaction is being executed locally (meaning there cannot be any concurrent processes helping it execute)
+then 
+
+
 \begin{figure} [htb]
 \centering{ \fbox{
 \begin{minipage}[t]{1\linewidth}%{150mm}
@@ -145,6 +193,9 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{H03} \>\> $\mathit{tmp} \gets (\downarrow \mathit{addr})$; \\
 \line{H04} \>\> {\bf if} (($\mathit{item} \not \in \mathit{ws} \wedge \mathit{tmp.desc.status} = $ LIVE) $\vee$ (${\sf get\_value}(\mathit{tmp}) \neq \mathit{item.value}$)) \\
 % ($\mathit{temp.desc.time} > \mathit{desc.time}$)) \\
+
+!!!!!!!!!!!!!!!!!!!Need to ensure an abort happens here!!!!!!!!!!!!!!!!!!!
+
 \line{H05} \>\>\> {\bf then} ${\sf check\_abort}(\mathit{tmp.desc.m\_desc})$; \\
 \line{H05} \>\> {\bf end if} \\
 \line{H05} \> {\bf end for} \\
