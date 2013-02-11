@@ -256,53 +256,7 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 \input Couverture
 
 
-%\input doc_frontPage			% Front Page
-%\thispagestyle{empty}		
 
-%  Abstract -----------
-
-
-\section*{On Improving the Ease of Use of the Software Transactional Memory Abstraction}
-%\begin{abstract}
-\subsection*{Abstract}
-
-Multicore architectures are changing the way we write programs.
-Writing concurrent programs is well known to be difficult task, hence 
-there exist many abstractions designed with the intention if making concurrent programming easier.
-Traditionally, the use of locks allowing code to execute in mutual exclusion
-has been the most widely used abstraction to write concurrent programs.
-Unfortunately, using locks it is
-difficult to write correct concurrent programs that perform efficiently.
-Additionally, locks present other problems such as scalability issues.
-Transactional memory has been proposed as a possible promising solution to these difficulties of writing concurrent programs.
-Transactions can be viewed as a high level abstraction or methodology for writing concurrent programs, allowing
-the programmer to be able to declare what sections of his code should be executed atomically,
-without having to worry about synchronization details.
-Unfortunately, although arguably easier to use then locks, transactional memory still suffers from performance and ease of use problems.
-In fact many concepts surrounding the usage and semantics of transactions have
-no widely agreed upon standards.
-This thesis specifically focuses on
-these ease of use problems by discussing how previous research has dealt with them
-and proposing new solutions putting ease of use first.
-
-% Transactional memory is designed to make parallel programming easier by allowing the programmer to define
-% what blocks of code he wants to be executed atomically while leaving the difficult synchronization tasks for the
-% underlying system.
-% Even though the idea of a transaction is clear, how the programmer should interact with the
-% abstraction is still not clearly defined.
-The thesis starts by giving a brief overview of software transactional
-memory (STM) as well as a discussion of the problem of ease of use that is focused on in the later chapters.
-The research contributions are then divide into four main chapter, each looking at different approaches
-working towards making transactional memory easier to use, organized as follows:
-\begin{enumerate}
-\item The first chapter looks at properties and consistency conditions in STM, presenting an STM protocol that satisfies two properties that can be considered good for efficiency.
-\item The following chapter looks at simplifying the semantics of transactions by introducing an STM protocol that guarantees transactions commit exactly once with the goal of hiding the concept of aborts to the programmer.
-\item The third chapter discusses how the STM abstraction can fit within a concurrent system, describing an STM protocol that allows safe concurrent access to the same memory both inside and outside of transactions.
-\item The forth chapter discusses adding efficient libraries specifically designed for use by programmers within STM.
-\end{enumerate}
-The thesis finishes with a concluding discussion and a discussion of possible future work.
-
-%\end{abstract}
 
 %\input doc_abstract    	    % Abstract.
 
@@ -324,7 +278,7 @@ The thesis finishes with a concluding discussion and a discussion of possible fu
 
 \part{Introduction}
 
-\chapter*{Introduction}
+\chapter{The software transactional memory abstraction}
 %\markboth{\MakeUppercase{Introduction}}{\MakeUppercase{Introduction}}
 %\addcontentsline{toc}{chapter}{Introduction}
 %\input{./introduction/doc_introduction}
@@ -422,6 +376,7 @@ The thesis finishes with a concluding discussion and a discussion of possible fu
 % \addcontentsline{toc}{chapter}{Conclusion}
 \input{./Conclusion/Conclusion.tex}
 
+\input{./Resume/resumefr.tex}
 
 % \chapter{Survey (to use for intro)}
 % \input{./STM-intro/STM-intro}
@@ -459,7 +414,103 @@ The thesis finishes with a concluding discussion and a discussion of possible fu
 
 \printindex
 
-\input{./Resume/resumefr.tex}
+
+
+
+
+
+% \chapter*{}
+% 
+\newpage
+\thispagestyle{empty}
+\mbox{}
+\newpage
+
+%\input doc_frontPage			% Front Page
+%\thispagestyle{empty}		
+
+%  Abstract -----------
+% \maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+\section*{On Improving the Ease of Use of the Software Transactional Memory Abstraction}
+%\begin{abstract}
+\subsection*{Abstract}
+
+Multicore architectures are changing the way we write programs.
+Writing concurrent programs is well known to be difficult task.
+Traditionally, the use of locks allowing code to execute in mutual exclusion
+has been the most widely used abstraction to write concurrent programs.
+Unfortunately, using locks it is
+difficult to write correct concurrent programs that perform efficiently.
+Additionally, locks present other problems such as scalability issues.
+Transactional memory has been proposed as a possible promising solution to these difficulties of writing concurrent programs.
+Transactions can be viewed as a high level abstraction or methodology for writing concurrent programs, allowing
+the programmer to be able to declare what sections of his code should be executed atomically,
+without having to worry about synchronization details.
+Unfortunately, although arguably easier to use then locks, transactional memory still suffers from performance and ease of use problems.
+In fact many concepts surrounding the usage and semantics of transactions have
+no widely agreed upon standards.
+This thesis specifically focuses on
+these ease of use problems by discussing how previous research has dealt with them
+and proposing new solutions putting ease of use first.
+
+
+The thesis starts with a chapter giving a brief overview of software transactional
+memory (STM) as well as a discussion of the problem of ease of use that is focused on in the later chapters.
+The research contributions are then divided into four main chapters, each looking at different approaches
+working towards making transactional memory easier to use.
+
+
+% , hence 
+% there exist many abstractions designed with the intention if making concurrent programming easier.
+
+
+
+% organized as follows:
+% The second chapter looks at properties and consistency conditions in STM, presenting an STM protocol that satisfies two properties that can be considered good for efficiency.
+% The following chapter looks at simplifying the semantics of transactions by introducing an STM protocol that guarantees transactions commit exactly once with the goal of hiding the concept of aborts to the programmer.
+% The fourth chapter discusses how the STM abstraction can fit within a concurrent system, describing an STM protocol that allows safe concurrent access to the same memory both inside and outside of transactions.
+% The fifth chapter discusses adding efficient libraries specifically designed for use by programmers within STM.
+% The thesis finishes with a concluding discussion and a discussion of possible future work.
+
+\subsection*{Résumé}
+
+
+Les architectures multicœurs changent notre façon d'écrire des programmes.
+L'écriture de programmes concurrents est bien connue pour être difficile.
+Traditionnellement, l'utilisation de verrous (locks) permettant au code de s'exécuter en exclusion mutuelle, 
+a été l'abstraction la plus largement utilisée pour l'écriture des programmes concurrents.
+Malheureusement, il est
+difficile d'écrire des programmes concurrents efficaces et corrects reposant sur des verrous.
+En outre, les verrous présentent d'autres problèmes, notamment celui du passage à l'échelle.
+Le concept de mémoire transactionnelle a été proposé comme une solution à ces difficultés.
+Les transactions peuvent être considérées comme une abstraction de haut niveau, ou une méthodologie pour l'écriture de programmes concurrents, ce qui permet
+au programmeur de pouvoir déclarer des sections de code devant être exécutés de façon atomique,
+sans avoir à se soucier des détails de synchronisation.
+Malheureusement, bien qu'assurément plus facile à utiliser que les verrous, la mémoire
+transactionnelle souffre encore de problèmes de performance et de facilité d'utilisation.
+En fait, de nombreux concepts relatifs à l'utilisation et à la sémantique des transactions n'ont pas encore des normes convenues.
+Cette thèse propose de nouvelles solutions permettant de faciliter l'utilisation des mémoires transactionellles.
+
+La thèse débute par un chapitre qui donne un bref aperçu de la mémoire transactionnelle logicielle (STM) ainsi qu'une discussion sur le problème de la facilité d'utilisation.
+Les contributions à la recherche sont ensuite divisées en quatre chapitres principaux, chacun proposant une approche différente afin de rendre les STMs plus facile à utiliser.
+
+
+
+% Transactional memory is designed to make parallel programming easier by allowing the programmer to define
+% what blocks of code he wants to be executed atomically while leaving the difficult synchronization tasks for the
+% underlying system.
+% Even though the idea of a transaction is clear, how the programmer should interact with the
+% abstraction is still not clearly defined.
+%\end{abstract}
+
+
+
+
+
+
 
 % \input{./Resume/resume.tex}
 

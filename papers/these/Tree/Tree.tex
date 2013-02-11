@@ -740,7 +740,12 @@ we expect the total space required to remain linear in the tree size.
 %time despite concurrent modifications. 
 
 
-\section{Correctness Proof} \label{sec:treeproof}
+
+
+
+\section{Correctness}\label{sec:treeproof}
+
+
 
 %\subsubsection{Linearisability}
 % Here we will give a sketch of the proof of the linearizability of these operations.
@@ -757,18 +762,11 @@ we expect the total space required to remain linear in the tree size.
 
 
 
+%with according to the abstraction of a set.
+
 There are two parts in the proof.
 First we have to ensure the structure of the tree is always a valid internal binary search tree.
-This is important because in a binary search tree in some state there is exactly one valid location for a key $k$, the term used for such a tree is \emph{valid binary tree}.
-In a valid binary a nodes left subtree is either empty or contains nodes with keys strictly smaller the the key of the node and its right subtree
-is either empty or contains nodes with keys strictly larger.
-A key $\ms{k}$ either exists in the tree at a single node or does not exist in the tree at all, in which case there is exactly one location at a leaf in the tree
-where a node with key with key $\ms{k}$ could be inserted without violating the validity of the tree.
-Throughout this proof we will refer to this location in the tree (either the node with key $\ms{k}$ or the leaf)
-as the \emph{correct} location for a node with key $\ms{k}$.
-A binary tree that does not have the previous property is simply called a \emph{binary tree}.
 Second we have to show the $\act{insert}$, $\act{delete}$, and $\act{contains}$ operations are linearizable.
-%with according to the abstraction of a set.
 
 It is important to remember for this proof that when a transaction commits the transactional $\lit{read}$s and $\lit{write}$s appear as if they have happened atomically
 and that $\lit{unit-read}$ operations only return values from previously committed transactions (or the value written by the current transaction, if the transaction has written to the location being read).
@@ -777,11 +775,22 @@ Another important part of this proof is the way the tree is first created.
 It is created with a root node with key $\infty$ so that all nodes will always be on its left subtree.
 This node will always be the root (i.e. it will not be modified by rotate or removal operations), this makes simpler operations and proofs.
 
+We will now present some definitions that will be used throught the proof.
+
 %\subsection{Definitions}
 %\vincent{Couldn't we put this paragraph in the alg. description instead of this section?}
 %First some definitions.
 
-\paragraph{Binary trees}
+\subsection{Binary trees}
+In an internal binary search tree in some state there is exactly one valid location for a key $k$, the term used for such a tree is \emph{valid binary tree}.
+In a valid binary a nodes left subtree is either empty or contains nodes with keys strictly smaller the the key of the node and its right subtree
+is either empty or contains nodes with keys strictly larger.
+A key $\ms{k}$ either exists in the tree at a single node or does not exist in the tree at all, in which case there is exactly one location at a leaf in the tree
+where a node with key with key $\ms{k}$ could be inserted without violating the validity of the tree.
+Throughout this proof we will refer to this location in the tree (either the node with key $\ms{k}$ or the leaf)
+as the \emph{correct} location for a node with key $\ms{k}$.
+A binary tree that does not have the previous property is simply called a \emph{binary tree}.
+
 Each node has two boolean state variables.
 When the variable $\ms{deleted}$ is $\lit{false}$ it entails that the key of $\ms{node.key}$ is in the set represented by the tree.
 When it is $\lit{true}$ it entails that the key of $\ms{node.key}$ is not in the set represented by the tree.
@@ -789,7 +798,7 @@ When the variable $\ms{removed}$ is $\lit{false}$ it entails that the node exist
 When it is $\lit{true}$ (or $\lit{true\_by\_left\_rot}$) it entails that the node does not exist in the tree (meaning no path exists from the root of the tree to the node).
 For simplicity throughout the pseudo code $\lit{true\_by\_left\_rot}$ is considered to be equivalent to $\lit{true}$, only on line \ref{line:find-rot-check} of the $\lit{find}$ operation is this
 parameter value specifically checked for.
-After showing that the tree is valid the second part of the proof proves the linearizability of the set operations.
+% After showing that the tree is valid the second part of the proof proves the linearizability of the set operations.
 
 In the proof we will use the phrase \emph{a node can reach a range of keys} which is explained here.
 Take the root, from this node there is a path to any node in the tree meaning any key that is in the set is reachable from the root.
@@ -802,28 +811,36 @@ Its left child will have a range $(10, 14)$ and its right child will have a rang
 The phrase \emph{a node $n$ has a path to a range of keys at least as large as some other node $n'$} is also used in the proof.
 It means that every key that is in the range of
 $n'$ is also in the range of $n$ (and possibly some more).
-For example any node will have a path to a range of keys at least at large as its left child (in fact it has the exact range of its left and right child combined).
+For example any node will have a path to a range of keys at least at large as its left child (in fact it has the exact range of
+its own key plus its left and right child combined).
 
-\paragraph{Set operations}
+\subsection{Set operations}
 Here traditional operations on the set are defined in the context of transactions.
 It is important to remember that the TM guarantees a linearization of transactions.
 
-The following definitions are used in defining the operations.
-Saying a key $k$ is in (not in) the set before the committal of a transaction $T$ means that if some transaction $T1$ performs a contains operation on key $k$
-and is serialized as the transaction immediately before $T$, $T1$ would return $\lit{true}$ ($\lit{false}$).
+% The following definitions are used in defining the operations.
+% Saying a key $k$ is in (not in) the set before the committal of a transaction $T$ means that if some transaction $T1$ performs a contains operation on key $k$
+% and is serialized as the transaction immediately before $T$, $T1$ would return $\lit{true}$ ($\lit{false}$).
+% 
+% Saying a key $k$ is in (not in) the set after the committal of a transaction $T$ means that if some transaction $T2$ performs a contains operation on key $k$
+% and is serialized as the transaction immediately after $T$, $T2$ would return $\lit{true}$ ($\lit{false}$).
 
-Saying a key $k$ is in (not in) the set after the committal of a transaction $T$ means that if some transaction $T2$ performs a contains operation on key $k$
-and is serialized as the transaction immediately after $T$, $T2$ would return $\lit{true}$ ($\lit{false}$).
-
-{\bf delete} For a transaction that commits a successful $\act{delete}$ operation of key $k$, before the commit $k$ was in the set
+{\bf delete} For a transaction $T$ that commits a successful $\act{delete}$ operation of key $k$, then before the linearization of $T$ $k$ was in the set
 and afterwards $k$ is not in the set.
-For a transaction that commits a failed $\act{delete}$ operation of key $k$, before and after the commit $k$ is not in the set.
+For a transaction that commits a failed $\act{delete}$ operation of key $k$, then before and after the linearization of $T$ $k$ is not in the set.
 
-{\bf insert} For a transaction that commits a successful $\act{insert}$ operation of key $k$, before the commit $k$ was not in the set and after the commit $k$ is in the set.
-For a transaction that commits a failed $\act{insert}$ operation of key $k$, before and after the commit $k$ is in the set.
+{\bf insert} For a transaction that commits a successful $\act{insert}$ operation of key $k$, then before the linearization of $T$ $k$ was not in the set and afterwards $k$ is in the set.
+For a transaction that commits a failed $\act{insert}$ operation of key $k$, then before and after the linearization of $T$ $k$ is in the set.
 
-{\bf contains} For a transaction that commits a successful $\act{contains}$ operation of key $k$, before and after the commit $k$ is in the set.
-For a transaction that commits a failed $\act{contains}$ operation of key $k$, before and after the commit $k$ is not in the set.
+{\bf contains} For a transaction that commits a successful $\act{contains}$ operation of key $k$, then before and after the linearization of $T$ $k$ is in the set.
+For a transaction that commits a failed $\act{contains}$ operation of key $k$, then before and after the llinearization of $T$ $k$ is not in the set.
+
+
+
+
+\subsection{Valid internal binary search tree}
+
+
 
 
 
@@ -880,11 +897,12 @@ By symmetry this holds for left rotations.
 
 \begin{lemma}
 \label{lemma:false-rem-par}
-A node with $\ms{removed}=\lit{false}$ has exactly parent with $\ms{removed}=\lit{false}$ (except the root, as it has no parent).
+A node with $\ms{removed}=\lit{false}$ has exactly one parent with $\ms{removed}=\lit{false}$ (except the root, as it has no parent).
 \end{lemma}
 \begin{proof}
 % Assume by contradiction that there is no parent with $\ms{removed}=\lit{false}$.
-When a node is first added to the tree it has a parent with $\ms{removed}=\lit{false}$ (line~\ref{line:rem-check2} of the $\act{find}$ operation).
+When a node is first added to the tree it has a parent with $\ms{removed}=\lit{false}$ (ensured by the transactional read of the parent's child pointer on
+line~\ref{line:rem-check2} of the $\act{find}$ operation).
 The only operations that modify links pointing to nodes are the $\act{remove}$ (line \ref{line:child-par-rem1}) and $\act{rotate}$ (line \ref{line:rot-path3}) operations,
 but in each case when a link is removed, a new link from a different node with $\ms{removed}=\lit{false}$ is added
 (lines~\ref{line:rem-write}--\ref{line:rem-end} of $\act{remove}$ and \ref{line:rot-write}--\ref{line:rot-end} of $\act{rotate}$).
@@ -942,7 +960,7 @@ we can then see that the resulting tree of non-removed nodes is equivalent to a 
 \end{proof}
 
 
-For the following lemma, we assume that the $\act{find}$ operation is performed correctly (this will be proved in a later lemma).
+For the following lemma, we assume that the $\act{find}$ operation is performed correctly (this will be proved later lemma in lemma \ref{lemma:find}).
 
 \begin{lemma}
 \label{lemma:insert-valid1}
@@ -983,12 +1001,37 @@ Thus the resulting tree is still valid.
 %\renewcommand{\toto}{lemma:remove-valid}
 \end{proof}
 
+
+Assuming a correct $\act{find}$ operation (proved in lemma \ref{lemma:find}), then from lemmas \ref{lemma:rotation-valid}, \ref{lemma:insert-valid1}, \ref{lemma:remove-valid},
+we know that the structural modifications to the tree (done by the $\act{rotate}$, $\act{insert}$ and $\act{remove}$ operations)
+result in a valid binary tree.
+Now given that initially the tree is created in a valid state
+and that only the $\act{rotate}$, $\act{insert}$ and $\act{remove}$ operations modify the tree structure (a $\act{delete}$ operation
+will only modify the $\ms{deleted}$ flag), we have know the tree will remain valid.
+Using this information, the next part of the proof will prove the linearizability of the set operations.
+
+
+\subsection{Linearizability of set operations}
+
+
+Each of the $\act{insert}$, $\act{delete}$ and $\act{contains}$ operations internally call the $\act{find}$ operation
+that is used to traverse the tree.
+Therefore before proving the linearizability of these set operations we will prove that the find operation traverses
+the tree in a correct manner.
+While traversing the tree, the find operation uses unit reads, meaning that concurrent modifications will not abort the transaction.
+Therefore we need to show that these concurrent modifications will not affect the correctness of the traversal.
+In doing this, we will first show that modifications to the structure of the tree are done in such a way that
+any $\act{find}$ operation preempted on a modified node will still be able to reach the same set of nodes as it was able to reach before the modification.
+Second, we will show that the transactional reads and writes done by the $\act{insert}$, $\act{delete}$ and $\act{contains}$
+operations ensure that the operations are linearized in valid way according to their sequential specification.
+
+
 \begin{lemma}
 \label{lemma:mods}
 Modifications to the tree structure are only performed on nodes with $\ms{removed}=\lit{false}$.
 \end{lemma}
 \begin{proof}
-A $\act{rotate}$, $\act{insert}$ or $\act{remove}$ operation can modify the tree.
+A $\act{rotate}$, $\act{insert}$ or $\act{remove}$ operation can modify the structure of tree.
 
 During a right $\act{rotate}$ operation the nodes that are modified are $n$, $l$ and the parent of $n$ (lines~\ref{line:rot-path3}--\ref{line:rot-end}).
 A transactional read is performed on the remove variable of the parent node (line~\ref{line:rot-par-rem}), this along with lemma~\ref{lemma:false-rem} ensures 
@@ -1002,6 +1045,9 @@ During a $\act{remove}$ operation a node is removed from the tree.
 A transactional read is performed on the node and its parent (line~\ref{line:rem-par-rem}), this along with lemma~\ref{lemma:false-rem} ensures that $\ms{removed}=\lit{false}$ for both nodes.
 %\renewcommand{\toto}{lemma:mods}
 \end{proof}
+
+
+
 
 \begin{lemma}
 \label{lemma:path-false}
@@ -1255,6 +1301,541 @@ Since $\ms{removed}$ is $\lit{false}$ this node is part of the valid tree (lemma
 $\ms{deleted}$ to $\lit{true}$, $\ms{k}$ is no longer in the set after the transaction commits.
 %\renewcommand{\toto}{lemma:delete-valid}
 \end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% \section{Correctness Proof} \label{sec:treeproof}
+% 
+% %\subsubsection{Linearisability}
+% % Here we will give a sketch of the proof of the linearizability of these operations.
+% % Without rotations and removals and with the help of transactional reads writes it is easy to show the linearizability of these operations.
+% % First note that the linearizability of the transactional reads and writes is ensured by the TM system.
+% % Also note that in a binary tree structure there is exactly one place where a node with a given key could exist.
+% % It is then only necessary to show that the correct location in the tree is always reached, and that the transactional read/write sets contain enough to ensure the operations are linearizable.
+% % 
+% % Out of these operations the only one that modifies the structure of the tree is the $\act{insert}$ operation, but an insert does not invalidate a search.
+% % The search might have to continue further down the tree in the case of concurrent inserts, but it does not have to abort or roll back, this means that the find operation will always be on the correct path towards the key it is searching.
+% % The result of the $\act{contains}$, $\act{insert}$, and $\act{delete}$ operations depend on if the node with the $key$ being searched for is in the tree.
+% % If they find the node with the correct $key$ in the tree then they transactionaly read (and possibly write) $\ms{deleted}$ field of this before returning, and the linearizability of this is guaranteed by the TM.
+% % Otherwise if the node is not found then the pointer that would point to this node is read (and possibly written to) transactionaly which is again guaranteed to be linearizable by the TM.
+% 
+% 
+% 
+% There are two parts in the proof.
+% First we have to ensure the structure of the tree is always a valid internal binary search tree.
+% This is important because in a binary search tree in some state there is exactly one valid location for a key $k$, the term used for such a tree is \emph{valid binary tree}.
+% In a valid binary a nodes left subtree is either empty or contains nodes with keys strictly smaller the the key of the node and its right subtree
+% is either empty or contains nodes with keys strictly larger.
+% A key $\ms{k}$ either exists in the tree at a single node or does not exist in the tree at all, in which case there is exactly one location at a leaf in the tree
+% where a node with key with key $\ms{k}$ could be inserted without violating the validity of the tree.
+% Throughout this proof we will refer to this location in the tree (either the node with key $\ms{k}$ or the leaf)
+% as the \emph{correct} location for a node with key $\ms{k}$.
+% A binary tree that does not have the previous property is simply called a \emph{binary tree}.
+% Second we have to show the $\act{insert}$, $\act{delete}$, and $\act{contains}$ operations are linearizable.
+% %with according to the abstraction of a set.
+% 
+% It is important to remember for this proof that when a transaction commits the transactional $\lit{read}$s and $\lit{write}$s appear as if they have happened atomically
+% and that $\lit{unit-read}$ operations only return values from previously committed transactions (or the value written by the current transaction, if the transaction has written to the location being read).
+% 
+% Another important part of this proof is the way the tree is first created.
+% It is created with a root node with key $\infty$ so that all nodes will always be on its left subtree.
+% This node will always be the root (i.e. it will not be modified by rotate or removal operations), this makes simpler operations and proofs.
+% 
+% %\subsection{Definitions}
+% %\vincent{Couldn't we put this paragraph in the alg. description instead of this section?}
+% %First some definitions.
+% 
+% \paragraph{Binary trees}
+% Each node has two boolean state variables.
+% When the variable $\ms{deleted}$ is $\lit{false}$ it entails that the key of $\ms{node.key}$ is in the set represented by the tree.
+% When it is $\lit{true}$ it entails that the key of $\ms{node.key}$ is not in the set represented by the tree.
+% When the variable $\ms{removed}$ is $\lit{false}$ it entails that the node exists in the tree (meaning a path exists from the root of the tree to the node).
+% When it is $\lit{true}$ (or $\lit{true\_by\_left\_rot}$) it entails that the node does not exist in the tree (meaning no path exists from the root of the tree to the node).
+% For simplicity throughout the pseudo code $\lit{true\_by\_left\_rot}$ is considered to be equivalent to $\lit{true}$, only on line \ref{line:find-rot-check} of the $\lit{find}$ operation is this
+% parameter value specifically checked for.
+% After showing that the tree is valid the second part of the proof proves the linearizability of the set operations.
+% 
+% In the proof we will use the phrase \emph{a node can reach a range of keys} which is explained here.
+% Take the root, from this node there is a path to any node in the tree meaning any key that is in the set is reachable from the root.
+% Furthermore for any key that is not in the tree the root has a path to where it would be if it did exist in the tree (i.e. to the leaf that would be its parent).
+% This means that the root with key $k$ node has a range $[-\infty, \infty]$,
+% now its left child has range $[-\infty,k]$ and its right child has range $[k,-\infty]$.
+% Or for example consider some node with range $(10, 20]$ and key $14$.
+% Its left child will have a range $(10, 14)$ and its right child will have a range $(14, 20]$.
+% 
+% The phrase \emph{a node $n$ has a path to a range of keys at least as large as some other node $n'$} is also used in the proof.
+% It means that every key that is in the range of
+% $n'$ is also in the range of $n$ (and possibly some more).
+% For example any node will have a path to a range of keys at least at large as its left child (in fact it has the exact range of its left and right child combined).
+% 
+% \paragraph{Set operations}
+% Here traditional operations on the set are defined in the context of transactions.
+% It is important to remember that the TM guarantees a linearization of transactions.
+% 
+% The following definitions are used in defining the operations.
+% Saying a key $k$ is in (not in) the set before the committal of a transaction $T$ means that if some transaction $T1$ performs a contains operation on key $k$
+% and is serialized as the transaction immediately before $T$, $T1$ would return $\lit{true}$ ($\lit{false}$).
+% 
+% Saying a key $k$ is in (not in) the set after the committal of a transaction $T$ means that if some transaction $T2$ performs a contains operation on key $k$
+% and is serialized as the transaction immediately after $T$, $T2$ would return $\lit{true}$ ($\lit{false}$).
+% 
+% {\bf delete} For a transaction that commits a successful $\act{delete}$ operation of key $k$, before the commit $k$ was in the set
+% and afterwards $k$ is not in the set.
+% For a transaction that commits a failed $\act{delete}$ operation of key $k$, before and after the commit $k$ is not in the set.
+% 
+% {\bf insert} For a transaction that commits a successful $\act{insert}$ operation of key $k$, before the commit $k$ was not in the set and after the commit $k$ is in the set.
+% For a transaction that commits a failed $\act{insert}$ operation of key $k$, before and after the commit $k$ is in the set.
+% 
+% {\bf contains} For a transaction that commits a successful $\act{contains}$ operation of key $k$, before and after the commit $k$ is in the set.
+% For a transaction that commits a failed $\act{contains}$ operation of key $k$, before and after the commit $k$ is not in the set.
+% 
+% 
+% 
+% %\subsection{Lemmas and Theorems}
+% %---------------------------
+% \begin{lemma}
+% \label{lemma:1-rem}
+% A node has at most one parent with $\ms{removed} = \lit{false}$.
+% \end{lemma}
+% 
+% \begin{proof}
+% % Assume by contradiction that a node has more then one parent with $\ms{removed} = \lit{false}$.
+% There are three operation where a node can be given a new parent.
+% First during the $\act{insert}$ operations on lines~\ref{sline:start-ins}--\ref{sline:end-ins}, but this is a new node so before this line it has no parent.
+% Second during the $\act{remove}$ operation on lines~\ref{line:rem-write}--\ref{line:rem-end}, but by line~\ref{line:rem-par-rem} the node's previous parent has $\ms{removed}$ set to $\lit{true}$.
+% Third during the $\ms{right-rotate}$ operation the node $l$ gets a new parent on lines~\ref{line:rot-write}--\ref{line:rot-end}, but by line \ref{line:rot-path3} the node's old parent has $\ms{removed}$ set to $\lit{true}$.
+% Also during the $\act{right\_rotate}$ operation the newly allocated node $\ms{n2}$ gets node $\ms{l}$ as a parent (line~\ref{line:rot-path3}), but since it is a new node it has no other parent.
+% (This holds for the $\act{left\_rotate}$ operation by symmetry)
+% Given this, a node will have at most one parent with $\ms{removed}=\lit{false}$.
+% %\renewcommand{\toto}{lemma:1-rem}
+% \end{proof}
+% 
+% \begin{lemma}
+% \label{lemma:false-rem}
+% A node with $\ms{removed}=\lit{false}$ only has paths from it to other nodes with $\ms{removed}=\lit{false}$.
+% \end{lemma}
+% 
+% \begin{proof}
+% This proof is by induction on the number $j$ of operations done on the subtree of a node with key $k$.
+% 
+% % new par. for the base case
+% The base case is when a new node is created and added to the tree.
+% This can happen in the $\act{insert}$ operation.
+% During the operation a new node is created with no children and for itself it has $\ms{removed}=\lit{false}$ (line~\ref{sline:new-node}) and the proof holds.
+% 
+% % new par. for the inductive case
+% Now for the induction step from $j=m-1$ to $j=m$, this could be a $\act{contains}$, $\act{delete}$, $\act{insert}$, $\act{remove}$, or $\act{rotate}$ operation.
+% First note that the inductions holds for the $\act{contains}$ and $\act{delete}$ operations as they neither change any children pointers nor any $\ms{removed}$ flags.
+% If this is an $\act{insert}$ operation, then at $j=m-1$ $\ms{left}$ or $\ms{right}$ must be $\bot$ (line~\ref{line:null-find} of the $\act{find}$ operation) and the induction obviously still holds
+% as newly allocated nodes have $\ms{removed}=\lit{false}$.
+% If this is a $\act{remove}$ operation, then the child of the node is being removed.
+% This means that the new child will either be $\bot$ or the child of the child (lines~\ref{line:rem-start}--\ref{line:rem-end}), 
+% but by induction these nodes have $\ms{removed}=\lit{false}$.
+% By symmetry this holds for the right and left children.
+% Otherwise this is a $\act{rotate}$ operation.
+% First consider right rotations.
+% By induction we know that node $n$ only has paths to nodes with $\ms{removed}=\lit{false}$.
+% After the rotation node $l$ points to nodes that had paths from $n$ before the rotation as well as $n2$ (line~\ref{line:rot-path3}) which has $\ms{removed}=\lit{false}$.
+% $n2$ points to nodes that had paths from $n$ before the rotation (line~\ref{line:rot-path1}).%--\ref{line:rot-path2}).
+% By symmetry this holds for left rotations.
+% %\renewcommand{\toto}{lemma:false-rem}
+% \end{proof}
+% 
+% 
+% \begin{lemma}
+% \label{lemma:false-rem-par}
+% A node with $\ms{removed}=\lit{false}$ has exactly parent with $\ms{removed}=\lit{false}$ (except the root, as it has no parent).
+% \end{lemma}
+% \begin{proof}
+% % Assume by contradiction that there is no parent with $\ms{removed}=\lit{false}$.
+% When a node is first added to the tree it has a parent with $\ms{removed}=\lit{false}$ (line~\ref{line:rem-check2} of the $\act{find}$ operation).
+% The only operations that modify links pointing to nodes are the $\act{remove}$ (line \ref{line:child-par-rem1}) and $\act{rotate}$ (line \ref{line:rot-path3}) operations,
+% but in each case when a link is removed, a new link from a different node with $\ms{removed}=\lit{false}$ is added
+% (lines~\ref{line:rem-write}--\ref{line:rem-end} of $\act{remove}$ and \ref{line:rot-write}--\ref{line:rot-end} of $\act{rotate}$).
+% The proof then follows from lemma \ref{lemma:1-rem}.
+% %\renewcommand{\toto}{lemma:false-rem-par}
+% \end{proof}
+% 
+% 
+% 
+% \begin{lemma}
+% \label{lemma:false-rem-root}
+% A node with $\ms{removed}=\lit{false}$ has a path from the root node to it.
+% \end{lemma}
+% \begin{proof}
+% Given that the root is always the same node and it always has $\ms{removed}=\lit{false}$ the proof of this lemma follows directly
+% from lemmas~\ref{lemma:false-rem} and \ref{lemma:false-rem-par}.
+% %\renewcommand{\toto}{lemma:false-rem-root}
+% \end{proof}
+% 
+% 
+% \begin{lemma}
+% \label{lemma:true-rem}
+% A node with $\ms{removed}=\lit{true}$ has no path from the root node to it.
+% \end{lemma}
+% \begin{proof}
+% By the way the tree is structured the root node always has $\ms{removed}=\lit{false}$.
+% Now it follows directly from lemma \ref{lemma:false-rem} that there is no path from the root to a node with $\ms{removed}=\lit{true}$.
+% %\renewcommand{\toto}{lemma:true-rem}
+% \end{proof}
+% 
+% 
+% \begin{lemma}
+% \label{lemma:binary-tree}
+% The nodes with $\ms{removed}=\lit{false}$ make up a single binary tree.
+% \end{lemma}
+% \begin{proof}
+% From the structure of a node, it can have at most $2$ children.
+% Now by lemmas \ref{lemma:1-rem}, \ref{lemma:false-rem-root}, and \ref{lemma:true-rem} the proof follows.
+% %\renewcommand{\toto}{lemma:binary-tree}
+% \end{proof}
+% 
+% 
+% 
+% \begin{lemma}
+% \label{lemma:rotation-valid}
+% A $rotation$ operation on a valid binary search tree results in a valid binary tree
+% representing the same set of keys as before the rotation. %of the nodes with $\ms{removed}=\lit{false}$.
+% \end{lemma}
+% \begin{proof}
+% From Figure~\ref{fig:rotation} which describes the $rotation$ operation and due to the use of transactional reads/writes
+% as well as the fact that the new node (node $\ms{n2}$) added by the rotation has the same state as the node (node $\ms{n}$) removed by the rotation
+% (lines \ref{line:new-node-ret}-\ref{line:rot-path1})
+% we can then see that the resulting tree of non-removed nodes is equivalent to a tree with a classical binary tree rotation performed on it.
+% %\renewcommand{\toto}{lemma:rotation-valid}
+% \end{proof}
+% 
+% 
+% For the following lemma, we assume that the $\act{find}$ operation is performed correctly (this will be proved in a later lemma).
+% 
+% \begin{lemma}
+% \label{lemma:insert-valid1}
+% Assuming a correct $\act{find}$ operation, an $\act{insert}$ operation on a valid binary search tree results in a valid binary tree.% of the nodes with $\ms{removed}=\lit{false}$.
+% \end{lemma}
+% \begin{proof}
+% There are two cases to consider.
+% 
+% First the key $k$ that we are inserting is already contained in the tree with $\ms{removed}=\lit{false}$ (lines \ref{line:eq-find}--\ref{line:rem-check1} of $\act{find}$).
+% In this case the structure of the tree will not be modified, thus the resulting tree will still be valid.
+% 
+% Second consider that there is no node in the tree with key $k$.
+% In this case the correct $\act{find}$ operation will return the correct node that will become the parent of the new node with key $k$ (line \ref{sline:start-ins}--\ref{sline:end-ins}).
+% Using transactional reads, the $\act{find}$ operation ensures that the parent node has $\ms{removed}=\lit{false}$ (line \ref{line:rem-check2}) and $\bot$
+% (line \ref{line:null-find}) as the child pointer where the new
+% node will be inserted.
+% The new node is then allocated and added to the tree as the child of the node returned from $\act{find}$.
+% This is done using a transactional write (lines~\ref{sline:start-ins}--\ref{sline:end-ins}) which ensures that the value of the pointer was $\bot$ before the write,
+% and finally resulting in a valid tree containing the new node after the transaction commits.
+% %\renewcommand{\toto}{lemma:insert-valid1}
+% \end{proof}
+% 
+% 
+% \begin{lemma}
+% \label{lemma:remove-valid}
+% A $\act{remove}$ operation on a valid binary search tree results in a valid binary tree that does not include the node removed.
+% \end{lemma}
+% \begin{proof}
+% A removal can only be preformed on a node $n$ with at least one $\bot$ child which is ensured by transactional reads to the
+% nodes child pointers (lines~\ref{line:rem-start}--\ref{line:rem-mid}).
+% A node $n$ being removed is unlinked from its parent (lines~\ref{line:rem-write}-\ref{line:rem-end})
+% (the parent is ensured to be in the tree by a transaction read on $\ms{removed}=\lit{false}$) effectively removing it from the tree (see lemma~\ref{lemma:false-rem-par}).
+% If both children of $n$ are set to $\bot$, then the parent's new child becomes $\bot$ (lines~\ref{line:rem-start}--\ref{line:rem-end}) leaving the tree still valid.
+% If node $n$ has a child $c$ such that $c\neq \bot$, then $c$ becomes the parent's new child 
+% (lines~\ref{line:rem-start}--\ref{line:rem-end}).
+% By lemma~\ref{lemma:false-rem} this $c$ must have $\ms{removed}=\lit{false}$ and by lemma~\ref{lemma:false-rem-root} it is part of the valid binary tree during the transaction (until the transaction commits).
+% Thus the resulting tree is still valid.
+% %\renewcommand{\toto}{lemma:remove-valid}
+% \end{proof}
+% 
+% \begin{lemma}
+% \label{lemma:mods}
+% Modifications to the tree structure are only performed on nodes with $\ms{removed}=\lit{false}$.
+% \end{lemma}
+% \begin{proof}
+% A $\act{rotate}$, $\act{insert}$ or $\act{remove}$ operation can modify the tree.
+% 
+% During a right $\act{rotate}$ operation the nodes that are modified are $n$, $l$ and the parent of $n$ (lines~\ref{line:rot-path3}--\ref{line:rot-end}).
+% A transactional read is performed on the remove variable of the parent node (line~\ref{line:rot-par-rem}), this along with lemma~\ref{lemma:false-rem} ensures 
+% that $\ms{removed}=\lit{false}$ for the parent of $n$ as well as $n$, and $l$.
+% By symmetry the left $\act{rotate}$ operation also only modifies nodes with $\ms{removed}=\lit{false}$.
+% 
+% During a successful $\act{insert}$ operation a new node might be added to the tree, in this case its parent node is modified (lines~\ref{sline:start-ins}--\ref{sline:end-ins}), and
+% a transactional read is performed on the parent to ensure that $\ms{removed}=\lit{false}$ (line \ref{line:rem-check2} of the $\act{find}$ operation).
+% 
+% During a $\act{remove}$ operation a node is removed from the tree.
+% A transactional read is performed on the node and its parent (line~\ref{line:rem-par-rem}), this along with lemma~\ref{lemma:false-rem} ensures that $\ms{removed}=\lit{false}$ for both nodes.
+% %\renewcommand{\toto}{lemma:mods}
+% \end{proof}
+% 
+% \begin{lemma}
+% \label{lemma:path-false}
+% From a node with $\ms{removed}=\lit{true}$ there is always a path to some node with $\ms{removed}=\lit{false}$.
+% \end{lemma}
+% \begin{proof}
+% There are two places where a node can be set to $\ms{removed}=\lit{true}$.
+% First during the $\act{remove}$ operation, in this case the node that is removed has both of the nodes child pointers are set to a node
+% with $\ms{removed}=\lit{false}$ (line~\ref{line:child-par-rem1}).%--\ref{line:child-par-rem2}).
+% Second during the $\act{rotate}$ operation, in this case the node that is removed does not have its child pointers changed.
+% By line~\ref{line:l-child-rot} $n$ must have at least $1$ child and using lemma \ref{lemma:false-rem} this child must have $\ms{removed}=\lit{false}$.
+% 
+% Now notice that once the $\ms{removed}$ field of a node is set to $\lit{true}$ it will never be reverted to $\lit{false}$ (lemma~\ref{lemma:mods}).
+% %after a node has had $\ms{removed}$ set to $\lit{true}$ the node will not be modified again (lemma~\ref{lemma:mods}), 
+% This along with the use of induction on the length
+% of the path to a node with $\ms{removed}=\lit{false}$ completes the proof.
+% %\renewcommand{\toto}{lemma:path-false}
+% \end{proof}
+% 
+% 
+% \begin{lemma}
+% \label{lemma:path}
+% From any node every path leads to a leaf node (or $\bot$).
+% \end{lemma}
+% \begin{proof}
+% This proof is the same as lemma \ref{lemma:path-false} with a small modification.
+% 
+% First consider a node with $\ms{removed}=\lit{false}$.
+% By lemma \ref{lemma:binary-tree} 
+% it is clear that there is a path from this node to a leaf node.
+% 
+% Now consider a node with $\ms{removed}=\lit{true}$.
+% There are two places where a node's $\ms{removed}$ flag can be set to $\lit{true}$.
+% It can either be set in the $\act{remove}$ operation, but in this case the node's left and right pointers  are set to a node with $\ms{removed}=\lit{false}$ (line~\ref{line:child-par-rem1}).%--\ref{line:child-par-rem2}).
+% 
+% Or it can be set in the $\act{rotation}$ operation, first notice that in this case the node's left and right pointers are not changed.
+% Then before the rotation the node has $\ms{removed}=\lit{false}$ and therefore by lemma~\ref{lemma:false-rem} the (node's left and right) pointers will point
+% to either nodes with $\ms{removed}=\lit{false}$ or $\bot$.
+% 
+% Now that after a node has had $\ms{removed}$ set to $\lit{true}$ the node will not be modified again (lemma~\ref{lemma:mods}), this along with lemma \ref{lemma:binary-tree} and
+% the use of induction on the length of the path to a node with $\ms{removed}=\lit{false}$ or $\bot$ completes the proof.
+% %\renewcommand{\toto}{lemma:path}
+% \end{proof}
+% 
+% The phrase \emph{a node that has $\ms{removed}=\lit{true}$ from a $\act{rotation}$ operation} refers to the node that is no longer in the tree after the rotation.
+% For example in figure \ref{sfig:tree3} this would be the node $\ms{j}$.
+% This phrase is used in the following lemmas.
+% 
+% \begin{lemma}
+% \label{lemma:right-rotation-range}
+% A node $\ms{n}$ with key $\ms{k}$ that has $\ms{removed}=\lit{true}$ from a $right\_rotation$ operation has, for its \textbf{left} child,
+% a path to a range of keys at least as large as 
+% $\ms{n}$ had before the rotation (including the new node $\ms{new}$ with key $\ms{k}$), and has, for its \textbf{right} child,
+% either a path to a range of keys at least as large as the right child of $\ms{n}$ had before the rotation, or $\bot$.
+% \end{lemma}
+% \begin{proof}
+% First notice that the node $\ms{n}$ that gets removed during the rotation is the node that would
+% be rotated downwards during a traditional rotation (i.e. node $\ms{j}$ from figure \ref{fig:rotation}).
+% Assume that the node $\ms{n}$ has key $\ms{k}$ and before the rotation has a path to a range $[a, b]$.
+% This means that node $\ms{l}$ (the left child of $\ms{n}$) has a path to the range $[a, k]$.
+% Assume node $\ms{l}$ has key $\ms{j}$.
+% The right child of $\ms{n}$ is either $\bot$ or some node $\ms{r}$ with a path to the range $[k, b]$.
+% 
+% After the rotation $\ms{l}$ keeps it left child with its right child changing from $\ms{n}$ to $\ms{new}$ (line \ref{line:rot-path3}).
+% $\ms{new}$'s right child is set to $\ms{n}$'s right child (line \ref{line:rot-path1}), and $\ms{new}$'s left child becomes $\ms{l}$'s old right child (line \ref{line:rot-path1}).
+% This leaves $\ms{new}$ with a path to the range $[j, b]$, and $\ms{l}$ with a path to the range $[a, b]$.
+% 
+% During the $rotation$ operation no modifications are made to node $\ms{n}$, except setting $\ms{removed}=\lit{true}$.
+% Now $\ms{n}$'s left child is $\ms{l}$ giving it a path to the range of keys $[a, b]$.
+% Node $\ms{n}$ still has the same right child who still has the same range, $[k, b]$, or is $\bot$.
+% %\renewcommand{\toto}{lemma:right-rotation-range}
+% \end{proof}
+% 
+% 
+% 
+% \begin{lemma}
+% \label{lemma:left-rotation-range}
+% A node $n$ with key $k$ that has $\ms{removed}=\lit{true\_by\_left\_rot}$ from a $left\_rotation$ operation has,
+% for its \textbf{right} child, a path to a range of keys at least as large as
+% $\ms{n}$ did before the rotation (including the new node $\ms{new}$ with key $\ms{k}$), and has, for its \textbf{left} child
+% either a path to a range of keys at least as large as the left child of $\ms{n}$ had before the rotation, or $\bot$.
+% \end{lemma}
+% \begin{proof}
+% This proof follows from symmetry (the left rotation is the mirror of the right rotation) and lemma \ref{lemma:right-rotation-range}.
+% %\renewcommand{\toto}{lemma:left-rotation-range}
+% \end{proof}
+% 
+% 
+% \begin{lemma}
+% \label{lemma:remove-range}
+% A node that has $\ms{removed}=\lit{true}$ from a $\act{remove}$ operation has a path to a range of keys as least as large as just before the $\act{remove}$ operation took place.
+% \end{lemma}
+% \begin{proof}
+% Assume that the node $n$ (where $n$ is the node to be removed) has key $k$.
+% Assume that $n$ has a parent node $p$ with range $[a, b]$ with key $j$.
+% This leaves $n$ with range $[a, k]$ if $n$ is the left child (or $[k, b]$ if $n$ is the right child, the proof of this case will follow by symmetry).
+% 
+% After the removal $\ms{removed}$ will be set to $\lit{true}$ (line~\ref{line:child-par-rem1} of $\act{remove}$) for $n$ and both its child pointers will point
+% to $p$ (line~\ref{line:child-par-rem1}%-\ref{line:child-par-rem2}
+% of $\act{remove}$).
+% Now given the removal is performed inside of an atomic transaction,
+% node $p$ will still have a range of $[a, b]$ and will be reachable from $n$, which completes the proof.
+% %\renewcommand{\toto}{lemma:remove-range}
+% \end{proof}
+% 
+% \begin{lemma}
+% \label{lemma:range}
+% A node that has $\ms{removed}=\lit{true}$ has either:
+% \begin{itemize}
+% \item for each child a path to a range of keys at least as large as they did when it had $\ms{removed}=\lit{false}$ or
+% \item a single $\bot$ child with the other child having a path to a range of keys at least as large as both children before when it had $\ms{removed}=\lit{false}$.
+% \end{itemize}
+% \end{lemma}
+% \begin{proof}
+% The proof follows using lemmas~\ref{lemma:right-rotation-range}, \ref{lemma:left-rotation-range}, and \ref{lemma:remove-range} as well as induction on the length
+% of the path from the node to a node with $\ms{removed}=\lit{false}$.
+% %\renewcommand{\toto}{lemma:range}
+% \end{proof}
+% 
+% 
+% \begin{lemma}
+% \label{lemma:find}
+% A $\act{find}$ operation for key $\ms{k}$ on a valid binary search tree always returns the correct location from the valid binary tree.
+% \end{lemma}
+% \begin{proof}
+% Assume by contradiction that a $\act{find}$ operation does not return the correct location from the valid binary tree.
+% By lemma \ref{lemma:binary-tree} we know that every node with $\ms{removed}=\lit{false}$ is a node in the valid binary tree so
+% there are two possibilities.
+% The operation never returns or the operation returns the wrong location.
+% First for the operation never returning.
+% From lemma~\ref{lemma:path} we know that there are no cycles in the path from any node so the operation will not get stuck in an endless loop in the tree.
+% In order for the operation to complete it must reach a node with $\ms{removed}=\lit{false}$ that either matches the key $\ms{k}$ (lines~\ref{line:eq-find}--\ref{line:rem-check1}) or
+% has $\bot$ as the appropriate child where a node with key $\ms{k}$ would exist (lines~\ref{line:rem-check2}--\ref{line:null-par-find2}).
+% Lemma~\ref{lemma:path-false} is enough to show that this will always happen and the operation will terminate without there
+% being infinite successful concurrent $\act{insert}$ operations.
+% 
+% The second possibility where the operation returns the wrong location is more difficult to prove.
+% To this end, we prove by induction on the number of nodes traversed by the operation that
+% %The following proof based on induction of the number of nodes traversed by the operation will show that 
+% the find operation will always have a path
+% to the correct location.
+% In order for the operation to reach the correct location the following must be true:
+% After each traversal from one node to the next the operation must have either reached the final correct location for $\ms{k}$
+% or have a path from the current location to a range of keys that includes the key being searched for.
+% Once the correct location is reached transactional reads are used to ensure that the location remains correct throughout the transaction
+% (lines~\ref{line:rem-check1}, and \ref{line:rem-check2}--\ref{line:null-par-find2}).
+% \begin{itemize}
+% \item The base case is easy given that the operation starts from the root which is always part of the valid tree and can reach
+% all nodes with $\ms{removed}=\lit{false}$ (lemma~\ref{lemma:false-rem-root}).
+% %
+% \item Now the induction step.
+% Assume that after $n-1$ nodes have been traversed the operation has a path to a range of keys that includes the key $k$ that is being searched for.
+% If the $n-1^{th}$ node is the correct location
+% meaning that a non-removed node with key $\ms{k}$ (line \ref{line:rem-check1}) or a leaf has been reached (line \ref{line:null-find})
+% the the proof is done, otherwise the operation must travel to the $n^{th}$ node.
+% Now it must be shown that the after the operation travels to the $n^{th}$ node it is still on the correct path.
+% %
+% There are $2$ possibilities.
+% \begin{enumerate}
+% \item The operation can move from a node with $\ms{removed}=\lit{false}$ (at the time of the load of the child pointer, lines~\ref{line:next-find1}--\ref{line:next-find2}).
+% By lemma~\ref{lemma:false-rem} the child must also have $\ms{removed}=\lit{false}$ (also at the time of the load of the child pointer),
+% in this case the traversal is performed on a valid binary tree (lemma~\ref{lemma:binary-tree}).
+% Since the choice of the the child is based on a standard tree traversal (lines \ref{line:find-rot-check}-\ref{line:next-find2}) the operation must still be on the correct path.
+% 
+% \item The operation can move from a node with $\ms{removed}=\lit{true}$.
+% By the assumption given by induction the $n-1^{th}$ node has a path to the range of keys that includes $\ms{k}$.
+% From the $n-1^{th}$ node either the right or left child must be chosen.
+% The node is chosen based on a standard tree traversal with one exception:
+% If the node has the same key $\ms{k}$ that is being searched for and the node was removed by a left rotation
+% ($\ms{removed}=\lit{true\_by\_left\_rot}$), then the right child is chosen (lines~\ref{line:find-rot-check}--\ref{line:next-find1}).
+% With this exception then in all cases if the node is not $\bot$, then by lemma \ref{lemma:range} it must have a path to the same range as when it has $\ms{removed}=\lit{false}$, which includes $\ms{k}$
+% (the $n-1^{th}$ node's range includes $\ms{k}$ so the $n^{th}$ node's range must also).
+% Otherwise if one child is $\bot$, then the other child is chosen (lines~\ref{line:rem-find1}--\ref{line:rem-find2}), which must have a path to a range at
+% least as large as the $n-1^{th}$ node by lemma~\ref{lemma:range} (which includes $\ms{k}$).
+% \end{enumerate}
+% \end{itemize}
+% %\renewcommand{\toto}{lemma:find}
+% \end{proof}
+% 
+% \begin{theorem}
+% \label{theorem:insert-valid2}
+% An $\act{insert}$ operation is linearizable.
+% \end{theorem}
+% \begin{proof}
+% The $\act{insert}$ operation starts by performing a $\act{find}$ operation (line \ref{sline:find-ins}).
+% From lemma \ref{lemma:find} we know that the $\act{find}$ operation will return the correct location in the tree for key $\ms{k}$.
+% There are two possibilities, either the $\act{find}$ operation returns a node in the tree with key $\ms{k}$ (line \ref{line:eq-find}),
+% or it returns a node in the tree that has $\bot$ for the child where $\ms{k}$ must be inserted (line \ref{line:null-find}).
+% 
+% First consider the case where a node with key $\ms{k}$ is returned.
+% The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
+% Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false-ins}) ensuring that this value will remain the same throughout the transaction.
+% If the read on $\ms{deleted}$ returns $\lit{false}$, then the $\act{insert}$ operation can return $\lit{false}$ because the node exists in the set.
+% % The transactional reads on $\ms{removed}$ and $\ms{deleted}$ ensure that $k$ exists in the set for the duration of the transaction.
+% Otherwise if the read on $\ms{deleted}$ returns $\lit{true}$, then a transaction performs a transactional write setting $\ms{deleted}$ to $\lit{false}$ (line \ref{sline:del-false-ins}).
+% The transactional read on $\ms{deleted}$ ensures that $\ms{k}$ is not in the set before the transaction commits.
+% The transactional write on $\ms{deleted}$ ensures that $\ms{k}$ is in the set after the transaction commits.
+% 
+% Second consider the case where a node with $\ms{key} \neq \ms{k}$ is returned.
+% On lines~\ref{line:null-par-find1}--\ref{line:null-par-find2} of the $\act{find}$ operation a transactional read has been done on the child pointer of this node, returning $\bot$, which must be valid throughout the transaction.
+% The transactional read on $\ms{removed}$ (line \ref{line:rem-check2} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
+% By lemma~\ref{lemma:binary-tree} this node belongs to a correct binary tree, this along with
+% lemma~\ref{lemma:find} ensures that the child of this node is the only valid location in the tree where a node with key $\ms{k}$ could exist
+% (and since the value of the child pointer of $\bot$ a node with key $\ms{k}$ is not in the tree).
+% A new node with key $\ms{k}$ is created and then added to the tree using a transactional write to the child pointer (lines~\ref{sline:start-ins}--\ref{sline:end-ins}).
+% The $\ms{removed}$ and $\ms{deleted}$ fields of a newly created node can only be $\lit{false}$ so when the transaction commits the new node will be in the tree and $\ms{k}$ will be in the set.
+% %\renewcommand{\toto}{lemma:insert-valid2}
+% \end{proof}
+% 
+% 
+% \begin{theorem}
+% \label{theorem:contains-valid}
+% A $\act{contains}$ operation is linearizable.
+% \end{theorem}
+% \begin{proof}
+% The $\act{contains}$ operation starts by performing a $\act{find}$ operation (line \ref{sline:cont-find}).
+% From lemma~\ref{lemma:find} we know that the $\act{find}$ operation will return the correct location in the tree for key $\ms{k}$.
+% There are two possibilities, either the $\act{find}$ operation returns a node in the tree with key $\ms{k}$ (line \ref{line:eq-find}),
+% or it returns a node in the tree that has $\bot$ for the child where $\ms{k}$ would exist (line \ref{line:rem-check2}).
+% 
+% First consider the case where a node with key $\ms{k}$ is returned.
+% The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
+% Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-cont}) ensuring that this value will remain the same throughout the transaction.
+% If the read on $\ms{deleted}$ returns $\lit{false}$, then the $\ms{contains}$ operation can return $\lit{true}$ because the node exists in the set
+% otherwise $\lit{false}$ can be returned because the node does not exist in the set.
+% 
+% Second consider the case where a node with $\ms{key} \neq \ms{k}$ is returned.
+% On lines~\ref{line:null-par-find1}--\ref{line:null-par-find2} of the $\act{find}$ operation a transactional read has been done on the child pointer of this node, returning $\bot$, and due to the transactional read the pointer must remain as $\bot$
+% throughout the transaction.
+% The transactional read on $\ms{removed}$ (line~\ref{line:rem-check2} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
+% By lemma~\ref{lemma:binary-tree} this node belongs to a correct binary tree, this along with lemma~\ref{lemma:find} ensures that the child of this node is the only place where a node with key $\ms{k}$ could exist
+% (and since the value of the child pointer is $\bot$ a node with key $\ms{k}$ is not in the tree).
+% The $\act{contains}$ operation can then return $\lit{false}$.
+% %\renewcommand{\toto}{lemma:contains-valid}
+% \end{proof}
+% 
+% 
+% 
+% \begin{theorem}
+% \label{theorem:delete-valid}
+% A $\act{delete}$ operation is linearizable.
+% \end{theorem}
+% \begin{proof}
+% The $\act{delete}$ operation is almost the same as the $\act{contains}$ operation.
+% The only difference is in the case where a node with key $\ms{k}$ is returned from the $\act{find}$ operation.
+% The transactional read on $\ms{removed}$ (line \ref{line:rem-check1} of the $\act{find}$ operation) ensures that the node will be in the tree throughout the duration of the transaction.
+% Next a transactional read is done on the node's $\ms{deleted}$ variable (line \ref{sline:del-false}) ensuring that this value will remain the same throughout the transaction.
+% If the read on $\ms{deleted}$ returns $\lit{true}$, then the $\act{delete}$ operation can return $\lit{false}$ because the node does not exist in the set.
+% Otherwise $\ms{k}$ is in the set and a transactional write is performed setting the nodes $\ms{deleted}$ variable to $\lit{true}$.
+% Since $\ms{removed}$ is $\lit{false}$ this node is part of the valid tree (lemma \ref{lemma:binary-tree}) so it is the only place where key $\ms{k}$ can be, then by setting
+% $\ms{deleted}$ to $\lit{true}$, $\ms{k}$ is no longer in the set after the transaction commits.
+% %\renewcommand{\toto}{lemma:delete-valid}
+% \end{proof}
 
 
 
