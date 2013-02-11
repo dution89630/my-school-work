@@ -843,7 +843,7 @@ execute in a consistent state of memory.
 Once this is satisfied the research then often focuses on improving the implementing protocol
 by increasing its performance or having it satisfy desirable properties
 (interestingly, this properties are usually related to improving performance).
-Following this model, the first chapter looks at the specific properties of \emph{invisible reads}
+Following this model, chapter \ref{chap:VWC} looks at the specific properties of \emph{invisible reads}
 (a property important for the speed and scalability of an STM) and
 \emph{permissiveness} (a property preventing a protocol from aborting transactions unnecessarily)
 showing that they are not compatible with the correctness condition
@@ -858,17 +858,17 @@ with memory accessed inside and outside of transactions, how transactions are ne
 how to deal with I/O, among others.
 The programmer then has to understand these issues and must then choose an
 appropriate STM protocol based on his needs.
-The second and the third chapters look at research that takes the approach
+Chapters \ref{chap:UC} and \ref{chap:SI}  look at research that takes the approach
 that requiring the programmer to make these decisions
 is not appropriate for an easy to use concurrent programming abstraction.
-The second chapter suggests looking at ways to simplify the traditional STM
+Chapter \ref{chap:UC} suggests looking at ways to simplify the traditional STM
 semantics while the third chapter suggests expanding the traditional semantics to consider
 issues that are likely to come up when using STM in a realistic system
 (things that are ignored by consistency criterion such as opacity)
 and provide straightforward solutions to them.
 
 
-Specifically, the second chapter looks at research that takes the view that for transactional memory to
+Specifically, chapters \ref{chap:UC} looks at research that takes the view that for transactional memory to
 be easy to use the basic semantics should be simplified, meaning that,
 in a sense, the abstraction level should be raised.
 In detail it looks at the problem of aborted transactions and suggests that
@@ -876,8 +876,8 @@ the programmer should not have to be aware of aborts at all, following this sugg
 that ensures every transaction issued by a process commits no matter the concurrency pattern
 of other threads in the system.
 
-The area of research looked at in the third chapter suggests expanding the basic semantics of transactions.
-Taking just the traditional definition of transactions from the first chapter only leaves a very limited view of how
+The area of research looked at in chapter \ref{chap:SI} suggests expanding the basic semantics of transactions.
+Taking just the traditional definition of transactions from the chapter \ref{chap:VWC} only leaves a very limited view of how
 transactions fit into the big picture of concurrent computing.
 It only considers the interaction between transactions themselves,
 %  and ensuring the read and write
@@ -913,7 +913,7 @@ A protocol ensuring this property is presented.
 % and ensuring terminating strong isolation. 
 % \anote{Hopefully!}
 
-The fourth chapter looks into the idea of providing efficient abstractions
+Chapter \ref{chap:STMlib} looks into the idea of providing efficient abstractions
 as libraries for programmers to reuse from within their transactions.
 Not only does this mean the programmer does not need to design such libraries himself, but
 it allows an expert programmer who knows well the synchronization pattern of STM

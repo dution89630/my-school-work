@@ -1,130 +1,119 @@
 
 
-\chapter{Resume}
+\chapter{Résumé en français}
 
-Architectures multicœurs changent notre façon d'écrire des programmes.
-Non seulement tous les dispositifs informatiques tournant multi devenant ainsi intrinsèquement parallèle,
-mais demain multicœurs intégrera une plus grande quantité de cœurs simplifiés
-afin de mieux gérer l'énergie tout en proposant des performances supérieures,
-une technologie également connu sous le nom \emph{manycore}~\cite{Borkar2007} et donnant lieu à ce qu'on appelle
-le \emph{multicœurs révolution} \cite{HL08}. Ainsi, afin de profiter de ces ressources, un renouveau de
-la programmation concurrente a commencé.
+Les architectures multicoeurs changent notre façon d'écrire des programmes.
+En outre le caractère parallèle intrinsèque des programmes informatiques actuels,
+les multicoeurs de demain intégreront un une plus grande quantité de coeurs dans les processeurs, permettant 
+de de mieux gérer l'énergie tout en proposant des performances supérieures.
+Cette technologie est également connue sous le nom de \emph{manycore}~\cite{Borkar2007} et donne lieu à ce que l'on appelle
+la \emph{révolution multicoeurs} \cite{HL08}. Afin de profiter de ces nouvelles ressources, un renouveau de
+la programmation concurrente a débuté.
 
-Il s'agit d'un point de vue largement partagé que la conception d'un programme concurrent n'est pas une tâche facile.
-Dans ce contexte, les objets de synchronisation de base ont été définis pour aider le programmeur à résoudre les problèmes de concurrence et de coopération processus.
-Une étape importante dans ce domaine, qui a été présenté il y a plus de quarante ans, était le concept de {\it exclusion mutuelle} \cite{D68} qui a donné naissance à la notion de {\it lock} objet.
-Un objet de verrouillage permet au programmeur de deux opérations (de verrouillage et de déverrouillage) qui permettent à un seul processus à la fois d'accéder à un objet concurrente.
-Par conséquent, d'un point de vue objet concurrent, le verrou associé à un objet permet de transformer accès concurrents sur cet objet en accès séquentiels.
-Le type de synchronisation admis par des verrous est souvent désigné comme \emph{pessimiste},
-car chaque accès à un emplacement $x$ bloque des accès supplémentaires à $x$ jusqu'à ce que la emplacement soit libéré.
-Il n'est pas surprenant donné que le processus de pensée d'une personne se passe de manière séquentielle et
-que ce concept d'exclusion mutuelle est un moyen simple de concevoir de synchronisation/concurrence, le verrouillage est de
-loin l'abstraction la plus largement utilisée pour mettre en œuvre des algorithmes concurrents.
+La conception d'un programme concurrent est une tâche délicate.
+Des objets de synchronisation de base ont été définis pour aider le programmeur à résoudre les problèmes de concurrence et de coopération de processus.
+Une étape majeure dans ce domaine, proposé il y a plus de quarante ans, est le concept d'\textit{exclusion mutuelle} \cite{D68} qui a donné naissance à la notion de verrouillage d'objet (\textit{lock}).
+Cet objet fournit au programmeur de processus concurrents, deux opérations (le verrouillage et le déverrouillage d'un objet) permettant uniquement à un seul processus d'accéder à l'objet.
+Par conséquent, le verrou associé à l'objet permet de transformer un accès concurrents à un accès séquentiel.
+La synchronisation par des verrous est souvent désigné comme \emph{pessimiste} car chaque accès à un objet bloque les accès supplémentaires à cet objet jusqu'à ce qu'il soit libéré. 
+Il n'est donc pas surprenant que le processus de conception d'un programmeur se fasse de manière séquentielle et
+que l'exclusion mutuelle soit un moyen simple de concevoir de la synchronisation d'objets concurrents. 
+Ce système de verrou est l'abstraction la plus largement utilisée dans ce domaine.
 
+Malheureusement, l'utilisation de verrous reste compliqué.
+La difficulté la plus fréquente associée au concept de verrou est d'éviter l'impasse (deadlock).
+L'impasse se produit par exemple lorsqu'un processus $T_A$ veut obtenir un verrou qui est déjà détenu par un processus
+$T_B$ tandis que ce dernier veut obtenir un verrou qui est déjà détenu par processus $T_A$. Dans ce cas, aucun processus ne progresse.
+Pour résoudre ce problème, les verrous sont souvent activée suivant un ordre pré-défini,
+mais cela peut entraîner des verrouillages souvent plus long que nécessaire.
 
-Malheureusement, l'utilisation de verrous n'est pas si facile.
-La difficulté la plus fréquente associée à verrouillage est d'éviter l'impasse.
-L'impasse se produit par exemple lorsqu'un processus $T_A$ veut obtenir un verrou qui est déjà détenu par processus
-$T_B$ tandis que le processus en même temps $T_B$ veut obtenir un verrou qui est déjà détenu par processus $T_A$ résultant dans aucun processus progresse.
-Verrous de blocage afin d'éviter sont souvent acquises dans un ordre mondial,
-mais cela peut entraîner des serrures prises plus souvent et plus longtemps tenue alors nécessaire.
+Un autre problème avec les verrous peut se produire quand un processus détenant un verrou sur un objet prisé est supprimé
+par le système d'exploitation. Dans ce cas, tous les autres processus vivants en attente tente d'accéder au même objet au même moment (parfois appelé problème d'\emph{inversion de priorité}). Similairement, d'autres problèmes peuvent se produire si un processus détenant un verrou prisé se bloque.
 
-D'autres problèmes avec verrous peut se produire quand un processus qui détient un verrou est dé prévue
-par le système d'exploitation tout un processus vivant tente d'accéder à le même verrou (parfois appelé \emph{inversion de priorité}).
-D'autres problèmes peuvent se produire si un thread se bloque ou est bloqué en tenant un verrou.
 
 \paragraph{Mémoire software transactionnelle}
 Le concept de \emph{mémoire software transactionnelle} (STM) est une réponse possible au défi de la programmation concurrente.
-Avant de décrire les détails, d'abord envisager une ``philosophie esprit/design'' qui a contribué à donner naissance à des systèmes STM: la notion de \emph{niveau d'abstraction}.
-Plus précisément, l'objectif d'un niveau d'abstraction accrue est de permettre au programmeur de se concentrer
-et de se concentrer uniquement sur le problème qu'il doit résoudre et non sur la machine de base nécessaires pour le résoudre.
-Comme nous pouvons le voir, c'est l'approche qui a remplacé les langages d'assemblage par des langages de haut niveau et collecte des ordures définié par le programmeur par collecte des ordures automatique.
-Dans ce manière STM peut être considérée comme un concept nouveau niveau d'abstraction qui relève ce défi lors de l'examen des problèmes de synchronisation.
+Avant de décrire en détail ce concept, introduisons l'idée sous-jacente qui a contribué à donner naissance aux STMs: la notion de \emph{niveau d'abstraction}.
+Plus précisément, l'objectif d'un niveau d'abstraction est de permettre au programmeur de se concentrer uniquement sur le problème qu'il doit résoudre et non sur des contraintes annexes pour le résoudre.
+Ce concept est similaire aux abstractions intégrées aux langages de haut niveau tel que l'introduction de récupérateurs de mémoire (garbage collector) qui automatique détruit les structures de données du programmeur qui ne sont plus utilisées.
+De la même manière, les STM sont considérées comme un nouveau niveau d'abstraction pour résoudre les problèmes de synchronisation lié à la programmation concurrente.
+
+La mémoire transactionnelle élimine la complexité associée à la programmation concurrente en remplaçant le verrouillage avec une unité d'exécution atomiques.
+Contrairement à l'utilisation des verrous où un programmeur peut utiliser plusieurs verrous dans ses opérations, lorsque il utilise la mémoire transactionnelle un programmeur n'a besoin que
+de définir toutes les sections de son code qui doivent être exécutées de façon atomique (ne laissant aucune possibilité d'entrelacement d'opérations simultanées).
+Le protocole de mémoire transactionnelle effectue ensuite la synchronisation nécessaire pour garantir leurs bonnes exécutions.
+%Un programmeur pourrait penser que c'est comme en utilisant un seul verrou global où toutes les fois qu'il veut effectuer la synchronisation entre processus.
+De cette façon, le programmeur se concentre seulement sur l'endroit où l'atomicité est nécessaire et non pas sur la façon dont il doit être effectué.
+Le but d'un système STM est donc de décharger le programmeur de la gestion directe de la synchronisation lié à l'accès simultanés aux objets.
 
 
-La façon dont la mémoire transactionnelle élimine la complexité associée à la programmation concurrente est de remplacer verrouillage avec unités d'exécution atomiques.
-Contrairement à l'utilisation des verrous où un programmeur peut utiliser plusieurs verrous au long de ses opérations, lorsque il utilise la mémoire transactionnelle un programmeur n'a besoin que
-de définir quelles sections de son code doit apparaître comme si elles exécuter de façon atomique (i.e. tout à la fois, ne laissant aucune possibilité pour des opérations simultanées entrelacés).
-Le protocole de mémoire transactionnelle aborde ensuite la synchronisation nécessaire pour garantir que cela arrive.
-Un programmeur pourrait penser que c'est comme en utilisant un seul verrou global où toutes les fois qu'il veut effectuer la synchronisation entre processus.
-De cette façon, le programmeur doit se concentrer sur l'endroit où l'atomicité est nécessaire et non pas sur la façon dont il doit être rendu compte.
-Le but d'un système STM est donc de décharger le programmeur de la gestion directe de la synchronisation qui est entraîné par des accès aux objets simultanés.
+Plus précisément, les STMs offrent au programmeur le concept de  {\it transaction} (proche mais différent de la notion de transactions rencontrées dans les systèmes de bases de données \cite{FFGH08, HCUAGSV07, HL08}).
+Ce processus est décomposé sous la forme de séquences d'opérations.
+Chaque opération étant un morceau de code qui, lors de l'accès des objets concurrents, apparaît toujours comme s'il était exécuté de façon atomique.
+Le rôle du système STM est de garantir que les opérations sont exécutées comme si elles étaient atomique en utilisant de faibles opérations de synchronisation tel que compar\&swap ou d'autres abstractions comme les verrous. Cependant, tous ces détails sont cachés du programmateur qui 
+n'a accès que à l'interface de la STM pour définir des unités de calcul atomiques.
 
 
-Plus explicitement, la STM offre au programmeur le concept {\it transaction} (ce concept est proche mais différente
-de la notion de transactions rencontrées dans les systèmes de bases de données \cite{FFGH08, HCUAGSV07, HL08}).
-Un processus est réalisé sous la forme (ou décomposée en) une séquence d'opérations,
-chaque opération étant un morceau de code qui, lors de l'accès des objets concurrents, apparaît toujours comme s'il était exécuté de façon atomique.
-C'est le travail du système STM pour garantir que les opérations sont exécutées comme
-si elles étaient atomique en utilisant de faibles opérations de synchronisation de niveau comme compar\&swap ou même d'autres
-abstractions telles que les verrous (notez que tous ces détails sont cachés par le programmateur
-comme il ne a que accès à l'interface de la STM qui lui permet de définir des unités de calcul atomiques).
-
-
-Un autre avantage important de l'utilisation mémoire transactionnelle sur les verrous est 
+Un autre avantage important de l'utilisation des mémoires transactionnelles sur les verrous vient du fait  
 qu'un programme transactionnel peut être directement réutilisé par un autre programmeur dans son propre code.
-Ainsi, un programmeur qui compose opérations à partir d'une bibliothèque d'opérations à une 
-autre transaction est garantie d'obtenir de nouvelles opérations sans impase qui sont exécutées de manière atomique.
-Promouvoir davantage la facilité d'utilisation de transactions, plusieurs études \cite{PA11, RHW10} ont été réalisées qui
-trouvent que (selon les paramètres de leurs études) les utilisateurs peuvent créer des programmes concurrents plus facile 
+Ainsi, un programmeur qui compose des opérations à partir d'une bibliothèque d'opérations à une 
+autre transaction, est garantie d'obtenir de nouvelles opérations sans impasse qui sont exécutées de manière atomique.
+Plusieurs études \cite{PA11, RHW10} ont été réalisées montrant que les utilisateurs créent des programmes concurrents plus facilement 
 lorsque ils utilisent la mémoire transactionnelle au lieu de verrous.
 
 
-La notion de mémoire transactionnelle a été proposée il ya près de vingt ans par Herlihy et Moss comme une abstraction à mettre
-en œuvre en hardware et être utilisé afin de mettre en œuvre facilement des structures de données concurrentes sans-verrou \cite{HM93}.
-Depuis, il a d'abord été mis en œuvre dans le logiciel par Shavit et Touitou \cite{ST97} et, en partie grâce à la
-révolution multi-core, a récemment pris de l'ampleur grand comme une alternative prometteuse aux verrous dans la programmation concurrente \cite{FFGH08,HCUAGSV07,LK08,R08}.
+Les premiers travaux autour de la mémoire transactionnelle ont été proposé il y a vingt ans par Herlihy et Moss. Ces travaux portaient sur une abstraction matérielle afin de mettre en oeuvre facilement des structures de données concurrentes sans-verrou \cite{HM93}.
+Par la suite, la mémoire transactionnelle a été intégré au logiciel par Shavit et Touitou \cite{ST97}.
+Enfin, grâce à la révolution multi-core, ce domaine a récemment pris de l'ampleur et se place comme une alternative prometteuse aux verrous dans la programmation concurrente \cite{FFGH08,HCUAGSV07,LK08,R08}.
 
 
-Comme une abstraction conçu pour rendre plus facile la programmation concurrente, la mémoire transactionnelle a
-besoin d'une interface simple et précis pour les programmeurs à utiliser.
-Afin de effectivement définir des transactions dans le code,
-l'approche la plus courante consiste à entourer le code par quelques mots-clés qui indiquent le début et la fin d'une transaction.
-Par exemple, le programmeur peut simplement entourer sa transaction en utilisant le \emph{atomique} mot-clé.
-Le code contenu dans ce bloc sera alors traitée comme une transaction et semblent être exécutés de façon atomique.
-Dans un monde idéal, ce serait tout que le programmeur aurait à connaître avant de commencer à utiliser la mémoire transactionnelle,
-mais malheureusement, comme on le verra dans cette thèse, il est beaucoup plus complexe que cela et il ya beaucoup d'autres choses que le programmeur doit prendre en considération.
+Conçue pour rendre plus facile la programmation concurrente, la mémoire transactionnelle a
+besoin d'une interface simple et précise à destination des programmeurs.
+
+Afin d'efficacement définir des transactions dans un programme,
+l'approche la plus courante consiste à baliser le code par des mots-clés qui indiquent le début et la fin d'une transaction.
+Par exemple, le programmeur peut simplement entourer sa transaction en utilisant le mot-clé \emph{atomique}.
+Le code contenu dans ce bloc sera alors traitée comme une transaction et sera exécuté de façon atomique.
+Idéalement, le programmeur ne devrait connaître que ça avant de commencer à utiliser la mémoire transactionnelle,
+mais malheureusement, comme on le verra dans cette thèse, l'utilisation de STM est un peu plus complexe le programmeur doit 
+prendre en considération d'autres points.
 
 
-
-Comme nous le verrons dans chaque chapitre de cette thèse dans un système moderne concurrentes
-il ya des aspects complexes de l'abstraction STM qui concernent comment un programmeur interagit avec le système STM et le système dans son ensemble.
-Alors que la sémantique de base d'une transaction sont largement convenu (i.e. atomicité de la transaction par rapport à d'autres transactions),
-il ya beaucoup d'autres détails à prendre en considération certains d'entre eux sont activement débattus et restent sous forme de questions de recherche ouverts.
-La normalisation de ce sémantique et à répondre aux questions ouvertes sur il est une étape importante pour garantir
-que l'objectif principal de rendre plus facile la programmation concurrente est réalisée.
-Si la sémantique est trop difficile à comprendre, ou un programmeur doit être conscient de trop de détails spécifiques à un système
-STM avant de pouvoir utiliser les transactions dans son programme, puis la vue de l'objectif original a été perdu.
-
-
-
-L'objectif de cette thèse est de faire un pas vers la retrouvailles et la définition fixe et facile à
-comprendre de la sémantique des transactions tout en trouvant des protocoles efficaces satisfaisant à cette sémantique.
+En effet, dans un système moderne concurrent,  les aspects complexes de l'abstraction STM concernent comment un programmeur interagit avec le système STM et le système dans son ensemble.
+Alors que la sémantique de base d'une transaction est largement convenu (atomicité de la transaction par rapport à d'autres transactions),
+beaucoup d'autres détails et questions sont encore activement débattus et restent à l'état de recherche.
+La normalisation de cette sémantique a pour but de répondre à ces questions ouvertes et est une étape importante pour atteindre l'objectif principal qui est de rendre plus facile la programmation concurrente.
+Si la sémantique est trop difficile à comprendre, ou si un programmeur doit être conscient de trop de détails spécifiques au système
+STM avant de pouvoir utiliser les transactions dans son programme, l'objectif n'est pas atteint.
 
 
 
-Chaque chapitre de cette thèse considère un domaine générale différent de la recherche autour du concept de la facilité
-(ou la difficulté) de la programmation concurrente en utilisant la mémoire transactionnelle, introduisant d'abord le domaine du lecteur,
-suivie d'une discussion d'un problème spécifique et une solution possible à partir de la région, chacun aidant à aller vers une solution de notre objectif.
+\textbf{L'objectif de cette thèse est de proposer une définition et une sémantique facile d'utilisation pour l'abstraction des STMs et le design de protocole efficace pour les multi-coeurs.}
+
+
+Chaque chapitre de cette thèse considère un domaine de la programmation concurrente 
+en utilisant la mémoire transactionnelle. Le chapitre 1 commence par introduire le domaine,
+le chapitre 2 propose un protocole d'abstraction des STMs pour les programmeur, et le chapitre 3 présente un modèle simplifié d'accès mémoire à l'intérieur et à l'extérieur des STMs.
+Le dernier chapitre conclue ce manuscrit en ouvrant sur de nouvelles perspectives.
 
 
 
-\section{Chapitre 1}
+\section*{Chapitre 1}
 
-L'objectif le plus important de l'abstraction STM est de rendre la programmation concurrente plus simple et plus accessible à tout programmeur.
+L'objectif le plus important de l'abstraction des STMs est de rendre la programmation concurrente la plus simple et la plus accessible à tout programmeur.
 On peut dire alors tout ce qu'un programmeur doit besoin de savoir afin d'utiliser l'abstraction STM est
 de connaître la syntaxe pour écrire un bloc atomique, probablement quelque chose d'aussi simple que $atomique\{ \dots \}$.
 Au niveau le plus élémentaire tout un programmeur devrait besoin de savoir est par où commencer et finir ses blocs atomiques.
 
-Comme de nombreuses abstractions, même si ce qui est exposé au programmeur est une interface fixe bien défini,
-il ya beaucoup de différentes implémentations possibles et des propriétés différentes qui existent pour fournir l'abstraction.
+Comme de nombreuses abstractions, même avec une interface fixe est bien défini,
+il y a beaucoup de différentes implémentations possibles et des propriétés différentes qui existent pour fournir l'abstraction.
 Sous ces blocs atomiques est la mise en œuvre de la STM, qui comporte de nombreux aspects.
 Depuis l'introduction de mémoire transactionnelle en 1993 \cite{HM93} des dizaines (voire des centaines) de propriétés différentes
 sont apparues ainsi que de nombreux algorithmes STM différentes, chacune d'entre elles en guarantissant plus ou moins de ces propriétés et être plus ou moins concernés par la performance.
 (Certaines de ces propriétés sont discutées dans l'introduction de cette thèse dans la section \ref{sec:details})
 
 
-Peut-être le plus important de ces propriétés concernent la exactitude de l'algorithme.
+La plus importante de ces propriétés concernent certainement l'exactitude de l'algorithme.
 Souvent désigné comme les critères de cohérence de STM, ils guarantissant que le protocole mise en œuvre l'abstraction correctement.
 En faisant cela, la facilité d'utilisation est prise d'une importance capitale,
 permettant aux utilisateurs de ne pas avoir à s'inquiéter de comportement étrange qui ferait l'abstraction plus difficile à comprendre.
@@ -138,7 +127,7 @@ Ce chapitre se penche sur la façon dont ces critères de cohérence, qui guaran
 se rapportent à d'autres propriétés qui concernent les choses moins importantes comme la performance.
 
 
-Dans un monde idéal, il existerait un \emph{``parfaite algorithme''} STM qui garantit toutes les propriétés désirables sans faire de sacrifices.
+Dans un monde idéal, il existerait un \emph{"algorithme parfait"} STM qui garantit toutes les propriétés désirables sans faire de sacrifices.
 Malheureusement, cet algorithme n'a pas encore été découverts (si c'est encore possible).
 En fait, beaucoup de ces propriétés désirables ont été un peu plus alors introduit et plusieurs de leurs implications sur la façon
 dont ils affectent algorithmes STM ou comment ils interagissent les uns avec les autres n'a pas encore été exploré.
@@ -149,27 +138,27 @@ Motivé par cela, ce chapitre examine deux propriétés désirables qui se préo
 
 
 \paragraph{Opération de lecture invisible}
-Une opération de lecture émis par une transaction est {\it invisible}
+Une opération de lecture émise par une transaction est {\it invisible}
 si elle n'implique pas la modification des objets partagés utilisés pour mettre en œuvre le système STM \cite{MSHAESS06}.
 Il s'agit d'une propriété désirable principalement pour l'efficacité.
 
 
 \paragraph{Permissivité}
 La notion de permissivité a été introduite dans \cite{GHS08} (dans un certain sens,
-il s'agit d'une généralisation très agréable de la notion de {\it obligation} propriété \cite{IR09-a}). C'est sur la annulation de transaction.
+il s'agit d'une généralisation très agréable de la notion de {\it obligation} propriété \cite{a-IR09}). C'est sur la annulation de transaction.
 Intuitivement, un système STM est {\it permissive} ``si elle n'a jamais annule une transaction sauf si c'est nécessaire pour l'exactitude.''
 (sinon, il est {\it non-permissive}). Plus précisément, un système STM est permissive par rapport à une condition de cohérence
 (par exemple, l'opacité) si elle accepte toute histoire qui satisfait la condition.
 
-Comme indiqué dans \cite{GHS08}, un système STM qui vérifie lors du commit que les
+Comme indiqué dans \cite{GHS08}, un système STM qui vérifie lors du "commit" que les
 valeurs des objets lus par une transaction n'ont pas été modifiées (et annule la transaction si vrai) ne peut pas être permissive par rapport à l'opacité.
 En fait autre que le protocole introduit avec la notation de permissivité dans \cite{GHS08} pratiquement
 tous les protocoles STM publiés annuler les transactions qui auraient pu être commises sans risque, à savoir les protocoles ne sont pas permissives.
 
 
-\paragraph{Deux conditions de cohérence pour les systèmes STM}
-Nous avons déjà notre syntaxe définie pour le programmeur ($atomique \{ \dots \})$) et d'une idée fondamentale de ce que cela signifie,
-``le code dans le bloc atomique apparaît comme si elle a été exécutée instantanément par rapport à autres opérations'',
+\paragraph{Deux conditions de cohérence pour les systèmes STMs}
+Nous avons proposé une syntaxe définie pour le programmeur ($atomique \{ \dots \})$) ainsi que l'idée fondamentale de ce que cela signifie,
+"le code dans le bloc atomique apparaît comme si elle a été exécutée instantanément par rapport à autres opérations",
 mais nous avons besoin de définir précisément ce que cela signifie pour un algorithme STM.
 Au cœur de ce que nous avons critères de cohérence.
 Ce critère de définir précisément la sémantique d'une transaction et guider la création d'algorithmes afin que le critère choisi est satisfaite.
@@ -179,7 +168,7 @@ Dans cette section, nous donnons un aperçu de deux critères de cohérence bien
 
 
 \paragraph {La condition de cohérence opacité}
-Le critère de cohérence classique pour les transactions de base de données est sérialisation \cite{P79}, approximativement définie comme suit:
+Le critère de cohérence classique pour les transactions de base de données est la sérialisation \cite{P79}, approximativement définie comme suit:
 ``Une histoire est sérialisable si elle est équivalente à celle dans laquelle les transactions apparaissent à exécuter de manière séquentielle, c'est à dire, sans entrelaçage.''
 Ce qui est important à considérer lorsqu'on pense à la mémoire transactionnelle est que le critère de cohérence sérialisation ne concerne que les transactions qui commettent.
 Dit autrement, une transaction qui est annulée n'est pas empêchés d'accéder à un état incohérent avant d'annuler.
@@ -216,7 +205,7 @@ Il déclare que (1) aucune transaction (validée ou annulée) lit les valeurs d'
 mais (3), tandis que l'état global lu par chaque transaction annulée est compatible à partir de son point de vue individuel,
 les états globaux lus par deux transactions annulée sont pas tenus d'être cohérents entre eux.
 
-En plus du fait qu'il peut permettre à davantage de transactions à commettre d'opacité,
+En plus du fait qu'il peut permettre à davantage de transactions de commettre d'opacité,
 l'un des points les plus importants de la cohérence monde virtuel réside dans le fait que, comme l'opacité,
 il empêche les phénomènes mauvaises (comme décrit précédemment) de se produire sans nécessiter de tous les transactions
 (validée ou annulée) se mettre d'accord sur là même exécution témoin.
@@ -230,7 +219,7 @@ une transaction ne peut le différencier de l'opacité.
 
 
 
-Alors qu'est-ce que cela signifie pour le programmeur qui prévoit d'utiliser la mémoire transactionnelle pour écrire son programme concurrent?
+Par conséquent, que signifie pour le programmeur de prévoir d'utiliser la mémoire transactionnelle pour écrire son programme concurrent?
 Implications sur les performances possibles de côté, absolument rien, le programmateur
 ne vois aucune différence entre un protocole STM qui est opaque par rapport à celui qui est le monde virtuel cohérent.
 Compte tenu de l'exigence première de la mémoire transactionnelle est la facilité d'utilisation, cela est extrêmement important,
@@ -243,15 +232,15 @@ Si la cohérence monde virtuel a changé la façon dont un programmeur devait pe
 puis il ne serait pas considéré comme un critère de cohérence approprié pour la mémoire transactionnelle.
 
 
-La deuxième contribution de ce chapitre présente un algorithme réaliste qui satisfait la cohérence monde virtuel, la permissivité, et l'invisibilité des lectures.
+La deuxième contribution de ce chapitre présente un algorithme réaliste qui satisfait la cohérence du monde virtuel, la permissivité, et l'invisibilité des lectures.
 
 Globalement, la contribution de ce chapitre est une étude de l'interaction entre plusieurs propriétés et les conditions de cohérence de mémoire transactionnelle.
-Alors, qu'est-ce que cela a à voir avec la facilité d'utilisation de la mémoire transactionnelle?
+Cependant, comment facilité l'utilisation de la mémoire transactionnelle?
 
 
 
 
-Lors de la conception d'un protocole STM, il est nécessaire que nous le concevons pour satisfaire un critère de cohérence.
+Lors de la conception d'un protocole STM, il est nécessaire de satisfaire le critère de cohérence.
 Ceci est important parce que ce critère de cohérence définit la sémantique de un transaction pour le programmeur.
 Tant que le critère de cohérence choisi est satisfaite, alors nous pouvons commencer à envisager d'autres secondaires,
 mais important, choses telles que la performance.
@@ -264,9 +253,9 @@ mais plutôt de choisir critère de cohérence qui garantit l'atomicité des tra
 
 
 
-\section{Chapitre 2}
+\section*{Chapitre 2}
 
-Opacité et autres critère de cohérence sont parfois également appelées propriétés de sécurité.
+L'opacité et les autres critère de cohérence sont parfois également appelés propriétés de sécurité.
 Informellement c'est parce qu'ils guarantissant un protocole qui eux implémente va
 agir de manière à ce qu'un utilisateur pourrait s'attendre et ne pas produire aucun comportement bizarre.
 Par exemple, comme mentionné précédemment, l'opacité empêche les transactions de s'exécuter sur les états invalides de la mémoire, empêchant
@@ -276,9 +265,7 @@ ils laissent ouvertes d'autres problèmes pour le programmeur faire face aux ce 
 En ce sens, nous proposons de cacher certains de ces problèmes au programmeur en traitant avec eux dans la mise en œuvre de la STM.
 
 
-
-
-Remarquez comment dans le chapitre précédent aucune mention n'est faite de la façon dont comment fréquemment les transactions sont validées, en particulier, le critère de cohérence ne font aucune considérations à ce sujet.
+Le chapitre précédent ne mention la fréquence de validation des transactions, en particulier, le critère de cohérence ne font aucune considérations à ce sujet.
 Par exemple, un protocole pourrait satisfaire l'opacité par tout simplement faire annuler toute transaction avant qu'elle n'ait effectué aucune action, mais bien sûr, ce protocole serait inutile.
 Afin d'éviter cela, certains protocoles STM satisfaire liveness (ou progrès) propriétés.
 Ces propriétés (dont certains ne se limite pas à la mémoire transactionnelle) guarantissant que les opérations d'un processus fera une sorte de progrès, parfois en fonction du nombre de conflits dans le système.
@@ -288,8 +275,8 @@ Ces propriétés (dont certains ne se limite pas à la mémoire transactionnelle
 
 
 
-Malheureusement, le programmeur doit toujours comprendre le concept de abort/commit comme un complexité qui
-est présumé quand il décide d'utiliser la mémoire transactionnelle dû au fait que les protocoles STM actuelles ne garantissent pas qu'une transaction commettre.
+Malheureusement, le programmeur doit toujours comprendre le concept de "abort/commit" comme une complexité qui
+est présumée quand il décide d'utiliser la mémoire transactionnelle dû au fait que les protocoles STM actuelles ne garantissent pas qu'une transaction commettre.
 Dans certains cas, le programmeur doit traiter directement avec les transactions annulées dans son code,
 dans d'autres, un programmeur peut prioriser certaines transactions afin qu'elles ne pas avorter, dans d'autres cas le protocole permet aux transactions d'être bloqués,
 tandis que d'autres, les transactions peuvent être annulée à l'infini.
@@ -305,8 +292,8 @@ Une difficulté qui se pose de ce type d'aider qui est résolu par cet algorithm
 
 
 
-Chapitre 1 a exploré un domaine de recherche de la mémoire transactionnelle qui se concentre sur
-l'amélioration des protocoles STM sans affecter la façon dont l'utilisateur interagit avec la STM,
+Le chapitre 1 a exploré un domaine de recherche de la mémoire transactionnelle qui se concentre sur
+l'amélioration des protocoles STMs sans affecter la façon dont l'utilisateur interagit avec la STM,
 que est garantir la mise en œuvre des propriétés ou par l'augmentation de le performance.
 Ce chapitre, bien que similaire au chapitre précédent en suggérant des propriétés et en montrant comment un protocole peut les mettre en œuvre,
 adopte une approche plus visible qui a des répercussions directes sur l'interaction entre le programmateur et la STM.
@@ -315,23 +302,22 @@ En supprimant la notion d'transactions annulée de la sémantique et de garantir
 quel que soit le motif de l'exécution des autres processus dans le système, nous nous dirigeons vers un système plus facile à utiliser.
 
 
-Des recherches antérieures ont prévu un certain niveau d'interaction entre le programmateur et les transactions annulées,
+Des recherches antérieures ont proposé un certain niveau d'interaction entre le programmateur et les transactions annulées,
 tandis que ce chapitre suggère la notion de commit/annuler être complètement abstraite en dehors de niveau programmeur laissé à être uniquement une préoccupation mise en œuvre.
 Cela libère le programmeur d'avoir à se demander si sa transaction pourrait ne pas commettre et soit tenter d'éviter une telle situation, ou pour trouver des moyens d'y faire face quand il le fait.
 
 
-\section{Chapitre 3}
+\section*{Chapitre 3}
 
-Une sémantique transactionnelle simplifiées peuvent ne pas être suffisant, ce chapitre suggère l'expansion de la sémantique.
+Une sémantique transactionnelle simplifiée peut ne pas être suffisant, ce chapitre suggère l'étendre la sémantique.
 Il examine comment un programmeur peut utiliser des transactions au sein de son code dans un système plus large afin de proposer
 l'extension de la sémantique transactionnelle dans l'intérêt de la facilité d'utilisation.
 
-
-Ce chapitre est d'avis que les opérations exister en tant que partie intégrante d'un programme de le utilisateur.
+Ce chapitre propose des opérations en tant que partie intégrante d'un programme de le utilisateur.
 Le programmeur met ensuite un groupe de lecture et d'écriture dans un bloc de code délimitée par les mots-clés
 $\act{transaction\_begin}()$ et $\act{transaction\_end}()$ (ou bien le bloc atomique $\act{atomique}\{ \dots \} $).
 Cette opération atomique existe directement comme un morceau de son code, précédé et suivi par le code, également écrit par le programmeur.
-Dans ce bloc de code les lectures et écritures de la mémoire partagée sont ensuite traités par le protocole comes lectures et écritures transactionnel,
+Dans ce bloc de code les lectures et écritures de la mémoire partagée sont ensuite traités par le protocole comme lectures et écritures transactionnel,
 tout en les lectures et écritures simples effectuées dans le code en dehors des transactions sont non-transactionnels.
 
 
@@ -341,33 +327,33 @@ Plus précisément, si la mémoire partagée qui est accessible à partir de l'i
 toute sécurité être seulement accessible à partir de transactions, ou doit-il être sûr d'accéder à la mémoire à l'intérieur et à l'extérieur de transactions à tout moment?
 
 
-Si, dans un programme, il existe deux sets de de la mémoire partagée, un set pour accéder à l'intérieur des transactions,
+Si, dans un programme, il existe deux sets de mémoire partagée, un set pour accéder à l'intérieur des transactions,
 et un autre pour accéder à l'extérieur de transactions, alors nous perdons la notion d'transactions faisant partie
 intégrante du programme de le utilisateur pour plus d'un concept où transactions Il existe comme un objet distinct isolé.
 Dans le second cas, les transactions pourraient représenter une interface de programmation définie pour un grand objet partagé et distincte du reste du système.
 Les transactions sont toujours définis et placés par le programmeur, mais ils sont limités à la mémoire qu'ils peuvent accéder.
 D'autre part, si le programmeur peut accéder à la mémoire partagée à la fois à l'intérieur et à l'extérieur des transactions
-tout en guarantissant l'atomicité de ces transactions, alors le système devient plus simple.
-Malheureusement, pour guarantir cela n'est pas clair et c'est le problème abordé par le présent chapitre.
+tout en garantissant l'atomicité de ces transactions, alors le système devient plus simple.
+Malheureusement, pour garantir cela n'est pas clair et c'est le problème abordé par le présent chapitre.
 
 
 
 \paragraph{Isolement forte}
 
-Le \emph{isolement forte} garantit que tant les opérations de lecture et d'écriture transactionnel et non-transactionnel sont mises en œuvre d'une manière qui prend leur co-existence en compte.
+L'\emph{isolement forte} garantit que les opérations de lecture et d'écriture transactionnel et non-transactionnel sont mises en œuvre d'une manière qui prend leur co-existence en compte.
 Plus précisément, l'isolement forte garantit que les accès non-transactionnelles à mémoire partagée ne violent pas l'atomicité des transactions.
 
 
 
-Afin de mieux comprendre les garanties de l'isolement forte, considérons une extension simple et intuitive qui peut être appliquée à un protocole STM afin d'garantir l'isolation forte.
+Afin de mieux comprendre les garanties de l'isolement forte, nous considérons une extension simple et intuitive qui peut être appliquée à un protocole STM afin de garantir l'isolation forte.
 Afin de fournir cette extension, toute opération non transactionnel qui accède à des données partagées est simplement considéré comme un ``mini-transaction'', c'est à dire, une transaction qui contient une seule opération lecture/écriture.
-Dans ce casles transactions devront être conformes non seulement par rapport à d'autres transactions, mais aussi par rapport à les opérations non transactionnelles.
-Évidemment, dans cette solution il n'ya pas de section distincte de la mémoire pour les transactions et leur atomicité est préservée, ce qui entraîne un cadre plus simple pour le programmeur.
+Dans ce cas des transactions devront être conformes non seulement par rapport à d'autres transactions, mais aussi par rapport à les opérations non transactionnelles.
+Évidemment, dans cette solution il n'y a pas de section distincte de la mémoire pour les transactions et leur atomicité est préservée, ce qui entraîne un cadre plus simple pour le programmeur.
 
 
 \paragraph{Isolement forte terminant}
 
-Considérons maintenant une solution au problème d'garantir la isolation forte en utilisant les mécanismes typiques de verrous ou barrières:
+Nous considérons maintenant une solution au problème de garantir la isolation forte en utilisant les mécanismes typiques de verrous ou barrières:
 Chaque variable partagée serait alors associée avec un verrou et les deux types de opérations (transactionnelles et non-transactionnelles) devront accéder à le verrou avant d'accéder à la variable.
 Les verrous sont déjà utilisées dans les algorithmes STM - comme TL2 \cite{DSS06} - où il est toutefois supposé que la mémoire partagée est uniquement accessible par les transactions.
 L'utilisation de verrous dans un algorithme STM implique le blocage et peut même conduire à la famine de les processus.
@@ -376,42 +362,41 @@ Maintenant, si nous avons des opérations non transactionnelles qui s'appuient s
 ils sont également susceptibles à la possibilité même de la non-exécution.
 
 
-Toutefois, normalement le concept d'un lecture/écriture de memoire partagé n'inclut pas cette possibilité.
+Toutefois, le concept d'un lecture/écriture de mémoire partagé n'inclut pas normalement cette possibilité.
 Lorsqu'il s'agit d'un single lecture ou en écriture sur une variable partagée, une opération non transactionnelle est normalement comprise comme un événement qui se produit de façon atomique et termine toujours.
 Lors de l'exécution, une lecture ou d'écriture ne devrait pas être dé-prévu, bloqué ou interrompu.
 Malheureusement forte isolation mis en œuvre avec des verrous implique le blocage des opérations de lecture et d'écriture non transactionnelles et ne fournit pas le terminaison.
 
 
 
-Pour cette raison, nous croyons que la mise en œuvre d'un protocole fort isolement devrait également examiner le progrès des opérations non transactionnelles.
+Pour cette raison, nous croyons que la mise en œuvre d'un protocole de fort isolement devrait également examiner le progrès des opérations non transactionnelles.
 Afin de faire face à cela, nous suggérons qu'un protocole STM devrait mettre en place \emph{l'isolement forte terminant},
-que nous définissons simplement que l'isolement fort avec la garantie supplémentaire que les opérations de lecture et d'écriture non-transactionnelles d'un processus sont garantis à terminer,
-peu importe les actions de processus concurrents dans le système.
+que nous définissons simplement que l'isolement fort avec la garantie supplémentaire que les opérations de lecture et d'écriture non-transactionnelles d'un processus sont garantis à terminer, peu importe les actions de processus concurrents dans le système.
 
 
-Ce chapitre présente un algorithme qui permet d'atteindre ``fort isolement terminant'' sur le dessus d'une algorithme STM basé sur les dates logiques et verrous, nommément TL2.
+Ce chapitre présente un algorithme qui permet d'atteindre le ``fort isolement terminant'' sur le dessus d'un algorithme STM basé sur les dates logiques et verrous, nommément TL2.
 Dans le cas d'un conflit entre une transaction et une opération non-transactionnelle, cet algorithme donne la priorité à l'opération non-transactionnel,
-avec le raisonnement que même si un annulation ou redémarrage éventuel est s'inscrite dans la spécification d'une transaction, ce n'est pas le cas d'une single lecture ou d'écriture de memoire partagée.
+avec le raisonnement que même si un annulation ou redémarrage éventuel est s'inscrite dans la spécification d'une transaction, ce n'est pas le cas d'une single lecture ou d'écriture de mémoire partagée.
 Ceci permet au programmeur de connaître son transaction exécutera de façon atomique, même en présence de l'accès mémoire non-transactionnelle,
 tout en garantissant l'accès non-transactionnel ne sont jamais bloqués de progresser.
 
 
 
-L'interaction entre les accès transactionnelles et non transactionnelles à mémoire partagée n'est qu'un parmi de nombreuses interactions possibles qu'un programmeur peut faire face quand il utilise des transactions.
+L'interaction entre les accès transactionnelles et non transactionnelles à mémoire partagée n'est qu'une étape parmi de nombreuses interactions possibles qu'un programmeur peut faire face quand il utilise des transactions.
 Par exemple, il pourrait vouloir utiliser des verrous ou des opérations atomiques de hardware en même temps que les transactions, ou il pourrait vouloir utiliser des I/O au sein de ses transactions.
 Chacun de ces derniers et beaucoup d'autres choses méritent une enquête sur les modèles possibles où elles sont considérées aux côtés de la sémantique des transactions.
 De futures recherches sont nécessaires pour déterminer comment ces opérations supplémentaires peuvent être ajoutés à l'écosystème STM d'une manière qui n'entrave pas la facilité d'utilisation.
 
 
 
-\section{Chapitre 4}
-Une solution partielle à la difficulté de la programmation concurrente est de fournissent des bibliothèques concurrentes d'abstractions populaires.
+\section*{Chapitre 4}
+La première difficulté pour la démocratisation de la programmation concurrente vient de la nécessité de fournir des bibliothèques concurrentes d'abstractions populaires.
 En général, ceux-ci sont finement accordés bibliothèques de haute performance fournissant au programmeur opérations utiles.
 Les implémentations de ces bibliothèques sont souvent très complexes et difficiles à comprendre, mais ils sont fournis avec une interface simple à utiliser pour quiconque d'utiliser.
 En faisant cela, les experts peuvent créer des algorithmes offrant des garanties fortes et de bonnes performances qui peuvent ensuite être largement réutilisés.
 
 
-En fournissant un programmeur avec un grand choix d'implémentations de transaction basées sur des abstractions couramment utilisés sa vie devient beaucoup plus facile.
+En fournissant à un programmeur avec un grand choix d'implémentations de transaction basées sur des abstractions couramment utilisés sa vie devient beaucoup plus facile.
 Par conséquent, ce chapitre se concentre sur la conception de structures de données efficaces au sein des transactions (en particulier ceux qui fournissent l'abstraction carte).
 Même si les chapitres précédents concentré sur la manière de définir la sémantique de transaction afin que le programmeur peut les
 utiliser facilement et les structures de données présentées dans ce chapitre ne sont pas directement liés à l'interaction entre les programmeurs et le sémantique de les transactions,
@@ -421,7 +406,7 @@ Plus précisément, il favorise le fait que les structures de données proposée
 
 
 \paragraph{Structures de données concurrentes}
-Dans cette ère multicœurs, concurrente structures de données deviennent des éléments plus importants pour les programmeurs qui écrivent des programmes concurrents.
+Dans cette aire multicœurs, les structures concurrentes de données deviennent des éléments plus importants pour les programmeurs qui écrivent des programmes concurrents.
 Ils présentent le programmeur avec une interface claire à une abstraction, lui permettant d'effectuer des operations de l'abstraction dans un contexte concurrente.
 En raison de leur importance dans l'organisation des données entre processus, ils sont de plus en plus un goulot d'étranglement dans une grande variété d'applications concurrentes.
 Compte tenu structures de données en général, à la fois concurrente et séquentielle, elles reposent souvent sur le maintien des invariants afin d'assurer leur efficacité et leur grand-O complexité.
@@ -429,23 +414,23 @@ Dans le cas d'un arbre, il doit généralement rester suffisamment équilibré �
 Malheureusement, alors que ces invariants sont importants pour garder, ils peuvent aussi empêcher l'performance de mise à l'échelle avec plusieurs cœurs~\cite{Sha2011}.
 
 
-De plus agrandissant ce problème, il est difficile de savoir comment on peut adapter une structure de données pour y accéder efficacement au moyen de transactions dans un système STM.
+De plus dans ce problème, il est difficile de savoir comment on peut adapter une structure de données pour y accéder efficacement au moyen de transactions dans un système STM.
 Potentiellement aussi un drawback de la simplicité de l'utilisation de transactions,
 les structures de données utilisées dans la mémoire transactionnelle sont le plus souvent seulement leurs versions séquentielles collées directement dans les transactions.
 
 
 
-Lorsque l'on considère la mise en œuvre d'un arbre en utilisant TM, il est clair que, même si une transaction doit être annulée avant violer
+Lorsque l'on considère la mise en œuvre d'un arbre en utilisant les STMs, il est clair que, même si une transaction doit être annulée avant de violer
 l'abstraction mis en œuvre par cet arbre (par exemple, l'insertion de $k$ avec succès dans un set où $k$ a déjà été insérée par une transaction concurrente),
 il est difficile de savoir si une transaction doit être annulée en raison d'un peu déséquilibrer l'arbre afin de strictement préserver l'invariant de l'équilibre.
-Selon cette hypothèse, nous introduisons un \emph{spéculation conviviale arbre} comme un arbre qui rompt transitoirement son invariant de l'equilibrium structurel
+Selon cette hypothèse, nous introduisons un \emph{spéculation conviviale arbre} comme un arbre qui rompt transitoirement son invariant de l'équilibre structurel
 sans nuire à l'exactitude de l'abstraction dans le but d'accélérer les accès basés sur les transactions.
 Voici nos contributions.
 
 
 \begin{itemize}
 
-\item Nous proposons une spéculation conviviale arbre binaire de recherche de données   mise en œuvre de l'abstraction de la carte.
+\item Nous proposons une spéculation originale d'arbre binaire de recherche de données mise en œuvre dans l'abstraction de la carte.
 Dans cette implémentation nous découpler les opérations qui modifient l'abstraction
 (on appelle ces transactions \emph{abstraites}) des opérations qui modifient la structure de l'arbre lui-même, mais pas l'abstraction (on appelle ces \emph{transactions structurelles}).
 Une transaction abstraite, soit insère soit supprime un élément de l'abstraction et dans certains cas, l'insertion peut également modifier la structure arborescente.
@@ -456,15 +441,15 @@ chacune de ces transactions exécute une rotation locale impliquant seulement un
 
 
 
-\item Nous prouvons la correction (i.e. linéarisabilité) de notre arbre et nous comparons sa performance par rapport existants versions d'un arbre AVL
-et un arbre rouge-noir basés sur les transactions, largement utilisé pour évaluer les transactions~\cite{DSS06, HLMS03, CCKO08, HK08, FFR08, YNW+08, DFGG11}.
+\item Nous prouvons la correction (linéarisabilité) de notre arbre et nous comparons sa performance par rapport à la version existantes d'un arbre AVL
+et un arbre rouge-noir basés sur les transactions, largement utilisé pour évaluer les transactions~\cite{DSS06, HLMS03, CCKO08, HK08 , FFR08, YNW 08, DFGG11}.
 L'arbre spéculation conviviale améliore par jusqu'à 1,6$\times$ la performance de l'arbre AVL sur le micro-benchmark et par jusqu'à 3,5$\times$ la performance du arbre rouge-noir sur
 une application de réservation de voyages, déjà bien ingénierie pour les transactions.
 Enfin, notre spéculation conviviale arbre a des résultats comparables à un arbre non rotatif mais il reste robuste face à des charges de travail non uniformes.
 
 
 
-\item Nous illustrent (1)~la portabilité de notre spéculation conviviale arbre en l'évaluant sur deux différents STMs, TinySTM~\cite{FFR08} et $\mathcal{E}$-STM~\cite{FGG09}
+\item Nous illustrons (1) la portabilité de notre spéculation d'arbre en l'évaluant sur deux différents STMs, TinySTM~\cite{FFR08} et $\mathcal{E}$-STM~\cite{FGG09}
 et avec différents paramètres de configuration, donc soulignant que notre gain de performance est indépendante de l'algorithme STM qu'il utilise,
 et (2)~comment facilement réutilisés en composant le $\lit{remove}$ et $\lit{insert}$ dans un nouveau $\lit{move}$ operation.
 En outre, nous comparons l'avantage de se détendre structures de données dans ceux qui sont spéculations conviviale contre ceux qui profit uniquement des transactions relaxantes, par l'évaluation des transactions élastiques.
@@ -475,16 +460,16 @@ Il montre que, pour cette structure de données particulière, la refactorisatio
 \end{itemize}
 
 
-\section{Conclusion}
+\section*{Conclusion}
 
 Cette thèse se penche sur les solutions possibles pour faire face aux difficultés qui surgissent quand un programmeur utilise la mémoire transactionnelle, en prenant la facilité d'utilisation comme la principale préoccupation.
-Même si une définition précise de la sémantique et les propriétés est utilisées comme solutions aux problèmes spécifiques, le but est qu'ils restent faciles à comprendre.
-Par conséquent, un programmeur qui comprend la définition de haut niveau devrait trouver les détails spécifiques des définitions de bas niveau comme un prolongement naturel.
+Même si une définition précise de la sémantique et des propriétés sont utilisées comme solutions aux problèmes les plus spécifiques, le but est de rester le plus facile à comprendre.
+Par conséquent, un programmeur qui comprend la définition de haut niveau devrait trouver les détails des définitions de bas niveau comme un prolongement naturel.
 
 
+L'objectif est qu'un programmeur peut écrire un programme concurrente aussi efficacement et avec autant de facilité que si il l'écrivait en séquentiel.
+Bien que cet objectif est loin d'être pleinement réalisé ici, cette thèse propose des solutions dans cette direction, tout en suggérant de possible perspectives.
 
-Le grand objectif est qu'un jour, un programmeur peut écrire un programme concurrente et efficient avec presque autant de facilité que il pouvait en écrire un séquentiel un.
-Bien que cet objectif est loin d'être pleinement réalisé ici, cette thèse fait des pas importants dans cette direction, tout en suggérant des moyens d'avancer plus loin.
 
 
 
