@@ -168,7 +168,19 @@ If not then the transaction is aborted by calling ${\sf check\_abort}$ with true
 \paragraph{check\_abort}
 This procedure takes as input a main descriptor $\mathit{m\_desc}$.
 If the transsaction is being executed locally (meaning there cannot be any concurrent processes helping it execute)
-then 
+then the abort count is increased and transaction is immediately restarted.
+Otherwise if the transaction is one that needs help (i.e. is not local) then the ${\sf contention\_manager}$ procedure is called
+taking as input the main descriptors of the conflicting transactions.
+If this returns false then the transaction is aborted, thus returing back to line \ref{} of the ${\sf help\_loop}$.
+If the call to ${\sf contention\_manager}$ returns true then the transaction continues executing (maybe should abort in the case it was called
+in validate!!!!!!!!!!!).
+
+
+\paragraph{contention\_manager}
+This procedure takes as input two main descriptors of conflicting transactions, $\mathit{m\_desc}$ is the descriptor of the transaction
+that noticed the conflict and $\mathit{o\_m\_desc}$ is the descriptor of the conflicting transaction.
+The actions of this operation are based on the priority assigned to the transactions.
+If the priority of $\mathit{m\_desc}$ is greater then that of $\mathit{o\_m\_desc}$, then the 
 
 
 \begin{figure} [htb]
@@ -194,7 +206,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{H04} \>\> {\bf if} (($\mathit{item} \not \in \mathit{ws} \wedge \mathit{tmp.desc.status} = $ LIVE) $\vee$ (${\sf get\_value}(\mathit{tmp}) \neq \mathit{item.value}$)) \\
 % ($\mathit{temp.desc.time} > \mathit{desc.time}$)) \\
 
-!!!!!!!!!!!!!!!!!!!Need to ensure an abort happens here!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!Need to ensure an abort happens here!!!!!!!!!!!!!!!!!!! \\
 
 \line{H05} \>\>\> {\bf then} ${\sf check\_abort}(\mathit{tmp.desc.m\_desc})$; \\
 \line{H05} \>\> {\bf end if} \\
@@ -268,6 +280,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 {\bf operation}  ${\sf begin\_transaction}()$:\\% {\bf is}\\
 \line{S1} \> {\bf if} ($\mathit{Self.is\_local}$) {\bf then} \\
 \line{S1} \>\> {\bf if} ($\mathit{Self.aborts} = 0$) {\bf then} $\mathit{Self.l\_main\_desc} \gets $ alloc new main descriptor \\
+\line{S1} \>\>\> $\mathit{Self.l\_main\_desc.priority} \gets $ unique priority based on $\mathit{GCV}$ and $\mathit{Self.id}$ \\
 \line{S1} \>\> {\bf else if} ($\mathit{aborts} > \mathit{THLD}$) {\bf then} \\
 % \line{S1} \>\>\> $\mathit{Self.is\_local} \gets \sf{false}$; \\
 \line{S1} \>\>\> $\mathit{Help\_array}[\mathit{Self.id}][\mathit{Self.id}] \gets \mathit{Self.l\_main\_desc}$; \\
