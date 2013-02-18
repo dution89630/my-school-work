@@ -1,3 +1,73 @@
+\documentclass[runningheads,a4paper]{article}
+\usepackage{amssymb}
+\setcounter{tocdepth}{3}
+\usepackage{graphicx}
+
+%%% Our Extra Packages %%%
+
+%\usepackage{epic,eepic,amsmath,latexsym,amssymb,color,amsthm}
+\usepackage{ifthen,epsfig}%,graphics,epsfig,fullpage} 
+\usepackage[english]{babel}
+
+%%%
+
+
+\usepackage{url}
+\urldef{\mailsa}\path|{tyler.crain, eleni.kanellou, michel.raynal}@irisa.fr| 
+\urldef{\mailsb}\path|michel.raynal@irisa.fr|    
+\newcommand{\keywords}[1]{\par\addvspace\baselineskip
+\noindent\keywordname\enspace\ignorespaces#1}
+
+\newcommand{\ignore}[1]{}
+
+%-----------------------for square--------------------------------------------
+\newlength {\squarewidth}
+\renewenvironment {square}
+{
+\setlength {\squarewidth} {\linewidth}
+\addtolength {\squarewidth} {-12pt}
+\renewcommand{\baselinestretch}{0.75} \footnotesize
+\begin {center}
+\begin {tabular} {|c|} \hline
+\begin {minipage} {\squarewidth}
+\medskip
+}{
+\end {minipage}
+\\ \hline
+\end{tabular}
+\end{center}
+}  
+%--------------------------------------------------------------------
+%--------------------------------------------------------------------
+%-------- macros for algorithm ---------------------------------------
+%\newtheorem{definition}{Definition}
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{lemma}{Lemma}
+%\newtheorem{corollary}{Corollary}
+\newcommand{\toto}{xxx}
+%\newenvironment{proofT}{\noindent{\bf Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+%\newenvironment{proofL}{\noindent{\bf Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+%\newenvironment{proofC}{\noindent{\bf Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+
+
+\newcounter{linecounter}
+\newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}{(0\arabic{linecounter})}{(\arabic{linecounter})}}
+\renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+\newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+\renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 9\else 0\fi \arabic{linecounter}}
+
+\newcommand{\tuple}[1]{\ensuremath{\left \langle #1 \right \rangle }}
+
+%----------------------------------------------------------------------
+
+
+
+
+
+\begin{document}
+ 
+
+
 Multicore architectures are changing the way we write programs.
 Not only are all computational devices
 turning multicore thus becoming inherently concurrent, 
@@ -772,8 +842,8 @@ semantics in the interest of ease of use.
 This chapter takes the view that transactions exist as an integrated part of
 a users program.
 The programmer then places a group of reads and writes
-inside a block of code bounded by the keywords $\act{transaction\_begin}()$ and
-$\act{transaction\_end}()$ (or alternatively the atomic block $\act{atomic}(\dots)$).
+inside a block of code bounded by the keywords ${\sf transaction\_begin}()$ and
+${\sf transaction\_end}()$ (or alternatively the atomic block ${\sf atomic}(\dots)$).
 This atomic operation exists directly as a piece of his code, preceded
 and followed by code also written by the programmer.
 Inside this block of code reads and writes to shared memory are then
@@ -1139,7 +1209,7 @@ Finally, our speculation-friendly tree performs similarly to a non-rotating tree
 \item We illustrate (1)~the portability of our speculation-friendly tree by evaluating it on two different Transactional Memories (TMs), TinySTM~\cite{FFR08} 
 and $\mathcal{E}$-STM~\cite{FGG09} and with different configuration settings, hence outlining that our performance benefit is independent 
 from the transactional algorithm it uses; and (2)~how it can be reused by composing 
-straightforwardly the $\lit{remove}$ and $\lit{insert}$ into a new $\lit{move}$ operation.
+straightforwardly the ${\sf remove}$ and ${\sf insert}$ into a new ${\sf move}$ operation.
 In addition, we compare the benefit of relaxing data structures into speculation-friendly ones against the benefit of only relaxing transactions,
 by evaluating elastic transactions.
 It shows that, for a particular data structure, refactoring its algorithm is preferable to refactoring the underlying transaction algorithm.
@@ -1176,4 +1246,5 @@ this thesis makes important steps in this direction, while suggesting ways to mo
 
 
 
+\end{document}
 
