@@ -9,6 +9,7 @@
 %\usepackage{epic,eepic,amsmath,latexsym,amssymb,color,amsthm}
 \usepackage{ifthen,epsfig}%,graphics,epsfig,fullpage} 
 \usepackage[english]{babel}
+\usepackage{hyperref}
 
 %%%
 
@@ -71,34 +72,42 @@
  
  
 
-\begin{figure*}[ht]
+\begin{figure}[ht]
 \centerline{
     \mbox{\includegraphics[width=0.9\textwidth]{stuff}}
 }
 \caption{The memory set-up and the data structures that are used by the 
 algorithm.}
 \label{fig:mem_setup}
-\end{figure*}
+\end{figure}
  
 !!!!!!!!!!!!!!!!!!!!!!!!!! Need to update commit for R/O transactions !!!!!!!!!!!!!!!!!!!
  
 \section{Intro}
-In \cite{} we presented a universal construction in which every transaction that is started is guaranteed to commit no matter the
-concurrecny pattern of the system.
-In addition, the progress of each thread was dependent only on the proccessor that it was statically assigned to.
-Unfortunatley while this algorithm was realistic in the sense that it could be implemented, it also presented several bottlenecks
+In \cite{CIR12} we presented an STM based universal construction in which every transaction that is started is guaranteed to commit no matter the
+concurrency pattern of the system.
+In addition, the progress of each thread was dependent only on the processor that it was statically assigned to.
+Unfortunately while this algorithm was realistic in the sense that it could be implemented, it also presented several bottlenecks
 for performance.
 Of these the two most important are (1) there is a single list containing all transactions, through which every transaction must
 traverse to perform reads and validations, before performing a CAS on the head pointer in order to commit, creating a single point
 of contention and (2) this list is expensive to maintain both in terms of computation and memory usage.
 The goal of the algorithm presented here is to address these bottlenecks.
-To acieve this, the idea of having a single list is thrown out for a more traditional view of memory when each variable has its own
-unique address.
-This memory layout is similar to one that we have used to present an efficent algorithm implementing \emph{terminating strong isolation} \cite{}.
-Non-conflicting transactions can then execute concurrently and completely independently (other then accessing a shared clock used for consistency).
-A process is still required to help other processes in order to ensure that every transaction is committed, this is done by looking for processes
-to help in a shared array where processes announce they need help.
 
+
+To achieve this, the idea of having a single list is thrown out for a more traditional view of memory when each variable has its own
+unique address.
+This memory layout is similar to one that we have used to present an efficient algorithm implementing \emph{terminating strong isolation} \cite{CKR12}.
+Non-conflicting transactions can then execute concurrently and completely independently (other then accessing a shared clock used for consistency a la TL2 \cite{dice06}).
+A process is still required to help other processes in order to ensure that every transaction is committed.
+Instead of a process helping any other arbitrary transactions, it only helps concurrent transactions that conflict with its own transactions (i.e. transactions
+that access at least one location that its transactions do concurrently).
+The reason for doing this is to prevent unnecessary helping which can cause unnecessary contention and wasted work.
+This is done by keeping a shared array for each process where another process can request help from this process.
+Help is requested when one processes' transaction aborts the transaction of another process.
+(Note: Say we have for example process $P_1$ owning transaction $T_1$, $P_2$ owning transaction $T_2$, and $P_3$ owning transaction $T_3$.
+Then if $T_1$ conflicts with $T_2$, which in turn conflicts with $T_3$, even if $T_1$ and $T_3$ don't conflict with each other, $P_1$ may
+still end up helping $T_3$.)
 
 
 \section{Memory Setup}
@@ -118,14 +127,14 @@ Its main descriptor (an object of type $\mathit{m\_desc\_type}$) which is a uniq
 execution descriptors (object of type $\mathit{desc\_type}$), one per execution of this transaction.
 The reason for having separate execution descriptors is that there can be multiple executions of a transaction,
 either due to aborts, or due to several threads executing the transaction concurrently in order to help it commit.
-The main descrptor contains three fields:
+The main descriptor contains three fields:
 A unique value, $\mathit{priority}$ assigned to the transaction which can be used as a global ordering for all transactions,
 $\mathit{id}$, a unique identifier for the process that initialized the transaction, and a pointer $\mathit{desc}$ that points
-to an exection descriptor of the transaction.
+to an execution descriptor of the transaction.
 Each execution descriptor contains the following fields:
 $\mathit{rv}$, the value read from the global clock $\mathit{GCV}$ at the start of the transaction,
 a pointer, $\mathit{m\_desc}$, to the main descriptor for this transaction,
-the unique commit time assocated with this transaction, obtained by performing an ${\sf Increment\&Fetch}$ on the global
+the unique commit time associated with this transaction, obtained by performing an ${\sf Increment\&Fetch}$ on the global
 clock $\mathit{GCV}$,
 an atomic value $\mathit{status}$ describing the current state of this execution of the transaction which a value of either
 LIVE meaning the transaction is currently running, COMMITTED meaning this execution of the transaction was successfully committed,
@@ -134,19 +143,19 @@ a set $\mathit{rs}$ of pairs $\tuple{\mathit{addr,value}}$ for each of the locat
 and a set $\mathit{ws}$ of pairs $\tuple{\mathit{addr,ptr}}$ for each of the locations this transaction has written to so far, where $\mathit{ptr}$ is 
 a pointer to a $\mathit{t\_item}$.
 
-In additon to these structures, a $\mathit{k}$ by $\mathit{k}$ (where $\mathit{k}$ is the number of processes in the system)
+In addition to these structures, a $\mathit{k}$ by $\mathit{k}$ (where $\mathit{k}$ is the number of processes in the system)
 array called $\mathit{Help\_array}$ exists in shared memory.
 Each location in the array either contains a pointer to a main descriptor to a transaction that needs help or $\bot$.
 This array is used for processes to announce to other processes that they need help.
 A process with id $\mathit{i}$ will scan the row $\mathit{Help\_array}[\mathit{i}][\mathit{*}]$ when looking for a transaction to help.
-When requesting help for a transaction $T$, a process with id $\mathit{i}$ whos execution of $T$ was aborted by process with id $\mathit{j}$, will
-annouce that it needs help to process $\mathit{j}$ by setting $\mathit{Help\_array}[\mathit{j}][\mathit{i}]$ to point to the main descriptor of $T$.
+When requesting help for a transaction $T$, a process with id $\mathit{i}$ who's execution of $T$ was aborted by process with id $\mathit{j}$, will
+announce that it needs help to process $\mathit{j}$ by setting $\mathit{Help\_array}[\mathit{j}][\mathit{i}]$ to point to the main descriptor of $T$.
 
 
 \section{Operation description}
 Here we have the traditional transactional operations of ${\sf begin\_transaction}$, ${\sf transactional\_read}$, ${\sf transactional\_write}$,
-and ${\sf try\_to\_commit}$ from wich the STM system runs.
-Within these operations we have calls to other procedures can be grouped into two broad categories (1) the ones that perform simlpe checks such
+and ${\sf try\_to\_commit}$ from which the STM system runs.
+Within these operations we have calls to other procedures can be grouped into two broad categories (1) the ones that perform simple checks such
 as validations and (2) the ones that are used to performing the helping of other transactions.
 Let us start by examining the simple check type operations show in Figure \ref{fig:helpers}.
 
@@ -155,8 +164,8 @@ Let us start by examining the simple check type operations show in Figure \ref{f
 \paragraph{get\_value}
 Each $t\_item$ stores two possible values for an address,
 $\mathit{value}$, which stores the value written by the transaction that created this object,
-and $\mathit{old}$, which stores the value written by the last transaction to successfully commit, writing to this locaion.
-This procedure simply checks if the transaction that created this item has commited (i.e. $\mathit{item.desc.status}$ = COMMITTED), if
+and $\mathit{old}$, which stores the value written by the last transaction to successfully commit, writing to this location.
+This procedure simply checks if the transaction that created this item has committed (i.e. $\mathit{item.desc.status}$ = COMMITTED), if
 so then $\mathit{value}$ is returned, otherwise $\mathit{old}$ is returned.
 
 \paragraph{validate\_by\_value}
@@ -167,11 +176,11 @@ If not then the transaction is aborted by calling ${\sf check\_abort}$ with true
 
 \paragraph{check\_abort}
 This procedure takes as input a main descriptor $\mathit{m\_desc}$.
-If the transsaction is being executed locally (meaning there cannot be any concurrent processes helping it execute)
+If the transaction is being executed locally (meaning there cannot be any concurrent processes helping it execute)
 then the abort count is increased and transaction is immediately restarted.
 Otherwise if the transaction is one that needs help (i.e. is not local) then the ${\sf contention\_manager}$ procedure is called
 taking as input the main descriptors of the conflicting transactions.
-If this returns false then the transaction is aborted, thus returing back to line \ref{} of the ${\sf help\_loop}$.
+If this returns false then the transaction is aborted, thus returning back to line \ref{} of the ${\sf help\_loop}$.
 If the call to ${\sf contention\_manager}$ returns true then the transaction continues executing (maybe should abort in the case it was called
 in validate!!!!!!!!!!!).
 
@@ -471,7 +480,37 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \end{figure} 
  
  
- 
+ \begin{thebibliography}{4}
+  
+  
+\bibitem{CIR12}
+Crain, T., Imbs D., Raynal M.:
+Towards a Universal Construction for
+Transaction Based Multiprocess Programs.
+In: {\it Theoretical Computer Science} (2013)
+
+% Crain, T., Imbs, D.,  Raynal, M.: 
+% Towards a Universal Construction for Transaction-based Multiprocess Programs.
+% In: {\it Proc. 13th Int'l Conference on Distributed Computing and Networking (ICDCN'12)}, 
+% pp. 61--75, Springer Verlag LNCS \#7129 (2012) 
+
+\bibitem{CKR12}
+Tyler Crain, Eleni Kanellou, Michel Raynal:
+STM Systems: Enforcing Strong Isolation between Transactions and Nontransactional Code.
+In: {\it International Conference on Algorithms and
+Architectures for Parallel Processing (ICA3PP'12)}, pp. 317--331, (2012)
+
+
+\bibitem{dice06}
+Dice, D., Shalev O., Shavit, N.:
+Transactional Locking II.
+In: {\em Proc. 20th Int'l Symp. on Distributed Computing (DISC'06)},
+Springer-Verlag, LNCS \#4167, pp.~194--208 (2006)
+  
+  
+  
+ \end{thebibliography}
+
  
  
 \end{document}
