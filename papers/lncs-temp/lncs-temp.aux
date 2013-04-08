@@ -1,0 +1,244 @@
+\relax 
+\citation{herlihy93}
+\citation{shavit95}
+\citation{blundell06}
+\select@language{english}
+\@writefile{toc}{\select@language{english}}
+\@writefile{lof}{\select@language{english}}
+\@writefile{lot}{\select@language{english}}
+\@writefile{toc}{\contentsline {title}{Lecture Notes in Computer Science}{1}}
+\@writefile{toc}{\authcount {3}}
+\@writefile{toc}{\contentsline {author}{Authors' Instructions}{1}}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}}
+\@writefile{toc}{\contentsline {paragraph}{STM Systems.}{1}}
+\@writefile{toc}{\contentsline {paragraph}{Strong vs Weak Isolation.}{1}}
+\citation{CIR12,MS12}
+\citation{dice06}
+\citation{P79}
+\citation{guerraoui08}
+\citation{IR09}
+\@writefile{toc}{\contentsline {paragraph}{Desirable Properties.}{2}}
+\@writefile{toc}{\contentsline {paragraph}{Content of the Paper.}{2}}
+\citation{blundell06}
+\citation{shpeis07}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Correctness and Strong Isolation}{3}}
+\newlabel{sec:badthings}{{2}{3}}
+\@writefile{toc}{\contentsline {paragraph}{Consistency Issues.}{3}}
+\@writefile{toc}{\contentsline {paragraph}{Transaction vs Non-transactional Code.}{3}}
+\citation{spear08}
+\citation{spear07}
+\citation{spear07}
+\citation{scott07}
+\citation{afek10}
+\citation{dice10}
+\@writefile{toc}{\contentsline {paragraph}{Privatization/Publication.}{4}}
+\citation{blundell06}
+\citation{ma07}
+\citation{harris06}
+\citation{blundell06}
+\@writefile{toc}{\contentsline {paragraph}{Providing Strong Isolation.}{5}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Left: {\it  Containment} (operation $R_x$ should not return the value written to $x$ inside the transaction). Right: {\it  Non-Interference} (wile it is still executing, transaction $T_1$ should not have access to the values that were written to $x$ and $y$ by process $p_2$).}}{5}}
+\newlabel{fig:int-nonc}{{1}{5}}
+\citation{dice06}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Transaction $T_2$ and non-transactional operations of process $p_3$ interfere with transaction $T_1$.}}{6}}
+\newlabel{fig:timent}{{2}{6}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}A Brief Presentation of TL2}{6}}
+\newlabel{sec:tl2}{{3}{6}}
+\@writefile{toc}{\contentsline {paragraph}{Main Features of TL2.}{6}}
+\@writefile{toc}{\contentsline {paragraph}{Locks and Logical Time.}{6}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Implementing Terminating Strong Isolation}{7}}
+\newlabel{sec:protocol}{{4}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Memory Setup and Data Structures}{8}}
+\@writefile{toc}{\contentsline {paragraph}{Memory Setup.}{8}}
+\@writefile{toc}{\contentsline {paragraph}{T-record and NT-record.}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The memory setup and the data structures that are used by the algorithm.}}{9}}
+\newlabel{fig:mem_setup}{{3}{9}}
+\@writefile{toc}{\contentsline {paragraph}{T-record.}{9}}
+\citation{SItechrep}
+\@writefile{toc}{\contentsline {paragraph}{NT-record.}{10}}
+\@writefile{toc}{\contentsline {paragraph}{Transactional Read and Write Sets.}{10}}
+\@writefile{toc}{\contentsline {subsubsection}{Discussion.}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Description of the Algorithm}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Non-transactional Operations}{11}}
+\newlabel{A01}{{01}{11}}
+\newlabel{A02}{{02}{11}}
+\newlabel{A03}{{03}{11}}
+\newlabel{A04}{{04}{11}}
+\newlabel{A06}{{05}{11}}
+\newlabel{A07}{{06}{11}}
+\newlabel{A08}{{07}{11}}
+\newlabel{A05}{{08}{11}}
+\newlabel{A09}{{09}{11}}
+\newlabel{A09A}{{\relax 10}{11}}
+\newlabel{A10}{{\relax 11}{11}}
+\newlabel{A11}{{\relax 12}{11}}
+\newlabel{A12}{{\relax 13}{11}}
+\newlabel{B01}{{\relax 14}{11}}
+\newlabel{B02}{{\relax 15}{11}}
+\newlabel{B03}{{\relax 16}{11}}
+\newlabel{B04}{{\relax 17}{11}}
+\newlabel{B05}{{\relax 18}{11}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Non-transactional operations for reading and writing a variable.}}{11}}
+\newlabel{fig:ntops}{{4}{11}}
+\@writefile{toc}{\contentsline {paragraph}{Non-transactional Read.}{11}}
+\@writefile{toc}{\contentsline {paragraph}{Non-transactional Write.}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Transactional Read and Write Operations}{12}}
+\@writefile{toc}{\contentsline {paragraph}{Transactional Read.}{12}}
+\newlabel{C01}{{\relax 19}{13}}
+\newlabel{C02}{{\relax 20}{13}}
+\newlabel{C03}{{\relax 21}{13}}
+\newlabel{C04}{{\relax 22}{13}}
+\newlabel{C05}{{\relax 23}{13}}
+\newlabel{C06}{{\relax 24}{13}}
+\newlabel{C06A}{{\relax 25}{13}}
+\newlabel{C07}{{\relax 26}{13}}
+\newlabel{C08}{{\relax 27}{13}}
+\newlabel{C09}{{\relax 28}{13}}
+\newlabel{C10}{{\relax 29}{13}}
+\newlabel{C11}{{\relax 30}{13}}
+\newlabel{C11A}{{\relax 31}{13}}
+\newlabel{C12}{{\relax 32}{13}}
+\newlabel{C13}{{\relax 33}{13}}
+\newlabel{C14}{{\relax 34}{13}}
+\newlabel{C15}{{\relax 35}{13}}
+\newlabel{D01}{{\relax 36}{13}}
+\newlabel{D02}{{\relax 37}{13}}
+\newlabel{D03}{{\relax 38}{13}}
+\newlabel{D04}{{\relax 39}{13}}
+\newlabel{D05}{{\relax 40}{13}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Transactional operations for reading and writing a variable.}}{13}}
+\newlabel{fig:tops}{{5}{13}}
+\@writefile{toc}{\contentsline {paragraph}{Transactional Write.}{14}}
+\@writefile{toc}{\contentsline {paragraph}{Begin and End of a Transaction}{14}}
+\newlabel{START1}{{\relax 41}{14}}
+\newlabel{START2}{{\relax 42}{14}}
+\newlabel{START3}{{\relax 43}{14}}
+\newlabel{DA01}{{\relax 44}{14}}
+\newlabel{DA02}{{\relax 45}{14}}
+\newlabel{DA03}{{\relax 46}{14}}
+\newlabel{DA04}{{\relax 47}{14}}
+\newlabel{DA05}{{\relax 48}{14}}
+\newlabel{DA06}{{\relax 49}{14}}
+\newlabel{DA06A}{{\relax 50}{14}}
+\newlabel{DA07}{{\relax 51}{14}}
+\newlabel{DA08}{{\relax 52}{14}}
+\newlabel{DA11}{{\relax 53}{14}}
+\newlabel{DA12}{{\relax 54}{14}}
+\newlabel{DA14}{{\relax 55}{14}}
+\newlabel{DA15}{{\relax 56}{14}}
+\newlabel{DA16}{{\relax 57}{14}}
+\newlabel{DA17}{{\relax 58}{14}}
+\newlabel{DA18}{{\relax 59}{14}}
+\newlabel{DA19}{{\relax 60}{14}}
+\newlabel{DA20}{{\relax 61}{14}}
+\newlabel{DA21}{{\relax 62}{14}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Transaction begin/commit.}}{14}}
+\newlabel{fig:tbc}{{6}{14}}
+\newlabel{H01}{{\relax 63}{15}}
+\newlabel{H02}{{\relax 64}{15}}
+\newlabel{H03}{{\relax 65}{15}}
+\newlabel{H04}{{\relax 66}{15}}
+\newlabel{H05}{{\relax 67}{15}}
+\newlabel{H06}{{\relax 68}{15}}
+\newlabel{H07}{{\relax 69}{15}}
+\newlabel{H07A}{{\relax 70}{15}}
+\newlabel{H08}{{\relax 71}{15}}
+\newlabel{H09}{{\relax 72}{15}}
+\newlabel{AB01}{{\relax 73}{15}}
+\newlabel{AB02}{{\relax 74}{15}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Transactional helper operations.}}{15}}
+\newlabel{fig:helpers}{{7}{15}}
+\@writefile{toc}{\contentsline {paragraph}{Transactional Helping operations.}{15}}
+\bibcite{afek10}{1}
+\bibcite{CIR12}{2}
+\bibcite{SItechrep}{3}
+\bibcite{dice10}{4}
+\bibcite{dice06}{5}
+\bibcite{guerraoui08}{6}
+\bibcite{harris06}{7}
+\bibcite{herlihy93}{8}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{16}}
+\newlabel{sec:conclusions}{{5}{16}}
+\bibcite{IR09}{9}
+\bibcite{ma07}{10}
+\bibcite{blundell06}{11}
+\bibcite{MS12}{12}
+\bibcite{P79}{13}
+\bibcite{scott07}{14}
+\bibcite{shavit95}{15}
+\bibcite{shpeis07}{16}
+\bibcite{spear08}{17}
+\bibcite{spear07}{18}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Version of algorithm that does not use NT-records}{17}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Version of algorithm with non-blocking NT-reads and blocking NT-writes}{17}}
+\newlabel{MA01}{{\relax 75}{18}}
+\newlabel{MA02}{{\relax 76}{18}}
+\newlabel{MA03}{{\relax 77}{18}}
+\newlabel{MA04}{{\relax 78}{18}}
+\newlabel{MA05}{{\relax 79}{18}}
+\newlabel{MA06}{{\relax 80}{18}}
+\newlabel{MA07}{{\relax 81}{18}}
+\newlabel{MA08}{{\relax 82}{18}}
+\newlabel{MA09}{{\relax 83}{18}}
+\newlabel{MA10}{{\relax 84}{18}}
+\newlabel{MA10A}{{\relax 85}{18}}
+\newlabel{MA11}{{\relax 86}{18}}
+\newlabel{MB01}{{\relax 87}{18}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Non-transactional operations for reading and writing a variable.}}{18}}
+\newlabel{fig:ntops2}{{8}{18}}
+\newlabel{MC01}{{\relax 88}{19}}
+\newlabel{MC02}{{\relax 89}{19}}
+\newlabel{MC03}{{\relax 90}{19}}
+\newlabel{MC04}{{\relax 91}{19}}
+\newlabel{MC05}{{\relax 92}{19}}
+\newlabel{MC06}{{\relax 93}{19}}
+\newlabel{MC07}{{\relax 94}{19}}
+\newlabel{MC08}{{\relax 95}{19}}
+\newlabel{MC08A}{{\relax 96}{19}}
+\newlabel{MC09}{{\relax 97}{19}}
+\newlabel{MC10}{{\relax 98}{19}}
+\newlabel{MC11}{{\relax 99}{19}}
+\newlabel{MC12}{{\relax 100}{19}}
+\newlabel{MC13}{{\relax 101}{19}}
+\newlabel{MC14}{{\relax 102}{19}}
+\newlabel{MD01}{{\relax 103}{19}}
+\newlabel{MD02}{{\relax 104}{19}}
+\newlabel{MD03}{{\relax 105}{19}}
+\newlabel{MD04}{{\relax 106}{19}}
+\newlabel{MD05}{{\relax 107}{19}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Transactional operations for reading and writing a variable.}}{19}}
+\newlabel{fig:tops2}{{9}{19}}
+\newlabel{MDA01}{{\relax 108}{20}}
+\newlabel{MDA02}{{\relax 109}{20}}
+\newlabel{MDA03}{{\relax 110}{20}}
+\newlabel{MDA04}{{\relax 111}{20}}
+\newlabel{MDA05}{{\relax 112}{20}}
+\newlabel{MDA05A}{{\relax 113}{20}}
+\newlabel{MDA06}{{\relax 114}{20}}
+\newlabel{MDA07}{{\relax 115}{20}}
+\newlabel{MDA07A}{{\relax 116}{20}}
+\newlabel{MDA08}{{\relax 117}{20}}
+\newlabel{MDA08A}{{\relax 118}{20}}
+\newlabel{MDA09}{{\relax 119}{20}}
+\newlabel{MDA12}{{\relax 120}{20}}
+\newlabel{MDA13}{{\relax 121}{20}}
+\newlabel{MDA14}{{\relax 122}{20}}
+\newlabel{MDA15}{{\relax 123}{20}}
+\newlabel{MDA16}{{\relax 124}{20}}
+\newlabel{MDA17}{{\relax 125}{20}}
+\newlabel{MDA18}{{\relax 126}{20}}
+\newlabel{MDA19}{{\relax 127}{20}}
+\newlabel{MDA20}{{\relax 128}{20}}
+\newlabel{MDA21}{{\relax 129}{20}}
+\newlabel{MDA22}{{\relax 130}{20}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Transaction commit.}}{20}}
+\newlabel{fig:tbc2}{{10}{20}}
+\newlabel{N01}{{\relax 131}{20}}
+\newlabel{N02}{{\relax 132}{20}}
+\newlabel{N03}{{\relax 133}{20}}
+\newlabel{N04}{{\relax 134}{20}}
+\newlabel{N05}{{\relax 135}{20}}
+\newlabel{N06}{{\relax 136}{20}}
+\newlabel{NB01}{{\relax 137}{20}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Non-transactional operations for reading and writing a variable.}}{20}}
+\newlabel{fig:noblock-readonly}{{11}{20}}
