@@ -7,20 +7,20 @@ else
 fi
 
 if [ $# -gt 5 ]; then
-   firstpart1=$1
-   shift;
-   firstpart2=$1
-   shift;
-   secondpart1=$1
-   shift;
-   secondpart2=$1
-   shift;
    firstnum=$1
    shift;
    secondnum=$1
    shift;
+   thirdum=$1
+   shift;
+   fourthnum=$1
+   shift;
+   fifthnum=$1
+   shift;
+   sixthnum=$1
+   shift;
 else
-    echo "suscript firstpart1 firstpart2 secondpart1 secondpart2 firstnum secondnum (removeline)"
+    echo "suscript firstnum secondnum thirdnum fourthnum fifthnum sixthnum"
 exit
 fi
 
