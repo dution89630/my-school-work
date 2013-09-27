@@ -1,0 +1,134 @@
+
+
+
+% ============================================================================
+\documentclass[11pt,letterpaper]{article}
+%\usepackage[T1]{fontenc}
+%\usepackage[latin1]{inputenc}
+\usepackage{epic,eepic,amsmath,latexsym,amssymb,color,amsthm}
+\usepackage{ifthen,graphics,epsfig,fullpage} 
+\usepackage[english]{babel} 
+\bibliographystyle{plain}
+\usepackage{times}
+
+
+% =========================================================================
+\newcommand{\Xomit}[1]{}
+\newcommand{\ignore}[1]{}
+% =========================================================================
+
+
+\begin{document}
+
+%-----------------------for square--------------------------------------------
+\newlength {\squarewidth}
+\renewenvironment {square}
+{
+\setlength {\squarewidth} {\linewidth}
+\addtolength {\squarewidth} {-12pt}
+\renewcommand{\baselinestretch}{0.75} \footnotesize
+\begin {center}
+\begin {tabular} {|c|} \hline
+\begin {minipage} {\squarewidth}
+\medskip
+}{
+\end {minipage}
+\\ \hline
+\end{tabular}
+\end{center}
+}  
+ 
+%--------------------------------------------------------------------
+%--------------------------------------------------------------------
+%-------- macros for algorithm ---------------------------------------
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newcommand{\toto}{xxx}
+\newenvironment{proofT}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofL}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofC}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+
+
+\newcounter{linecounter}
+\newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}
+{(0\arabic{linecounter})}{(\arabic{linecounter})}}
+\renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+\newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+\renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 
+9\else 0\fi \arabic{linecounter}}
+
+\newcommand{\tuple}[1]{\ensuremath{\left \langle #1 \right \rangle }}
+
+%----------------------------------------------------------------------
+
+
+
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+{\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
+\line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
+\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge \mathit{tmp.status} \neq$ COMMITTED ) \\
+\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
+\line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
+%\line{A05} \>\> {\bf end if} \\
+\line{A06} \>\>\> {\bf if} ($tmp.status \neq $ COMMITTED)  \\
+\line{A07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
+\line{A08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{A05} \>\>\> {\bf end if}; \\
+\line{A09} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{A09A} \> {\bf end if}; \\
+\line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \mathit{tmp.time})$ \\
+\line{A11} \> {\bf if} ($\mathit{time} = \infty$) {\bf then} $\mathit{time} = \mathit{GCV}$ {\bf end if}; \\
+\line{A12} \> ${\sf return}$ ($\mathit{value}$) \\
+{\bf end operation}. \\
+\\
+
+{\bf operation}  ${\sf contains}(\mathit{key})$ {\bf is}\\
+\line{A01} \> {\bf if} $key \in \mathit{list}$ {\bf then} \\
+\line{A01} \>\> ${\sf return}$ ($\sf{true}$) {\bf end if} \\
+\line{A01} \> $\mathit{hash} \gets {\sf hash}(\mathit{key})$ \\
+
+
+\line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
+\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge \mathit{tmp.status} \neq$ COMMITTED ) \\
+\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
+\line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
+%\line{A05} \>\> {\bf end if} \\
+\line{A06} \>\>\> {\bf if} ($tmp.status \neq $ COMMITTED)  \\
+\line{A07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
+\line{A08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{A05} \>\>\> {\bf end if}; \\
+\line{A09} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
+\line{A09A} \> {\bf end if}; \\
+\line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \mathit{tmp.time})$ \\
+\line{A11} \> {\bf if} ($\mathit{time} = \infty$) {\bf then} $\mathit{time} = \mathit{GCV}$ {\bf end if}; \\
+\line{A12} \> ${\sf return}$ ($\mathit{value}$) \\
+{\bf end operation}. \\
+\\
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Non-transactional operations for reading and writing a variable.}
+\label{fig:ntops}
+}
+\end{figure}
+
+
+
+\end{document}
