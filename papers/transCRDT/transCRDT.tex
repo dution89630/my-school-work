@@ -66,7 +66,27 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 
 %----------------------------------------------------------------------
 
+Originally proposed as a hardware mechanism for easily developing non-blocking data structures,
+Transactional Memory (TM) has since evloved to become a general pourpose method for easily writing
+efficient concurrent code.
+With TM a programmer is able to declare atomic transacions, more specifically, blocks
+one or several reads and writes to shared memory bounded by calls to the
+$\ms{begin\_transaction}$ and $\ms{end\_transaction}$ operations, with
+these reads and writes appearing to have executed in exclusion with no interleaving
+between other transactions, as if a single global lock had been used.
 
+Unlike using a global lock, several transactions can be executed at the same time,
+with the system ensuring that they appear to have executed in exclusion.
+In order to still ensure this, the TM system will keep track of reads and writes
+performed by transactions, detecting conflicts, and aborting and restarting transactions
+as necessary.
+Defining precisely how transactions execute in relation to eachother is a consistency criterion.
+Probably the most commonly used criterion, linearizability, roughly says that each
+operation appears to have occured at some instant in time between its invocation and completion.
+Opacity, the most common criterion used for TM, ensures this for both aborted and committed transactions.
+
+While for certain applications, certain STM systems exhibit performance that scales as the number
+of processing core increases, many applications 
 
 \begin{figure}[htb]
 \centering{ \fbox{
