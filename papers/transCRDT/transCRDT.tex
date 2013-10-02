@@ -71,7 +71,7 @@ Transactional Memory (TM) has since evloved to become a general pourpose method 
 efficient concurrent code.
 With TM a programmer is able to declare atomic transacions, more specifically, blocks
 one or several reads and writes to shared memory bounded by calls to the
-$\ms{begin\_transaction}$ and $\ms{end\_transaction}$ operations, with
+$\mathit{begin\_transaction}$ and $\mathit{end\_transaction}$ operations, with
 these reads and writes appearing to have executed in exclusion with no interleaving
 between other transactions, as if a single global lock had been used.
 
@@ -88,6 +88,27 @@ Opacity, the most common criterion used for TM, ensures this for both aborted an
 While for certain applications, certain STM systems exhibit performance that scales as the number
 of processing core increases, many applications 
 
+\section{Stop the world}
+
+The most direct way to implemnt the STM system is to allow all processes
+execute concurrently in isolation without making any modifications to shared memory.
+A single copy of the data structure is store in shared memory that is not modified.
+By avoiding modifications to this data structure, any group of reads to this data
+performed during a transaction will be guaranteed to provide a consistent snapshot.
+Updates done by transactions are stored locally.
+
+Eventually these updates must be shared so that they become visible to the other processes.
+This is done in a simple ``stop the world'' fashion.
+A separate process will tell every process to complete their current transaction (if there is one) and then to pause
+their execution.
+Once all processes are stopped, the separate process will go through all the updates that are stored locally at
+each process and, using the communitive properties of the CRDT? model, will merge them to the shared copy.
+Updates done by each process are considered ``concurrent'' with the updates of all other processes and are merged
+accordinly, for example by using the add wins model of a concurrent set.
+
+Ocnce all updates have been merged to the shared copy, the processes are allowd to continue their execution,
+with transactions reading from the new version of the data.
+
 \begin{figure}[htb]
 \centering{ \fbox{
 \begin{minipage}[t]{150mm}
@@ -97,6 +118,162 @@ of processing core increases, many applications
 %\setcounter{linecounter}{200}
 \begin{tabbing}
 aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+
+{\bf operation} ${\sf begin\_transaction}()$ \\
+\line{A01} \> {\bf while} ($\sf{true}$) {\bf do} \\
+\line{A01} \>\> $\mathit{stopped} \gets {\sf true}$ \\
+\line{A01} \>\> {\bf if} ($\neg \mathit{stop}$) {\bf then} \\
+\line{A01} \>\>\> $\mathit{live} \gets {\sf false}$ \\
+\line{A01} \>\>\> $\sf return$() \\
+\line{A01} \>\> {\bf else} \\
+\line{A01} \>\>\> $\mathit{live} \gets \mathit{false}$ \\
+\line{A01} \>\>\> $\mathit{live} \gets \mathit{false}$ \\
+\line{A01} \>\>\> ${\sf wait}(\mathit{stop})$ \\
+\line{A01} \> {\bf end if} {\bf end while} \\
+{\bf end operation}. \\
+\\
+
+{\bf operation} ${\sf transactional\_read}(\mathit{addr})$ \\
+\line{A01} \> {\bf if}($\mathit{addr} \in \mathit{WS}$) {\bf then} \\
+\line{A01} \>\> ${\sf return}$ ($\mathit{WS.get}(\mathit{addr})$) {\bf end if} \\
+\line{A01} \> ${\sf return}$($\mathit{hash\_table.get}(\mathit{addr})$) \\
+{\bf end operation}. \\
+\\
+
+{\bf operation} ${\sf transactional\_update}(\mathit{addr}, \mathit{op}, \mathit{val})$ \\
+\line{A01} \> $\mathit{WS.add}(\mathit{addr}, \mathit{op}, \mathit{val})$ \\
+{\bf end operation}. \\
+\\
+
+{\bf operation} ${\sf commit}()$ \\
+\line{A01} \> $\mathit{live} \gets {\sf false}$ \\
+\line{A01} \> $\mathit{stopped} \gets {\sf true}$ \\
+\line{A01} \> ${\sf return}$ (${\sf false}$) \\
+{\bf end operation}. \\
+\\
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transactional operations for the stop-the-world version}
+\label{fig:ntops}
+}
+\end{figure}
+
+
+
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+{\bf operation} ${\sf stop\_the\_world}()$ {\bf is} \\
+\line{A01} \> {\bf for each} ($\mathit{p} \in \mathit{processes}$) {\bf do} \\
+\line{A01} \>\> $\mathit{p.stop} \gets {\sf true}$ \\
+\line{A01} \>\> {\bf while}($\neg \mathit{p.stopped} \cup \mathit{p.live}$); \\
+\line{A01} \> {\bf end for} \\
+\line{A01} \> {\bf for each} ($\mathit{p} \in \mathit{processes}$) {\bf do} \\
+\line{A01} \>\> {\bf for each} ($\mathit{item} \in \mathit{p.WS}$) {\bf do} \\
+\line{A01} \>\>\> $\mathit{hash\_table.merge}(\mathit{item.addr}, \mathit{item.op}, \mathit{item.var})$ \\
+\line{A01} \>\> {\bf end for} \\
+\line{A01} \>\> $\mathit{p.WS.clear}()$ {\bf end for} \\
+\line{A01} \> {\bf for each} ($\mathit{p} \in \mathit{processes}$) {\bf do} \\
+\line{A01} \>\> $\mathit{p.stopped} \gets {\sf false}$; $\mathit{p.stop} \gets {\sf false}$ \\
+{\bf end operation}. \\
+\\
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Operation to stop the world and merge the updates}
+\label{fig:ntops}
+}
+\end{figure}
+
+
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+{\bf operation} ${\sf begin\_transaction}()$ \\
+\line{A01} \> {\bf if} ($\mathit{WS.is\_empty}()$) {\bf then} \\
+\line{A01} \>\> $\mathit{start\_time} \gets \mathit{GC}$ {\bf end if} \\
+{\bf end operation}. \\
+\\
+
+{\bf operation} ${\sf transactional\_read}(\mathit{addr})$ \\
+\line{A01} \> {\bf if}($\mathit{addr} \in \mathit{WS}$) {\bf then} \\
+\line{A01} \>\> ${\sf return}$ ($\mathit{WS.get}(\mathit{addr})$) {\bf end if} \\
+\line{A01} \> ${\sf return}$($\mathit{multi\_version\_struct.get}(\mathit{addr})$) \\
+{\bf end operation}. \\
+\\
+
+{\bf operation} ${\sf transactional\_update}(\mathit{addr}, \mathit{op}, \mathit{val})$ \\
+\line{A01} \> $\mathit{WS.add}(\mathit{addr}, \mathit{op}, \mathit{val})$ \\
+{\bf end operation}. \\
+\\
+
+{\bf operation} ${\sf commit}()$ \\
+
+\line{A01} \> {\bf for each} ($\mathit{item} \in \mathit{WS}$) {\bf do} \\
+\line{A01} \>\> ${\sf lock}(\mathit{item.addr})$ {\bf end for} \\
+\line{A01} \> $\mathit{time} \gets {\sf incrament\&fetch}(\mathit{GC})$ \\
+
+\line{A01} \> $\mathit{live} \gets {\sf false}$ \\
+\line{A01} \> $\mathit{stopped} \gets {\sf true}$ \\
+\line{A01} \> ${\sf return}$ (${\sf false}$) \\
+{\bf end operation}. \\
+\\
+
+
+
+
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Transactional operations for the more traditional STM version}
+\label{fig:ntops}
+}
+\end{figure}
+
+
+
+
+
+
+
+
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
 
 
 {\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
