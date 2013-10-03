@@ -123,13 +123,13 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 {\bf operation} ${\sf begin\_transaction}()$ \\
 \line{A01} \> {\bf while} ($\sf{true}$) {\bf do} \\
-\line{A01} \>\> $\mathit{stopped} \gets {\sf true}$ \\
+\line{A01} \>\> $\mathit{stopped} \gets {\sf false}$ \\
 \line{A01} \>\> {\bf if} ($\neg \mathit{stop}$) {\bf then} \\
 \line{A01} \>\>\> $\mathit{live} \gets {\sf false}$ \\
 \line{A01} \>\>\> $\sf return$() \\
 \line{A01} \>\> {\bf else} \\
 \line{A01} \>\>\> $\mathit{live} \gets \mathit{false}$ \\
-\line{A01} \>\>\> $\mathit{live} \gets \mathit{false}$ \\
+\line{A01} \>\>\> $\mathit{stopped} \gets \mathit{true}$ \\
 \line{A01} \>\>\> ${\sf wait}(\mathit{stop})$ \\
 \line{A01} \> {\bf end if} {\bf end while} \\
 {\bf end operation}. \\
@@ -150,7 +150,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 {\bf operation} ${\sf commit}()$ \\
 \line{A01} \> $\mathit{live} \gets {\sf false}$ \\
 \line{A01} \> $\mathit{stopped} \gets {\sf true}$ \\
-\line{A01} \> ${\sf return}$ (${\sf false}$) \\
+\line{A01} \> ${\sf return}$ (${\sf true}$) \\
 {\bf end operation}. \\
 \\
 
@@ -235,15 +235,14 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{A01} \> {\bf for each} ($\mathit{item} \in \mathit{WS}$) {\bf do} \\
 \line{A01} \>\> ${\sf lock}(\mathit{item.addr})$ {\bf end for} \\
 \line{A01} \> $\mathit{time} \gets {\sf incrament\&fetch}(\mathit{GC})$ \\
-
-\line{A01} \> $\mathit{live} \gets {\sf false}$ \\
-\line{A01} \> $\mathit{stopped} \gets {\sf true}$ \\
+\line{A01} \> {\bf for each} ($\mathit{item} \in \mathit{WS}$) {\bf do} \\
+\line{A01} \>\> $\mathit{multi\_version\_array.merge}(\mathit{item.addr}, \mathit{item.op}, \mathit{item.val})$ {\bf end for} \\
+\line{A01} \> {\bf for each} ($\mathit{item} \in \mathit{WS}$) {\bf do} \\
+\line{A01} \>\> ${\sf unlock}(\mathit{item.addr})$ {\bf end for} \\
+\line{A01} \> $\mathit{WS.clear}()$ \\
 \line{A01} \> ${\sf return}$ (${\sf false}$) \\
 {\bf end operation}. \\
 \\
-
-
-
 
 
 
@@ -259,6 +258,41 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
 
+\begin{figure}[htb]
+\centering{ \fbox{
+\begin{minipage}[t]{150mm}
+\footnotesize 
+\renewcommand{\baselinestretch}{2.5} 
+%\resetline
+%\setcounter{linecounter}{200}
+\begin{tabbing}
+aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
+
+
+
+
+{\bf operation}  ${\sf get}(\mathit{addr}, \mathit{time})$ {\bf is}\\
+\line{A01} \> $\mathit{next} \gets \mathit{hash\_table.get}(\mathit{addr})$ \\
+\line{A01} \> {\bf while}($\mathit{time} < \mathit{next.time}$){\bf do} \\
+\line{A01} \>\> $\mathit{next} \gets \mathit{next.time}$ {\bf end while} \\
+\line{A01} \> ${\sf return}(\mathit{next.val})$ \\
+{\bf end operation}. \\
+\\
+
+
+\line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
+
+
+
+
+\end{tabbing}
+\normalsize
+\end{minipage}
+}
+\caption{Operations of the mulit-version structure}
+\label{fig:ntops}
+}
+\end{figure}
 
 
 
