@@ -109,6 +109,94 @@ accordinly, for example by using the add wins model of a concurrent set.
 Ocnce all updates have been merged to the shared copy, the processes are allowd to continue their execution,
 with transactions reading from the new version of the data.
 
+
+\subsection{Operations and data structures}
+
+The shared copy of the data is stored in a hash table
+$\mathit{hash\_table}$ with each item in the hash-table
+being stored as an object
+containg a value $\mathit{val}$ and
+being identified by a unique address $\mathit{addr}$.
+
+Each process has several local variables.
+The boolean status variables $\mathit{stopped}$,
+$\mathit{stop}$, and $\mathit{live}$ are used to indicate
+where or not the process is currently executing a transaction
+or is wating for the shared merging to complete.
+Additionally each process contains a write set $\mathit{WS}$
+implemented as a hash table
+storing all updates that have taken place on this process
+since the last merge operation took place.
+
+\paragraph{begin\_transaction}
+The $\mathit{begin\_transaction}$ operation is the etrance to
+a transaction as indicated by the programmer.
+Its main pourpose is to announce that this thread will be executing
+a transaction, so that merging to shared memory does not take place
+while it is executing.
+Additionally, if a merging procedure has started before this transaction
+has started then the $\mathit{begin\_transaction}$ operation will
+block until the merging is complete.
+
+
+
+
+\paragraph{transactional\_update}
+The $\mathit{transactional\_update}$ operation indicates an update operation
+performed to the shared data structure during a transaction.
+It takes as input an identifier $\mathit{addr}$ of the location to update,
+an integer $\mathit{op}$ indicating the operation to perfrom, and a value $\mathit{val}$.
+The operation simple stores the update locally in a hash table, $\mathit{WS}$.
+Notice that given our weakened consistency model, these updates are not
+immediately propagated to shared memory, instead
+they are stored locally until the merging operation takes place.
+
+Updates performed by a process that happen at the same location are ordered by process order and
+follow the update semantics of the given operation/data structure.
+Additionally, the updates are ordered after the last merging operation that occured before
+the start of the transaction, and any updates performed by other processes after this merge and before
+the next are considered to be concurrent with this transaction.
+
+
+\paragraph{transactional\_read}
+The $\mathit{transactional\_read}$ operation is a read to the shared data structure
+where each of the reads that occur within a single transaction return the values from
+an atomic snapshot of the shared data structure.
+It takes as input an identifier $\mathit{addr}$ and returns a value $\mathit{val}$.
+
+Defined for this protocol, the snapshot is the status of shared memory at the time that
+the process returns from the from the $\mathit{begin\_transaction}$ operation.
+Notice that, since the $\mathit{begin\_transaction}$ operation
+sets flags blocking any merging to take place, the shared data sturcutre
+will not be modified, thus any values read from this structure obviously come from
+an atomic snapshot.
+The operation is not quite as simple as directly reading from shared memory though,
+as the process might have performed updates that have not yet been merged to shared memory
+and process order must still be respected.
+Thus, the read starts by checking if the value has been written by this
+thread since the last merge by performing a look up in the local write set
+(values written before the last merge are cleard from the write set during
+the $\mathit{stop\_the\_world}$ operation).
+If a value is found in the write set then it is returned as it is more recent
+then the value in shared memory, respecting process order.
+Otherwise, if no value is found,
+the location is read from the shared data structure and that value is returned.
+
+
+
+\paragraph{commit}
+The $\mathit{commit}$ operation indicates the end of a transaction.
+It simple announces that this thread is no longer executing a transaction,
+so that a merging operation knows that it does not have to wait for this process
+before safely executing.
+
+It is important to notice that it makes no changes to shared memory and that the write set is not cleared,
+this way the updates can be kept locally and propagated to shared memory during the next merge operation.
+Additionally, futre transactions performed by this process will be ordered after this
+transactions as such, they must observe the modifications made by this trasaction, even if they
+have not yet been propagated to shared memory.
+
+
 \begin{figure}[htb]
 \centering{ \fbox{
 \begin{minipage}[t]{150mm}
@@ -236,7 +324,7 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \line{A01} \>\> ${\sf lock}(\mathit{item.addr})$ {\bf end for} \\
 \line{A01} \> $\mathit{time} \gets {\sf incrament\&fetch}(\mathit{GC})$ \\
 \line{A01} \> {\bf for each} ($\mathit{item} \in \mathit{WS}$) {\bf do} \\
-\line{A01} \>\> $\mathit{multi\_version\_array.merge}(\mathit{item.addr}, \mathit{item.op}, \mathit{item.val})$ {\bf end for} \\
+\line{A01} \>\> $\mathit{multi\_version\_array.merge}(\mathit{item.addr}, \mathit{item.op}, \mathit{item.val}, \mathit{start\_time}, \mathit{time})$ {\bf end for} \\
 \line{A01} \> {\bf for each} ($\mathit{item} \in \mathit{WS}$) {\bf do} \\
 \line{A01} \>\> ${\sf unlock}(\mathit{item.addr})$ {\bf end for} \\
 \line{A01} \> $\mathit{WS.clear}()$ \\
@@ -280,7 +368,19 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 \\
 
 
-\line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
+{\bf operation} ${\sf merge}(\mathit{addr}, \mathit{op}, \mathit{val}, \mathit{start\_time}, \mathit{time})$ \\
+\line{A01} \> $\mathit{next} \gets \mathit{hash\_table.get}(\mathit{addr})$ \\
+\line{A01} \> $\mathit{node} \gets$ allocate new node \\
+\line{A01} \> $\mathit{node.time} \gets \mathit{time}$; $\mathit{node.val} \gets \mathit{val}$ \\
+\line{A01} \> $\mathit{node.next} \gets \mathit{next}$ \\
+\line{A01} \> {\bf while}($\mathit{start\_time} < \mathit{next.time}$){\bf do} \\
+\line{A01} \>\> $\mathit{merge}(\mathit{op}, \mathit{node}, \mathit{next})$ \\
+\line{A01} \>\> $\mathit{next} \gets \mathit{next.next}$ {\bf end while} \\
+\line{A01} \> $\mathit{merge}(\mathit{op}, \mathit{node}, \mathit{next})$ \\
+\line{A01} \> $\mathit{hash\_table.set}(\mathit{addr}, \mathit{node})$ \\
+{\bf end operation}. \\
+\\
+
 
 
 
@@ -296,69 +396,10 @@ aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
 
 
 
-
-\begin{figure}[htb]
-\centering{ \fbox{
-\begin{minipage}[t]{150mm}
-\footnotesize 
-\renewcommand{\baselinestretch}{2.5} 
-%\resetline
-%\setcounter{linecounter}{200}
-\begin{tabbing}
-aaaaaaa\=aa\=aaaaa\=aa\=aa\=\kill %~\\
-
-
-
-
-{\bf operation}  ${\sf non\_transactional\_read}(\mathit{addr})$ {\bf is}\\
-\line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
-\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge \mathit{tmp.status} \neq$ COMMITTED ) \\
-\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
-\line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
-%\line{A05} \>\> {\bf end if} \\
-\line{A06} \>\>\> {\bf if} ($tmp.status \neq $ COMMITTED)  \\
-\line{A07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{A08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
-\line{A05} \>\>\> {\bf end if}; \\
-\line{A09} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
-\line{A09A} \> {\bf end if}; \\
-\line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \mathit{tmp.time})$ \\
-\line{A11} \> {\bf if} ($\mathit{time} = \infty$) {\bf then} $\mathit{time} = \mathit{GCV}$ {\bf end if}; \\
-\line{A12} \> ${\sf return}$ ($\mathit{value}$) \\
-{\bf end operation}. \\
-\\
-
-{\bf operation}  ${\sf contains}(\mathit{key})$ {\bf is}\\
-\line{A01} \> {\bf if} $key \in \mathit{list}$ {\bf then} \\
-\line{A01} \>\> ${\sf return}$ ($\sf{true}$) {\bf end if} \\
-\line{A01} \> $\mathit{hash} \gets {\sf hash}(\mathit{key})$ \\
-
-
-\line{A01} \> $\mathit{tmp} \gets {\sf load}(\mathit{addr})$; \\ 
-\line{A02} \> {\bf if} $( ~\mathit{tmp}$ is of type T $ \wedge \mathit{tmp.status} \neq$ COMMITTED ) \\
-\line{A03}  \>\>  {\bf then if}  $(\mathit{tmp.time}  \leq \mathit{time}  \wedge  \mathit{tmp.status} = $ LIVE) \\
-\line{A04} \>\>\>\> {\bf then} \=${\sf \mathit{C\&S}}$($tmp.status$, LIVE, ABORTED) {\bf end if}; \\
-%\line{A05} \>\> {\bf end if} \\
-\line{A06} \>\>\> {\bf if} ($tmp.status \neq $ COMMITTED)  \\
-\line{A07} \>\>\>\> {\bf then} $\mathit{value} \gets \mathit{tmp.last}$ \\
-\line{A08} \>\>\>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
-\line{A05} \>\>\> {\bf end if}; \\
-\line{A09} \>\> {\bf else} $\mathit{value} \gets \mathit{tmp.value}$ \\
-\line{A09A} \> {\bf end if}; \\
-\line{A10} \> $\mathit{time} \gets {\sf max}(\mathit{time}, \mathit{tmp.time})$ \\
-\line{A11} \> {\bf if} ($\mathit{time} = \infty$) {\bf then} $\mathit{time} = \mathit{GCV}$ {\bf end if}; \\
-\line{A12} \> ${\sf return}$ ($\mathit{value}$) \\
-{\bf end operation}. \\
-\\
-
-\end{tabbing}
-\normalsize
-\end{minipage}
-}
-\caption{Non-transactional operations for reading and writing a variable.}
-\label{fig:ntops}
-}
-\end{figure}
+Idea: in all protocols need to do a memory barrier at transaction start/end (to let know safely that the transaction is no longer executing)
+Is there a way we can take advantage of this in the memory structure?
+Would want to be able to read directly from a time in memory without querying the location from the central structure that could have been updated
+in the mean-time.
 
 
 
