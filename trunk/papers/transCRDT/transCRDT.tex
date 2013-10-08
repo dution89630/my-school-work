@@ -67,13 +67,13 @@ Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
 %----------------------------------------------------------------------
 
 Originally proposed as a hardware mechanism for easily developing non-blocking data structures,
-Transactional Memory (TM) has since evloved to become a general pourpose method for easily writing
+Transactional Memory (TM) has since evloved to become a general pourpose method for more easily writing
 efficient concurrent code.
-With TM a programmer is able to declare atomic transacions, more specifically, blocks
-one or several reads and writes to shared memory bounded by calls to the
-$\mathit{begin\_transaction}$ and $\mathit{end\_transaction}$ operations, with
-these reads and writes appearing to have executed in exclusion with no interleaving
-between other transactions, as if a single global lock had been used.
+With TM, a programmer is able to declare atomic transacions, more specifically, blocks
+of one or several reads and writes to shared memory bounded by calls to the
+$\mathit{begin\_transaction}$ and $\mathit{end\_transaction}$ operations.
+These reads and writes then appear to execute in exclusion with no interleaving
+between other transactions, as if a single global lock had been used for each transaction.
 
 Unlike using a global lock, several transactions can be executed at the same time,
 with the system ensuring that they appear to have executed in exclusion.
@@ -85,8 +85,22 @@ Probably the most commonly used criterion, linearizability, roughly says that ea
 operation appears to have occured at some instant in time between its invocation and completion.
 Opacity, the most common criterion used for TM, ensures this for both aborted and committed transactions.
 
-While for certain applications, certain STM systems exhibit performance that scales as the number
-of processing core increases, many applications 
+For certain applications, certain STM systems exhibit performance that scales as the number
+of processing core increases.
+But this is the exception, not the norm, it the general case STM is considered to be slow
+and unscalable.
+While numerous algorithms and enhancements have been proposed in order to improve the performance
+of STM, they are still usually advantageous in certain cituations.
+The goal of this work is goes a step further in a attempt to improve performance, instead of 
+just tweaking algorithms and ensuring the same guarantees, it weakens the model of transactions
+from being totally order atomic blocks, to a model that allows concurrent conflicting transactions
+both execute and commit successfully with their updats being merged together.
+This will require the programmer to understand more complex concepts and limit the transactions
+to certain data types with the aspired trade off of increased scalibility.
+
+\subsection{Opacity}
+
+\subsection{Weakened consistency}
 
 \section{Stop the world}
 
@@ -146,7 +160,7 @@ The $\mathit{transactional\_update}$ operation indicates an update operation
 performed to the shared data structure during a transaction.
 It takes as input an identifier $\mathit{addr}$ of the location to update,
 an integer $\mathit{op}$ indicating the operation to perfrom, and a value $\mathit{val}$.
-The operation simple stores the update locally in a hash table, $\mathit{WS}$.
+The operation simply stores the update locally in a hash table, $\mathit{WS}$.
 Notice that given our weakened consistency model, these updates are not
 immediately propagated to shared memory, instead
 they are stored locally until the merging operation takes place.
@@ -196,6 +210,131 @@ Additionally, futre transactions performed by this process will be ordered after
 transactions as such, they must observe the modifications made by this trasaction, even if they
 have not yet been propagated to shared memory.
 
+
+\subsection{To consider}
+The important thing to consider is that even after a transaction commits, the updates will not
+necessarily be visible to other trainsactions that start afterwards.
+This will probably make a big impact on how a programmer will have to write his code, but should
+also provide much greater scalibility.
+Considering programability, one thing that might be interesting to consider is to allow merging
+based on certain events that the programmer might be aware, rather then just perfroming merging
+on some interval.
+For example a programmer could even provoke a merge himself if he wanted certain changes to be sure
+to be visible when a transaction commits.
+Or certain data types might warrant a merge at a certain point in their operation in order
+to provide some interesting guarantees (for example possibly in order to ensure 
+that a list really is empty??).
+
+
+\section{STM-like}
+The two obvious weaknesses of the \emph{stop the world} algorithm are that
+it requires all processes to stop executing transactions while a merging takes place
+and that updates done by one process are not immediately visible to other processes.
+This section will present a protocol that avoids these shortcommings at the cost
+of additional memory managment.
+The key difference in this protocol is that instead of having a updates be kepy
+locally until a global merging is perform, the process executing a transactions
+perform its updates to shared memory immediately upon commit.
+In order to enable transactions to do this while still ensuring that other transactions
+observe an atomic state of shared memory, multiple copies of the shared data is kept.
+similar to as it would be in a multi-version STM protocosl.
+STM protocols traditionally keep multiple versions in-order to allow for read-only transactions
+to read from an atomic snapshot of memory so that they never abort.
+Similarry, in the protocol presented in this section keeping multiple versions allow transactions to read
+from an atomic snapshot, but differently, given the weakened consistency requirements, updating transactions
+will never abort due to the fact that conflicting concurrent updates are merged.
+
+\subsection{Operations and data structures}
+A shared global counter $\mathit{gc}$ is used to order transactions.
+Each transaction is assigned a unique time value during commit by performing the atomic
+operation $\mathit{incrament\&fetch}$ on $\mathit{gc}$.
+
+
+The shared copy the data is stored in a hash-table
+$\mathit{hash\_table}$ with each oject in the hash-table
+being stored as a list identified by a unique address $\mathit{addr}$.
+Each item in the list describes a version of this object created
+by an updating transaction, thus they contain an integer
+set to the unique time $\mathit{time}$ given to the transaction that commited this
+update, a value $\mathit{val}$ created by this update, and a $\mathit{next}$ pointer
+which points to the node created by the previous update.
+Additionally each unique $\mathit{addr}$ has a lock associated with it.
+
+
+Each process has several local variables.
+An integer $\mathit{start\_time}$ is set to the value of $\mathit{GC}$
+at the start of the transaction,
+this will be the assigned time for the atomic snapshot of the transaction.
+Additionally each process contains a write set $\mathit{WS}$
+implemented as a hash table
+storing all updates that have taken place on this process
+since the beginning of the current transaction.
+
+\paragraph{begin\_transaction}
+At the beginning of a transaction the local variable $\mathit{start\_time}$
+is updated to the value of the shared global counter.
+This will be used as the time of the atomic snapshot that is read
+by the $\mathit{transactional\_read}$ operations.
+
+\paragraph{transactional\_update}
+The $\mathit{transactional\_update}$ operation indicates an update operation
+performed to the shared data structure during a transaction.
+It takes as input an identifier $\mathit{addr}$ of the location to update,
+an integer $\mathit{op}$ indicating the operation to perfrom, and a value $\mathit{val}$.
+The operation simply stores the update locally in a hash table, $\mathit{WS}$.
+
+
+\paragraph{transactional\_read}
+The $\mathit{transactional\_read}$ operation is a read to the shared data structure
+where each of the reads that occur within a single transaction return the values from
+an atomic snapshot of the shared data structure.
+It takes as input an identifier $\mathit{addr}$ and returns a value $\mathit{val}$.
+
+The read starts by checking the write set $\mathit{WS}$ to see if the value has already been written
+by this transaction, returning the value written if this is true.
+Otherwise, given that there could be concurrent transactions updating the shared structure,
+the operation cannot simply just return the most recent value written.
+Instead it will return the value that was in memory at the start of this transaction.
+In order to do this, first the head of the list for the location $\mathit{addr}$ is retrived
+from the shared hash-table $\mathit{multi-version-array}$ and the list is then traversed
+by the multi-version $\mathit{get}$ operation
+until a node with time smaller or equal to $\mathit{start\_time}$ is found and
+its value is then returned.
+
+\paragraph{commit}
+The commit operation merges the updates done by this transaction
+to shared memory.
+It starts by acquiring a lock for each of the locations updated by this transaction
+(in an order that avoids deadlock).
+It then performs a $\mathit{incrament\&fetch}$ operation on the global shared counter,
+setting $\mathit{time}$ to the value fetched.
+This value is used as the unique time value for the transaction.
+Next, each of the updates done by this transaction are merged to shared memory by
+calling the $\mathit{merge operation}$.
+This operation allocates a new list item for the update, setting its time vale
+to the unique time for this transaction.
+The updated value for this location stored at this new list item is computed by traversing the list merging
+the new operation with each of the updates to this location that took place concurrently i.e. those that happend
+after the start of the committing transaction up until the present time.
+(Note that it might not be necessary to traverse the list, depending on how the semantics of the
+data type and how the information is stored)
+The new item is then added to the head of its associated list.
+Finally the commit operation finishes by release the locks.
+
+
+\subsection{To consider}
+\paragraph{Multi-version}
+Here keeping track of multiple-versions is done by keeping a list.
+The $\mathit{merge}$ and $\mathit{get}$ operations shown here are specifc to this list structure.
+There should be other interesting data strcutres to use for keeping multiplie versions, maybe
+even ones that could prevent having to perform access to shared memory that is modified.
+It would be nice if, when performing a read, the correct location was accessable without first traversing the newer
+list items (i.e. trying to avoid the cache thrashing).
+
+\paragraph{STM protocol}
+The design for the multi-version STM protocol is fairly basic here, there are many other designs that might
+be interesting to use, for example something closer to NoREC, or
+a lock-free design, etc.
 
 \begin{figure}[htb]
 \centering{ \fbox{
@@ -401,6 +540,11 @@ Is there a way we can take advantage of this in the memory structure?
 Would want to be able to read directly from a time in memory without querying the location from the central structure that could have been updated
 in the mean-time.
 
+
+ToDo: Would it be interesting to add strong consistency along side weak, how would this model work?  Could we use it to implement
+certain data structures?
+I.e. a check if empty operation, or a producer/single consumer.
+Can you do some strong read/writes within a transaction also containing weak read/writes?
 
 
 \end{document}
