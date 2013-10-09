@@ -93,14 +93,52 @@ While numerous algorithms and enhancements have been proposed in order to improv
 of STM, they are still usually advantageous in certain cituations.
 The goal of this work is goes a step further in a attempt to improve performance, instead of 
 just tweaking algorithms and ensuring the same guarantees, it weakens the model of transactions
-from being totally order atomic blocks, to a model that allows concurrent conflicting transactions
+from being totally ordered atomic blocks, to a model that allows concurrent conflicting transactions
 both execute and commit successfully with their updats being merged together.
 This will require the programmer to understand more complex concepts and limit the transactions
 to certain data types with the aspired trade off of increased scalibility.
 
 \subsection{Opacity}
+How a transaction executes in relation to another transaction is defined by a consistency condition,
+allowing a programer to know how he can use transactions to correctly write his programs.
+The most commonly used consistency condition for concurrent implementations of abstractions or data types
+is \emph{linearizability}.
+When an implementation of a data type ensures linearizability then each operation exectued on it will
+be totally ordered based on real time, where an operation appears to have completely executed at
+some instant in time (called a linearlization point) between it invocation and completion.
+Specifally, when considerig TM, a bit of a stronger condition is used called \emph{opacity}.
+The reason for this is that in TM there is the concept of an aborted transaction.
+That is a transaction that has started executing, but due to conflicts due to concurrency
+has had to stop and start over (otherwise risking violating the atomicity of transactions),
+leaving no visible effect on the state of the shared data.
+Even though linearizability will ensure the commited transactions are correct, aborted transactions
+might see invalid states of memory before they abort, risking problems such a divide by zero exceptions
+or 
+Opacity prevents this by requring the reads performed by aborted transactions to be exists
+as totally orderd atomic transactions along with the commited transactions.
+
+For the programmer, this means that the reads and writes of a transaction
+appear to all happen atomically at some instant, preventing him from having
+to worry about different interleavings of reads and writes between concurrent transactions.
+Given that from within a transaction, a programer can call a read to any location in shared memory
+it can become costly for the system to ensure opacity in the presence of concurrency.
+There are dozens of different STM algorithms that try to minimize these cost with the hope
+of improving performance, scalability, or progress.
+On one extreeme an algorithm may keep large ammounts of meta data to try to make
+sure that every transaction can commit if it was possible, but keeping and processing
+this meta data becomes expensive.
+On another extreeme an algorihtm might try to keep operations as light as possible, but
+then might have to abort transactions unnecessarily just in case they might violate
+opacity, limiting concurrency.
+Other algorithms have been proposed doing everything inbetween.
+
 
 \subsection{Weakened consistency}
+While strong consistency such as opacity makes concurrent programs easier to write,
+it can limit performance and scalibility.
+This ease of use might be essential for certain developers, but others might be willing
+to give up some of the ease of use in order to 
+
 
 \section{Stop the world}
 
