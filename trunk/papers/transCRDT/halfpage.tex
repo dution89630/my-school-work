@@ -1,0 +1,179 @@
+
+
+
+
+% ============================================================================
+\documentclass[11pt,letterpaper]{article}
+%\usepackage[T1]{fontenc}
+%\usepackage[latin1]{inputenc}
+\usepackage{epic,eepic,amsmath,latexsym,amssymb,color,amsthm}
+\usepackage{ifthen,graphics,epsfig,fullpage} 
+\usepackage[english]{babel} 
+\bibliographystyle{plain}
+\usepackage{times}
+
+
+% =========================================================================
+\newcommand{\Xomit}[1]{}
+\newcommand{\ignore}[1]{}
+% =========================================================================
+
+
+\begin{document}
+
+%-----------------------for square--------------------------------------------
+\newlength {\squarewidth}
+\renewenvironment {square}
+{
+\setlength {\squarewidth} {\linewidth}
+\addtolength {\squarewidth} {-12pt}
+\renewcommand{\baselinestretch}{0.75} \footnotesize
+\begin {center}
+\begin {tabular} {|c|} \hline
+\begin {minipage} {\squarewidth}
+\medskip
+}{
+\end {minipage}
+\\ \hline
+\end{tabular}
+\end{center}
+}  
+ 
+%--------------------------------------------------------------------
+%--------------------------------------------------------------------
+%-------- macros for algorithm ---------------------------------------
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newcommand{\toto}{xxx}
+\newenvironment{proofT}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Theorem~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofL}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Lemma~\ref{\toto}}$\par\vspace{3mm}}
+\newenvironment{proofC}{\noindent{\bf
+Proof }} {\hspace*{\fill}$\Box_{Corollary~\ref{\toto}}$\par\vspace{3mm}}
+
+
+\newcounter{linecounter}
+\newcommand{\linenumbering}{\ifthenelse{\value{linecounter}<10}
+{(0\arabic{linecounter})}{(\arabic{linecounter})}}
+\renewcommand{\line}[1]{\refstepcounter{linecounter}\label{#1}\linenumbering}
+\newcommand{\resetline}[1]{\setcounter{linecounter}{0}#1}
+\renewcommand{\thelinecounter}{\ifnum \value{linecounter} > 
+9\else 0\fi \arabic{linecounter}}
+
+\newcommand{\tuple}[1]{\ensuremath{\left \langle #1 \right \rangle }}
+
+%----------------------------------------------------------------------
+
+
+Due to physical limitations, the speed (MHz) of computer processors is no longer increasing each year,
+instead, the number of cores per chip is increasing.
+This means that the only way to allow programs to execute faster is to rewrite them
+into several threads that execute in parallel across the different cores.
+Thus, programmers must think about how threads will share and access data concurrently, but doing this
+this correctly and efficiently has been shown to be an extremely difficult task.
+
+
+From locks providing mutual exclusion, to data structures providing concurrent maps or sets,
+many different abstractions have been proposed to make writing concurrent programs easier,
+but these are ether too low level and difficult to use or too specific for programmers
+to write concurrent programs in general.
+More recently, the abstraction of Transactional Memory (TM) \cite{HM93,ST97} has been proposed as a higher level approach,
+giving the programmer access to the transaction concept, allowing him to write blocks
+of code that appear to execute atomically in isolation.
+The underlying TM system then takes care of difficult
+synchronization while allowing concurrency where possible.
+
+Even though TM appears to be a promising solution, it has
+still yet to gain transaction outside of the research community.
+One reason for this is that no matter how refined the protocols get,
+scalability is still limited \cite{CBMCWC08}, except in specific situations \cite{DFGG11}.
+Scalability is limited by the strong consistency guarantees of an atomic transaction, requiring large
+amounts of meta data, processing, and synchronization, which often
+turns out to be wasted, but is necessary to prevent possible inconsistencies
+``just in case''.
+
+Differently, for many applications, such strong consistency is not even required.
+This can be seen by the popularity of using weakened data types in
+both commercial and academic large scale distributed systems and applications.
+For example. conflict-free data types (CRDTs) \cite{SPBZ11}
+weaken consistency, thus increasing scalability,
+while still providing strong enough abstractions
+to create interesting applications.
+
+Even though large scale distributed systems exists on a different medium then parallel processing
+and are trying to solve different problems,
+they share many concepts.
+Solutions in one can often be applied in the other.
+Partially weakened semantics for transactional memory have already been proposed
+and shown to have scalability problems \cite{BDFG13}.
+Different, this work will explore and develop TM implementations for shared memory systems that provide
+weak transaction semantics similar to what is provided in CRDTs,
+taking reference to other work that proposed weakened
+transactions in large scale distributed systems \cite{ZBBDBSP13}.
+Highly scalable TM algorithms
+will be created by redesign and re-implementing current protocols, removing
+the scalability limiting synchronization operations, while keeping the scalable concepts.
+We believe these protocols will have immediate applications in concurrent graph processing.
+
+
+
+\begin{thebibliography}{99}
+\small{
+
+
+\bibitem{BDFG13}
+Bushkov V., Dziuma D., Fatourou P., and Guerraoui R,.
+Snapshot Isolation Does Not Scale Either.
+{\it 5th Workshop on the Theory of Transactional Memory (WTTM)}, 2013.
+
+
+\bibitem{CBMCWC08}
+Cascaval C., Blundell C., Michael M., Cain H. W., Wu P., Chiras S., and Chatterjee S.,
+Software Transactional Memory: Why Is It Only a Research Toy?.
+{\it Queue}, (6)5,  pages 46--58, 2008.
+
+
+
+\bibitem{DFGG11}
+% Aleksandar Dragojevic, Pascal Felber, Vincent Gramoli, and Rachid Guerraoui.
+Dragojevi\'{c} A., Felber P., Gramoli V. and Guerraoui R.,
+\newblock Why {STM} can be more than a research toy.
+\newblock In {\em Commun. ACM}, 54(4), pages 70--77, 2011.
+
+
+\bibitem{HM93}
+Herlihy M.P.  and Moss J.E.B., 
+Transactional Memory: Architectural Support for Lock-free Data Structures. 
+In {\it Proc. of the 20th ACM Int'l Symposium  on Computer Archictecture (ISCA'93)}, 
+pages 289--300, 1993. 
+
+
+\bibitem{SPBZ11}
+Shapiro M., Pregui{\c c}a N., Baquero C., and Zawirski M.,
+Conflict-free Replicated Data Types
+{\it INRIA Tech Report N° RR-7687}, 2011.
+
+
+
+\bibitem{ST97}
+Shavit N. and Touitou D., 
+\newblock Software Transactional Memory. 
+\newblock In {\it Distributed  Computing}, 10(2), pages 99-116, 1997. 
+
+
+\bibitem{ZBBDBSP13}
+Zawirski M., Bieniusa A., Balegas V., Duarte S., Baquero C., Shapiro M., and Pregui{\c c}a N.
+SwiftCloud: Fault-Tolerant Geo-Replication Integrated all the Way to the Client Machine.
+{\it INRIA Tech Reoprt N° RR-8347}, 2013.
+
+
+
+
+}
+\end{thebibliography}
+
+
+\end{document}
